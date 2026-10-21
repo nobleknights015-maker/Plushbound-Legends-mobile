@@ -1,0 +1,134 @@
+/* Moto G landscape character-creator fit override */
+@media (orientation: landscape) and (max-height: 520px) {
+  #creatorScreen.screen {
+    padding: 6px;
+    align-items: stretch;
+  }
+
+  #creatorScreen .creator-panel {
+    width: min(1180px, 99vw);
+    height: calc(100% - 0px);
+    max-height: none;
+    overflow: hidden;
+    padding: 10px 12px;
+    border-radius: 14px;
+  }
+
+  #creatorScreen .section-heading {
+    align-items: center;
+    margin-bottom: 6px;
+    gap: 8px;
+  }
+
+  #creatorScreen .section-heading .eyebrow {
+    margin-bottom: 2px;
+    font-size: 10px;
+  }
+
+  #creatorScreen .section-heading h2 {
+    font-size: 22px;
+    line-height: 1.05;
+  }
+
+  #creatorScreen .step-pill {
+    padding: 5px 9px;
+    font-size: 11px;
+  }
+
+  #creatorScreen .creator-grid {
+    grid-template-columns: minmax(150px, 190px) minmax(0, 1fr);
+    gap: 10px;
+    height: calc(100% - 42px);
+    min-height: 0;
+  }
+
+  #creatorScreen .creator-grid > div:first-child {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #creatorScreen .avatar-preview {
+    min-height: 0;
+    height: 100%;
+    border-radius: 12px;
+  }
+
+  #creatorScreen .prototype-note {
+    display: none;
+  }
+
+  #creatorScreen .creator-form {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-auto-rows: min-content;
+    align-content: start;
+    gap: 6px 8px;
+    min-width: 0;
+  }
+
+  #creatorScreen .creator-form label {
+    gap: 3px;
+    font-size: 11px;
+    min-width: 0;
+  }
+
+  #creatorScreen .creator-form input,
+  #creatorScreen .creator-form select {
+    min-height: 44px;
+    height: 44px;
+    padding: 6px 9px;
+    border-radius: 8px;
+    font-size: 16px;
+    min-width: 0;
+  }
+
+  #creatorScreen .row-actions {
+    grid-column: 1 / -1;
+    margin-top: 2px;
+    gap: 8px;
+  }
+
+  #creatorScreen .row-actions button {
+    min-height: 44px;
+    padding: 8px 14px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 390px) {
+  #creatorScreen .creator-panel {
+    padding: 7px 9px;
+  }
+
+  #creatorScreen .section-heading {
+    margin-bottom: 4px;
+  }
+
+  #creatorScreen .section-heading h2 {
+    font-size: 19px;
+  }
+
+  #creatorScreen .creator-grid {
+    grid-template-columns: 150px minmax(0, 1fr);
+    gap: 7px;
+    height: calc(100% - 34px);
+  }
+
+  #creatorScreen .creator-form {
+    gap: 4px 6px;
+  }
+
+  #creatorScreen .creator-form label {
+    font-size: 10px;
+  }
+
+  #creatorScreen .creator-form input,
+  #creatorScreen .creator-form select {
+    min-height: 42px;
+    height: 42px;
+    padding: 5px 8px;
+  }
+
+  #creatorScreen .row-actions button {
+    min-height: 42px;
+  }
+}

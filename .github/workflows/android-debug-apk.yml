@@ -24,6 +24,9 @@ jobs:
       - name: Apply Moto G creator layout override
         run: cat overrides/creator_landscape.css >> app/src/main/assets/style.css
 
+      - name: Apply in-game MV-inspired character visuals
+        run: python overrides/patch_mv_visuals.py
+
       - name: Validate game script
         run: node --check app/src/main/assets/game.js
 

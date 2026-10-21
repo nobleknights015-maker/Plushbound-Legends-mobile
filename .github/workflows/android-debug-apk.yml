@@ -31,7 +31,7 @@ jobs:
         run: python overrides/patch_runtime_startup.py
 
       - name: Apply live creator, Guardian, and field sprite pass
-        run: python overrides/patch_visuals_v2.py
+        run: python overrides/run_visuals_v2_compat.py
 
       - name: Apply opening Elyndor cutscene
         run: python overrides/patch_opening_cutscene.py

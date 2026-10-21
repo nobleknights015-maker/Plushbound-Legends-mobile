@@ -27,6 +27,12 @@ jobs:
       - name: Apply in-game MV-inspired character visuals
         run: python overrides/patch_mv_visuals.py
 
+      - name: Package scalable world manifest
+        run: |
+          mkdir -p app/src/main/assets/data
+          cp overrides/world_manifest.json app/src/main/assets/data/world_manifest.json
+          python -m json.tool app/src/main/assets/data/world_manifest.json >/dev/null
+
       - name: Validate game script
         run: node --check app/src/main/assets/game.js
 

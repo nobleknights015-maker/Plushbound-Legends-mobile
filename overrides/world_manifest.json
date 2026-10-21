@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "worldId": "plushtopia",
+  "displayName": "Plushtopia",
+  "designTarget": {
+    "majorContinentSlots": 5,
+    "supportsOptionalIslands": true,
+    "supportsSeaTravel": true,
+    "supportsAirTravel": true,
+    "supportsWaystitchFastTravel": true,
+    "streamingModel": "region-scoped",
+    "mobileBaseline": "Moto G 2025 / 4 GB physical RAM"
+  },
+  "continents": [
+    {
+      "id": "continent_01",
+      "name": null,
+      "status": "active-development",
+      "regions": [
+        {
+          "id": "sunny_plains_elyndor",
+          "name": "Sunny Plains of Elyndor",
+          "status": "playable-prototype",
+          "biome": "sunny-plains",
+          "entryPoint": true,
+          "waystitches": ["elyndor_first_waystitch"],
+          "settlements": [],
+          "dungeons": [],
+          "optionalAreas": [],
+          "guardianHabitats": [],
+          "encounterTable": "encounters_elyndor_early",
+          "musicSet": "music_elyndor",
+          "assetBundle": "region_sunny_plains_elyndor",
+          "storyGate": null
+        },
+        {
+          "id": "akatsukiyama",
+          "name": "Akatsukiyama",
+          "status": "planned",
+          "biome": "mountain-shrine",
+          "entryPoint": false,
+          "waystitches": [],
+          "settlements": [],
+          "dungeons": [],
+          "optionalAreas": [],
+          "guardianHabitats": [],
+          "encounterTable": null,
+          "musicSet": null,
+          "assetBundle": "region_akatsukiyama",
+          "storyGate": "story_unlock_akatsukiyama"
+        }
+      ]
+    },
+    {"id":"continent_02","name":null,"status":"reserved","regions":[]},
+    {"id":"continent_03","name":null,"status":"reserved","regions":[]},
+    {"id":"continent_04","name":null,"status":"reserved","regions":[]},
+    {"id":"continent_05","name":null,"status":"reserved","regions":[]}
+  ],
+  "islandGroups": [],
+  "travel": {
+    "waystitches": {
+      "requiresDiscovery": true,
+      "canBeStoryDisabled": true,
+      "supportsSettlementNodes": true,
+      "supportsLandmarkNodes": true
+    },
+    "sea": {"enabled": true, "unlockGate": "story_unlock_sea_travel"},
+    "air": {"enabled": true, "unlockGate": "story_unlock_air_travel"}
+  },
+  "exploration": {
+    "supportsGuardianTraversalAbilities": true,
+    "supportsBacktrackingRewards": true,
+    "supportsHiddenAreas": true,
+    "supportsOptionalBosses": true,
+    "supportsPostgameRegions": true,
+    "supportsRareGuardianHabitats": true
+  },
+  "loading": {
+    "keepOnlyActiveRegionResident": true,
+    "preloadAdjacentLocalMaps": false,
+    "releasePreviousRegionAssets": true,
+    "maxSimultaneousLargePortraitSets": 1,
+    "maxSimultaneousRegionMusicSets": 1
+  }
+}

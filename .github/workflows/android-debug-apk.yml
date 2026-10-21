@@ -33,6 +33,9 @@ jobs:
       - name: Apply live creator, Guardian, and field sprite pass
         run: python overrides/patch_visuals_v2.py
 
+      - name: Apply opening Elyndor cutscene
+        run: python overrides/patch_opening_cutscene.py
+
       - name: Package scalable world manifest
         run: |
           mkdir -p app/src/main/assets/data
@@ -48,6 +51,7 @@ jobs:
           grep -q "function updateCreatorPreview()" app/src/main/assets/game.js
           grep -q "function drawHumanoidSprite" app/src/main/assets/game.js
           grep -q "function drawGuardianSprite" app/src/main/assets/game.js
+          grep -q "function runOpeningCutscene" app/src/main/assets/game.js
           grep -q "newGameBtn.*addEventListener" app/src/main/assets/game.js
           ! grep -q "escapeHtml(v.name)" app/src/main/assets/game.js
 

@@ -21,6 +21,9 @@ jobs:
       - name: Apply Android Guardian-selection hotfix
         run: python overrides/patch_game.py
 
+      - name: Apply Moto G creator layout override
+        run: cat overrides/creator_landscape.css >> app/src/main/assets/style.css
+
       - name: Validate game script
         run: node --check app/src/main/assets/game.js
 

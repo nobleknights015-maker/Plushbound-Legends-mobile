@@ -79,13 +79,15 @@ export class TilemapRenderer {
     };
   }
 
-  buildDrawList({ camera, map, sprites = [], overlays = [] } = {}) {
+  buildDrawList({ camera, map, sprites = [], overlays = [], tileset = null, clockMs = 0 } = {}) {
     if (!camera) throw new Error('camera is required');
     if (!map) throw new Error('map is required');
     const width = Math.max(0, Number(map.width) || 0);
     const height = Math.max(0, Number(map.height) || 0);
     const bounds = this.visibleTileBounds(camera, width, height);
     const commands = [];
+
+    if (map.parallax) commands.push(buildParallaxCommand(map.parallax, camera));
 
     const layers = normalizeLayers(map.layers);
     for (let layerIndex = 0; layerIndex < layers.length; layerIndex++) {
@@ -96,7 +98,8 @@ export class TilemapRenderer {
           const tileId = tileAt(layer, x, y, width);
           if (tileId == null || tileId === 0) continue;
           const pos = camera.worldToScreen(x * this.tileWidth, y * this.tileHeight);
-          commands.push({ kind: 'tile', layer: layerIndex, z: layer.z ?? layerIndex, tileId, x, y, screenX: pos.x, screenY: pos.y });
+          const source = tileset?.resolve?.(tileId, { x, y, layer: layerIndex, clockMs }) ?? null;
+          commands.push({ kind: 'tile', layer: layerIndex, z: layer.z ?? layerIndex, tileId, x, y, screenX: pos.x, screenY: pos.y, source });
         }
       }
     }
@@ -110,7 +113,7 @@ export class TilemapRenderer {
       const heightPx = Math.max(1, Number(sprite.height) || this.tileHeight);
       if (!rectIntersects(cameraBounds, { left: worldX, top: worldY, right: worldX + widthPx, bottom: worldY + heightPx })) continue;
       const pos = camera.worldToScreen(worldX, worldY);
-      commands.push({ kind: 'sprite', id: String(sprite.id ?? ''), z: Number(sprite.z ?? 1000 + worldY), screenX: pos.x, screenY: pos.y, frame: sprite.frame ?? 0 });
+      commands.push({ kind: 'sprite', id: String(sprite.id ?? ''), z: Number(sprite.z ?? 1000 + worldY), screenX: pos.x, screenY: pos.y, frame: sprite.frame ?? 0, source: sprite.source ?? null });
     }
 
     for (const overlay of overlays) {
@@ -121,6 +124,74 @@ export class TilemapRenderer {
     commands.sort((a, b) => (a.z - b.z) || kindOrder(a.kind) - kindOrder(b.kind) || stableKey(a).localeCompare(stableKey(b)));
     return { bounds, commands };
   }
+}
+
+export class TilesetAtlas {
+  constructor({ tileWidth = 48, tileHeight = 48, sheets = {}, animated = {} } = {}) {
+    this.tileWidth = Math.max(1, Number(tileWidth) || 48);
+    this.tileHeight = Math.max(1, Number(tileHeight) || 48);
+    this.sheets = new Map();
+    this.animated = new Map();
+    for (const [id, sheet] of Object.entries(sheets || {})) this.registerSheet(id, sheet);
+    for (const [tileId, animation] of Object.entries(animated || {})) this.registerAnimation(tileId, animation);
+  }
+
+  registerSheet(id, { firstId = 1, columns = 8, rows = 1, image = null, autotile = false, variants = 1 } = {}) {
+    const sheet = {
+      id: String(id), firstId: Number(firstId), columns: Math.max(1, Number(columns) || 1), rows: Math.max(1, Number(rows) || 1),
+      image, autotile: !!autotile, variants: Math.max(1, Number(variants) || 1)
+    };
+    sheet.lastId = sheet.firstId + sheet.columns * sheet.rows * sheet.variants - 1;
+    this.sheets.set(sheet.id, sheet);
+    return sheet;
+  }
+
+  registerAnimation(tileId, { frames = [], frameMs = 400 } = {}) {
+    this.animated.set(Number(tileId), { frames: frames.map(Number), frameMs: Math.max(1, Number(frameMs) || 400) });
+  }
+
+  resolve(tileId, { clockMs = 0, variant = 0 } = {}) {
+    let id = Number(tileId);
+    const animation = this.animated.get(id);
+    if (animation?.frames.length) {
+      const index = Math.floor(Math.max(0, Number(clockMs) || 0) / animation.frameMs) % animation.frames.length;
+      id = animation.frames[index];
+    }
+    const sheet = [...this.sheets.values()].find(candidate => id >= candidate.firstId && id <= candidate.lastId);
+    if (!sheet) return null;
+    const local = id - sheet.firstId;
+    const tileCountPerVariant = sheet.columns * sheet.rows;
+    const resolvedVariant = sheet.autotile ? clamp(Math.floor(Number(variant) || 0), 0, sheet.variants - 1) : Math.floor(local / tileCountPerVariant);
+    const tileIndex = sheet.autotile ? local % tileCountPerVariant : local % tileCountPerVariant;
+    return {
+      sheetId: sheet.id,
+      image: sheet.image,
+      sx: (tileIndex % sheet.columns) * this.tileWidth,
+      sy: Math.floor(tileIndex / sheet.columns) * this.tileHeight,
+      sw: this.tileWidth,
+      sh: this.tileHeight,
+      variant: resolvedVariant,
+      animated: !!animation
+    };
+  }
+}
+
+export function autotileVariant({ north = false, east = false, south = false, west = false } = {}) {
+  return (north ? 1 : 0) | (east ? 2 : 0) | (south ? 4 : 0) | (west ? 8 : 0);
+}
+
+function buildParallaxCommand(parallax, camera) {
+  const factorX = Number(parallax.factorX ?? parallax.factor ?? 0.5);
+  const factorY = Number(parallax.factorY ?? parallax.factor ?? 0.5);
+  const speedX = Number(parallax.speedX || 0);
+  const speedY = Number(parallax.speedY || 0);
+  const time = Math.max(0, Number(parallax.clockMs || 0)) / 1000;
+  return {
+    kind: 'parallax', id: String(parallax.id ?? 'parallax'), z: Number(parallax.z ?? -1000), image: parallax.image ?? null,
+    offsetX: camera.x * factorX + speedX * time,
+    offsetY: camera.y * factorY + speedY * time,
+    loopX: parallax.loopX !== false, loopY: parallax.loopY !== false
+  };
 }
 
 function normalizeLayers(layers) {
@@ -144,6 +215,7 @@ function stableKey(command) {
 }
 
 function kindOrder(kind) {
+  if (kind === 'parallax') return -1;
   if (kind === 'tile') return 0;
   if (kind === 'sprite') return 1;
   return 2;

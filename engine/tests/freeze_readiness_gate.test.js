@@ -6,6 +6,17 @@ import { LiveInputRouter } from '../src/input/LiveInputRouter.js';
 import { LogicalViewport } from '../src/render/Canvas2DRenderBackend.js';
 import { classifyScreen, safeViewport, responsiveAnchor } from '../src/platform/ScreenAdaptation.js';
 import { bootPlushboundEngineV1 } from '../src/runtime/BrowserRuntimeEntry.js';
+import { installNativeRuntimeHardening } from '../src/runtime/NativeRuntimeHardening.js';
+
+function eventTarget() {
+  const listeners = new Map();
+  return {
+    addEventListener(type, fn) { if (!listeners.has(type)) listeners.set(type, new Set()); listeners.get(type).add(fn); },
+    removeEventListener(type, fn) { listeners.get(type)?.delete(fn); },
+    dispatch(type, event = {}) { for (const fn of listeners.get(type) || []) fn(event); },
+    count(type) { return listeners.get(type)?.size || 0; }
+  };
+}
 
 test('Engine v1 freeze gate: screen, touch, assets and runtime error contracts remain stable', async () => {
   const viewport = new LogicalViewport();
@@ -56,4 +67,40 @@ test('Engine v1 freeze gate: screen, touch, assets and runtime error contracts r
   assert.equal(result.error, true);
   assert.equal(runtime.interactionErrors().length, 1);
   assert.equal(events.at(-1).type, 'plushbound-engine-v1-interaction-error');
+});
+
+test('Engine v1 freeze gate: native viewport refresh and root Back fallthrough remain stable', async () => {
+  const viewport = eventTarget();
+  const scopeEvents = eventTarget();
+  let resized = 0;
+  let refreshed = 0;
+  let handled = true;
+  const scope = {
+    visualViewport: viewport,
+    __PLUSHBOUND_ENGINE_V1__: {
+      booted: true,
+      resize: () => { resized += 1; },
+      refreshSafeAreaInsets: () => { refreshed += 1; },
+      handleAction: async () => handled ? { handled: true } : { type: 'back', unhandled: true }
+    },
+    addEventListener: scopeEvents.addEventListener,
+    removeEventListener: scopeEvents.removeEventListener
+  };
+
+  const native = await installNativeRuntimeHardening(scope);
+  assert.equal(resized, 1);
+  assert.equal(refreshed, 1);
+  viewport.dispatch('resize');
+  assert.equal(resized, 2);
+  assert.equal(refreshed, 2);
+
+  let prevented = 0;
+  assert.equal(await native.back({ preventDefault: () => { prevented += 1; } }), true);
+  handled = false;
+  assert.equal(await native.back({ preventDefault: () => { prevented += 1; } }), false);
+  assert.equal(prevented, 1);
+
+  native.destroy();
+  assert.equal(viewport.count('resize'), 0);
+  assert.equal(viewport.count('scroll'), 0);
 });

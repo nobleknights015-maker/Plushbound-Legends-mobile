@@ -5,6 +5,7 @@ import { SceneRenderExecutor } from '../render/SceneRenderExecutor.js';
 import { Canvas2DRenderBackend } from '../render/Canvas2DRenderBackend.js';
 import { InputManager } from '../input/InputManager.js';
 import { LiveInputRouter } from '../input/LiveInputRouter.js';
+import { SceneInteractionController } from '../scenes/SceneInteractionController.js';
 
 function imageLoader(descriptor, scope = globalThis) {
   if (descriptor.type !== 'image' || typeof scope.Image !== 'function') {
@@ -82,6 +83,14 @@ export async function bootPlushboundEngineV1({
   });
   inputRouter.attach(renderCanvas);
 
+  const interaction = new SceneInteractionController({
+    render: scene => {
+      inputRouter.setScene(scene);
+      return executor.execute(scene);
+    }
+  });
+  actionListeners.add(action => interaction.handle(action));
+
   const resize = () => liveBackend?.resize?.(
     renderCanvas?.clientWidth || scope.innerWidth || 1604,
     renderCanvas?.clientHeight || scope.innerHeight || 720,
@@ -101,15 +110,19 @@ export async function bootPlushboundEngineV1({
     canvas: renderCanvas,
     input: inputManager,
     inputRouter,
+    interaction,
     validation,
     resize,
     mapClientPoint: (x, y) => liveBackend?.pointFromClient?.(x, y) || { x: Number(x) || 0, y: Number(y) || 0 },
     onAction: listener => { if (typeof listener === 'function') actionListeners.add(listener); return () => actionListeners.delete(listener); },
+    registerInteraction: (sceneType, id, handler) => { interaction.register(sceneType, id, handler); return runtime; },
     composeScene: (scene, options = {}) => executor.compose(scene, options),
     renderScene: (scene, options = {}) => {
+      interaction.setScene(scene);
       inputRouter.setScene(scene);
       return executor.execute(scene, options);
     },
+    handleAction: action => interaction.handle(action),
     destroy: () => {
       inputRouter.detach();
       inputManager.clearAll();
@@ -121,7 +134,7 @@ export async function bootPlushboundEngineV1({
 
   scope.__PLUSHBOUND_ENGINE_V1__ = runtime;
   scope.dispatchEvent?.(new (scope.CustomEvent || class { constructor(type, init) { this.type = type; this.detail = init?.detail; } })('plushbound-engine-v1-ready', {
-    detail: { version: runtime.version, validAssets: validation.valid, liveRenderer: !!liveBackend, liveInput: !!renderCanvas }
+    detail: { version: runtime.version, validAssets: validation.valid, liveRenderer: !!liveBackend, liveInput: !!renderCanvas, liveInteractions: true }
   }));
   return runtime;
 }

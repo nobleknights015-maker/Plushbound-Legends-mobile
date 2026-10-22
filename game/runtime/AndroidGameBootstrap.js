@@ -15,7 +15,17 @@ function resolveBase(scope = globalThis) {
   return new URL('./', scope.location?.href || 'file:///android_asset/');
 }
 
+export function ensureStructuredClone(scope = globalThis) {
+  if (typeof scope.structuredClone === 'function') return scope.structuredClone;
+  const fallback = value => value == null ? value : JSON.parse(JSON.stringify(value));
+  scope.structuredClone = fallback;
+  if (scope !== globalThis && typeof globalThis.structuredClone !== 'function') globalThis.structuredClone = fallback;
+  return fallback;
+}
+
 export async function bootPlushboundGame({ scope = globalThis, baseUrl } = {}) {
+  ensureStructuredClone(scope);
+
   const runtimeBase = baseUrl ? new URL(baseUrl, scope.location?.href) : resolveBase(scope);
   const root = new URL('../', runtimeBase);
   const contentBase = new URL('content/', root);

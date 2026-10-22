@@ -8,7 +8,7 @@ const fixtures = new Map([
   ['content-index.json', read('content/content-index.json')],
   ['opening-elyndor.json', read('content/opening-elyndor.json')],
   ['elyndor-route-one.json', read('content/elyndor-route-one.json')],
-  ['elyndor-runtime-maps.json', read('runtime/elyndor-runtime-maps.json')]
+  ['elyndor-route-one.maps.json', read('runtime/elyndor-route-one.maps.json')]
 ]);
 
 test('Android game bootstrap creates a session on the frozen engine baseline and enters Elyndor', async () => {

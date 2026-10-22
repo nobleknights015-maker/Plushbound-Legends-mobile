@@ -7,7 +7,8 @@
     { "id": "opening-elyndor", "path": "opening-elyndor.json", "required": true },
     { "id": "elyndor-route-one", "path": "elyndor-route-one.json", "required": true },
     { "id": "elyndor-map-layouts", "path": "elyndor-map-layouts.json", "required": true },
-    { "id": "elyndor-asset-slots", "path": "elyndor-asset-slots.json", "required": true }
+    { "id": "elyndor-asset-slots", "path": "elyndor-asset-slots.json", "required": true },
+    { "id": "legal", "path": "legal.json", "required": true }
   ],
   "runtimePackages": [
     { "id": "elyndor-route-one-maps", "path": "../runtime/elyndor-route-one.maps.json", "required": true },
@@ -16,6 +17,13 @@
   "assetLibraries": [
     { "id": "plushbound-game-assets", "root": "../assets", "manifest": "../assets/asset-manifest.json", "required": true }
   ],
+  "legal": {
+    "contentPackageId": "legal",
+    "licenseFile": "../../LICENSE.md",
+    "creditsFile": "../../CREDITS.md",
+    "thirdPartyNoticesFile": "../../THIRD_PARTY_NOTICES.md",
+    "assetProvenancePolicy": "../assets/ASSET_PROVENANCE.md"
+  },
   "start": {
     "worldId": "plustopia",
     "regionId": "elyndor",

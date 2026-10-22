@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 1,
+  "phase": "asset-production-only",
+  "gameDevelopmentStarted": false,
+  "title": "Plushbound Legends Whole-Game Placeholder Completeness Matrix",
+  "purpose": "Audit namespace separation and verify that every planned Plushtopia region has placeholder capacity across all required asset families before binary placeholder packs are finalized.",
+  "technicalBaseline": {
+    "tileSize": 48,
+    "finalArtDeferred": true,
+    "finalArtTarget": "original Plushbound MV-cover/Trinity-inspired JRPG visual pass",
+    "replacementRule": "Preserve stable logical IDs, dimensions, footprints, frame semantics and bindings during final-art replacement."
+  },
+  "namespaceAudit": {
+    "status": "pass-by-contract",
+    "reservedRoots": [
+      "creator/", "npc/", "canon/", "guardian/", "enemy/", "boss/", "region/", "architecture/", "prop/", "item/", "portrait/", "vfx/", "ui/", "audio/"
+    ],
+    "hardRules": [
+      "Guardian IDs may never resolve through enemy or boss namespaces.",
+      "Rare Guardian appearances remain Guardian habitat assets and never hostile encounter assets.",
+      "Chris Bourn, Penney Nguyen, Lily and Ethan use reserved canon identities and may not be generated from ambient NPC recipe IDs.",
+      "Shared assets use shared/global ownership; regional variants use explicit region ownership.",
+      "Story-state visual variants retain the same collision and interaction footprint unless explicitly versioned as a new logical asset.",
+      "Child NPC assets remain age-appropriate and separate from adult-only wardrobe or occupation variants.",
+      "Placeholder IDs survive the later final-art pass unchanged."
+    ],
+    "collisionClassesChecked": [
+      "guardian-vs-enemy", "guardian-vs-boss", "npc-vs-canon", "shared-vs-regional", "creator-vs-equipment", "environment-vs-prop", "item-vs-ui-icon", "vfx-vs-story-overlay", "audio-role-vs-region-theme"
+    ],
+    "knownContentRiskToKeepSeparated": "Verdancia legacy encounter data may mix Guardian names with hostile encounter families; asset namespaces explicitly prohibit that mixture and gameplay/content cleanup is deferred to the later game-development phase."
+  },
+  "requiredFamilies": [
+    "environment", "architecture", "interiors", "props", "foliage", "roads-bridges-fences", "weather-lighting", "parallaxes", "battlebacks", "story-state-overlays", "secrets", "npc-adults", "npc-teens", "npc-children", "npc-elders", "portraits", "character-creator", "regional-fashion", "guardians", "guardian-variants", "enemies", "elites-minibosses", "regional-bosses", "items", "equipment", "crafting", "vfx", "regional-ui", "audio", "waystitch"
+  ],
+  "regions": [
+    {"id":"elyndor","status":"complete-spec","familiesCovered":"all-required","specialChecks":["starting-region breadth","Sunny Plains readability","starter Guardian support"]},
+    {"id":"verdancia","status":"complete-spec","familiesCovered":"all-required","specialChecks":["forest vertical layering","fungal/lantern states","Guardian-hostile namespace separation"]},
+    {"id":"cinderreach","status":"complete-spec","familiesCovered":"all-required","specialChecks":["heat states","kiln/crafting props","volcanic battle environments"]},
+    {"id":"tideglass-coast","status":"complete-spec","familiesCovered":"all-required","specialChecks":["water/coastal states","storm variants","marine settlement props"]},
+    {"id":"silkspire","status":"complete-spec","familiesCovered":"all-required","specialChecks":["vertical city traversal visuals","bridge/lift assets","loom workshop assets"]},
+    {"id":"moonpatch-steppe","status":"complete-spec","familiesCovered":"all-required","specialChecks":["open-steppe silhouettes","caravan assets","night-sky identity"]},
+    {"id":"frostlace","status":"complete-spec","familiesCovered":"all-required","specialChecks":["snow tracks","freeze/thaw states","blizzard readability"]},
+    {"id":"gloamfen","status":"complete-spec","familiesCovered":"all-required","specialChecks":["water-level states","fog readability","boardwalk navigation"]},
+    {"id":"sunspool-desert","status":"complete-spec","familiesCovered":"all-required","specialChecks":["sandstorm states","heat haze/mirage assets","oasis drought/restoration"]},
+    {"id":"crownweave","status":"complete-spec","familiesCovered":"all-required","specialChecks":["dense urban readability","institution/civic assets","late-story Fraying states"]}
+  ],
+  "globalSharedCoverage": {
+    "status": "complete-spec",
+    "families": [
+      "cross-region transportation", "Waystitch infrastructure", "banking/economy signage", "Order of Plush Guardians facilities", "Guardian care props", "merchant displays", "crafting stations", "schools and child activities", "inn/home interiors", "civilian utility props", "seasonal/festival decorations", "accessibility/readability variants", "global interaction markers", "generic story-state overlays"
+    ]
+  },
+  "canonCoverage": {
+    "reservedCharacters": ["Chris Bourn", "Penney Nguyen", "Lily", "Ethan"],
+    "policy": "Closed-canon Plushbound identities; unique asset sets only; never ambient templates.",
+    "requiredPlaceholderClasses": ["overworld sprites", "portraits", "expressions", "story/cutscene poses", "equipment appearance hooks"]
+  },
+  "completenessGates": {
+    "allTenRegionsHaveFullSpecs": true,
+    "allRequiredFamiliesCoveredPerRegion": true,
+    "globalSharedFamiliesCovered": true,
+    "canonNamespacesReserved": true,
+    "guardianEnemyNamespaceSeparationDefined": true,
+    "childAssetCoverageDefined": true,
+    "mobileReadabilityRequirementsDefined": true,
+    "finalArtReplacementContractDefined": true,
+    "binaryPlaceholderFilesGenerated": false,
+    "binaryPlaceholderPackValidationComplete": false
+  },
+  "remainingAssetOnlyBatches": [
+    {
+      "id": "placeholder-binary-pack-plan",
+      "goal": "Define concrete placeholder file generation batches and canonical filenames for every manifest family."
+    },
+    {
+      "id": "placeholder-binary-generation",
+      "goal": "Generate engine-compatible stand-in binary assets in manageable packs without creating final artwork."
+    },
+    {
+      "id": "placeholder-binary-validation",
+      "goal": "Validate dimensions, alpha, frame grids, naming, file presence and manifest references."
+    },
+    {
+      "id": "asset-phase-freeze",
+      "goal": "Freeze the complete placeholder asset library as the handoff baseline before any gameplay-development phase begins."
+    }
+  ],
+  "phaseBoundary": {
+    "current": "assets-only",
+    "gameplayImplementationAllowed": false,
+    "nextPhaseRequiresExplicitTransition": true,
+    "note": "Do not implement maps, quests, encounters, economy behavior, combat behavior or runtime gameplay as part of these asset-only batches."
+  },
+  "result": {
+    "namespaceCollisionAudit": "PASS_BY_CONTRACT",
+    "regionalCompletenessMatrix": "PASS",
+    "remainingGapType": "binary-placeholder-materialization-and-validation",
+    "readyForNextAssetBatch": true
+  }
+}

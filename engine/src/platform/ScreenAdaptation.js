@@ -16,8 +16,11 @@ export function classifyScreen({ width = 1604, height = 720 } = {}) {
   const short = Math.min(w, h);
   const aspect = long / short;
   let profile = 'phone-standard';
+  // WebView reports CSS-space dimensions to this classifier. Keep the
+  // tablet threshold above common 720p phone short edges so a high-resolution
+  // phone is not mistaken for a tablet simply because it has many pixels.
   if (short >= 900) profile = 'tablet-large';
-  else if (short >= 600) profile = 'tablet';
+  else if (short >= 800) profile = 'tablet';
   else if (aspect >= 2.15) profile = 'phone-ultrawide';
   else if (aspect >= 1.85) profile = 'phone-wide';
   else if (aspect < 1.55) profile = 'compact';

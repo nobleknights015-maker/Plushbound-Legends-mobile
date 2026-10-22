@@ -1,3 +1,4 @@
+import './NativeRuntimeHardening.js';
 import { AssetManager } from '../assets/AssetManager.js';
 import { ContentAssetCatalog } from '../assets/ContentAssetCatalog.js';
 import { AssetBindingRegistry } from '../ui/AssetBindingRegistry.js';

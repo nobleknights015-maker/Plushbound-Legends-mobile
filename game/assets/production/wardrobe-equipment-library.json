@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "libraryId": "plushtopia-wardrobe-equipment-library",
+  "purpose": "Whole-game clothing, equipment and character-creator visual inventory with a two-times reserve.",
+  "visualDirection": "Original Plushtopia fashion blending Chinese, Japanese and Victorian influences with stitching, plush textiles and Guardian symbolism.",
+  "targets": {
+    "tops": 192,
+    "bottoms": 128,
+    "onePieceOutfits": 160,
+    "outerwear": 128,
+    "footwear": 96,
+    "headwear": 96,
+    "accessories": 192,
+    "formalSets": 64,
+    "workwearSets": 96,
+    "childWardrobePieces": 160,
+    "armorAppearanceSets": 128,
+    "weaponFocusAppearances": 192,
+    "guardianCharms": 96,
+    "paletteVariantsPerReusablePiece": 8
+  },
+  "collections": [
+    {"id":"sunthread-daywear","motifs":["wrap collars","light waistcoats","embroidered hems","field boots"]},
+    {"id":"lantern-court","motifs":["layered sleeves","structured jackets","silk-like plush trim","lantern embroidery"]},
+    {"id":"menders-guild","motifs":["tool aprons","reinforced cuffs","patchwork panels","thread spools"]},
+    {"id":"verdant-formal","motifs":["long coats","sash layers","botanical brocade","high collars"]},
+    {"id":"wayfarer","motifs":["travel cloaks","cross-body packs","weather wraps","sturdy boots"]},
+    {"id":"guardian-order","motifs":["ceremonial mantles","bond emblems","practical field layers","charm clasps"]},
+    {"id":"river-market","motifs":["short jackets","wide trousers","waterproof wraps","trade satchels"]},
+    {"id":"winter-thread","motifs":["quilted coats","fur-like plush trim","layered scarves","insulated boots"]},
+    {"id":"festival-bloom","motifs":["bright layered fabrics","decorative knots","ribbons","embroidered footwear"]},
+    {"id":"scholar-atelier","motifs":["vests","long skirts or trousers","ink guards","spectacle accessories"]},
+    {"id":"imperial-stitch","motifs":["structured long coats","formal robes","ornamental fasteners","brocade panels"]},
+    {"id":"frontier-workwear","motifs":["durable shirts","utility belts","patched trousers","protective gloves"]}
+  ],
+  "equipmentAppearanceRules": {
+    "transmogFriendly": true,
+    "combatStatsSeparatedFromAppearance": true,
+    "weaponFamilies": ["blade","greatblade","spear","staff","focus","bow","gauntlet","hammer","fan","needle-tool","instrument","tome"],
+    "armorVisualWeights": ["clothing","light","medium","heavy","ceremonial"],
+    "guardianCharmMounts": ["neck","wrist","belt","brooch","bag","weapon"]
+  },
+  "creatorCompatibility": {
+    "layerOrder": ["body","base","bottom","top","onePiece","footwear","outerwear","accessory","headwear","hairFront"],
+    "ageBandFiltering": true,
+    "childSafeFiltering": true,
+    "paletteSwaps": true,
+    "mirrorSafeAccessories": true
+  },
+  "outputRoots": {
+    "creator":"characters/creator/wardrobe",
+    "equipment":"items/equipment/visuals",
+    "icons":"items/icons/equipment",
+    "guardianCharms":"items/guardian-charms"
+  }
+}

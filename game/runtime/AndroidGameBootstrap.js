@@ -1,5 +1,7 @@
 import { GameState } from '../../engine/src/core/GameState.js';
 import { PlushboundGameSession } from './PlushboundGameSession.js';
+import { GameShellBridge } from './GameShellBridge.js';
+import { GameDomAdapter } from './GameDomAdapter.js';
 
 async function loadJson(url) {
   const response = await fetch(url, { cache: 'no-store' });
@@ -49,9 +51,17 @@ export async function bootPlushboundGame({ scope = globalThis, baseUrl } = {}) {
   };
 
   scope.PlushboundGame = runtime;
+
+  const shellBridge = scope.PlushboundGameShell || new GameShellBridge({ scope }).attach();
+  scope.PlushboundGameShell = shellBridge;
+  if (scope.document && !scope.PlushboundGameDomAdapter) {
+    scope.PlushboundGameDomAdapter = new GameDomAdapter({ scope, bridge: shellBridge }).attach();
+  }
+
   scope.dispatchEvent?.(new CustomEvent('plushbound-game-ready', {
     detail: { engineBaseline: index.engineBaseline, startMapId: index.start.mapId }
   }));
+  shellBridge.publish?.('ready');
   return runtime;
 }
 

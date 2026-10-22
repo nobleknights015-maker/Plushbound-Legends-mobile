@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "regionId": "verdancia",
+  "productionTarget": "2x-jrpg-reserve",
+  "assetTargets": {
+    "tilesets": 6,
+    "parallaxes": 6,
+    "weatherFx": 5,
+    "environmentOverlays": 12,
+    "npcBaseSprites": 24,
+    "npcVariantSets": 48,
+    "childNpcBaseSprites": 8,
+    "guardianFamilies": 12,
+    "guardianSilhouettes": 12,
+    "monsterFamilies": 20,
+    "eliteVariants": 10,
+    "minibosses": 6,
+    "regionalBosses": 2,
+    "portraits": 32,
+    "battleBacks": 12,
+    "bgmTracks": 8,
+    "ambienceLoops": 10,
+    "sfxFamilies": 12,
+    "props": 64,
+    "characterCreationPieces": 40
+  },
+  "contentTargets": {
+    "mainStoryBeats": 8,
+    "regionalQuestChains": 10,
+    "guardianQuestChains": 12,
+    "sideQuests": 30,
+    "dynamicEvents": 20,
+    "secrets": 18,
+    "treasurePlacements": 36,
+    "npcIdentities": 64,
+    "shopsAndServices": 10,
+    "encounterTables": 10
+  },
+  "rules": [
+    "All runtime-facing art uses logical asset IDs.",
+    "Reserve assets may remain unreferenced until promoted into playable content.",
+    "Child NPCs use age-appropriate proportions, schedules, dialogue, and roles.",
+    "Plush Guardians are inhabitants and companions, not harvestable monster resources.",
+    "Unique story assets receive state/expression variants instead of meaningless duplicates.",
+    "All map-facing assets must remain compatible with the 48px MV-inspired grid contract."
+  ]
+}

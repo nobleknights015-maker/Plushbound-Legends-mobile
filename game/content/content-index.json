@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "engineBaseline": "160d9fd95bc0d3db39224f8bb4c5e1e3a1f54425",
+  "packages": [
+    { "id": "world", "path": "world.json", "required": true },
+    { "id": "guardians", "path": "guardians.json", "required": true },
+    { "id": "opening-elyndor", "path": "opening-elyndor.json", "required": true }
+  ],
+  "start": {
+    "worldId": "plustopia",
+    "regionId": "elyndor",
+    "mapId": "elyndor-sunny-plains",
+    "openingId": "opening-first-bond",
+    "firstQuestId": "a-thread-begins"
+  }
+}

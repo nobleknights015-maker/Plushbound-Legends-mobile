@@ -26,12 +26,15 @@ test('browser runtime entry boots Engine v1 services and exposes executable scen
   assert.equal(scope.__PLUSHBOUND_ENGINE_V1__, runtime);
   assert.equal(runtime.validation.valid, true);
   assert.equal(runtime.assetManager.has('ui/windowskin/test'), true);
+  assert.equal(runtime.diagnostics.manifestLoaded, true);
+  assert.equal(runtime.diagnostics.valid, true);
   const frame = runtime.composeScene({
     type: 'title',
     layers: [{ kind: 'window', z: 10, model: { rect: { x: 20, y: 20, width: 300, height: 180 }, items: [] } }]
   });
   assert.ok(frame.some(command => command.kind === 'ui-nine-slice'));
   assert.equal(events.at(-1).type, 'plushbound-engine-v1-ready');
+  assert.equal(events.at(-1).detail.diagnostics.valid, true);
 });
 
 test('browser runtime entry is idempotent for WebView recreation within one page', async () => {
@@ -44,7 +47,7 @@ test('browser runtime entry is idempotent for WebView recreation within one page
 test('module bootstrap resolves the marked runtime script when document.currentScript is null', () => {
   const script = {
     src: 'file:///android_asset/engine-v1/runtime/BrowserRuntimeEntry.js',
-    dataset: { assetManifest: '../content-assets.json' },
+    dataset: { assetManifest: '../content/asset-manifest.json' },
     getAttribute() { return null; }
   };
   const scope = {
@@ -60,7 +63,7 @@ test('module bootstrap resolves the marked runtime script when document.currentS
   };
   const resolved = resolveRuntimeScriptConfig(scope);
   assert.equal(resolved.script, script);
-  assert.equal(resolved.manifestUrl, 'file:///android_asset/engine-v1/content-assets.json');
+  assert.equal(resolved.manifestUrl, 'file:///android_asset/engine-v1/content/asset-manifest.json');
 });
 
 test('runtime exposes safe-area aware screen profile and UI anchoring helpers', async () => {
@@ -90,4 +93,33 @@ test('runtime exposes safe-area aware screen profile and UI anchoring helpers', 
   assert.ok(anchored.y >= info.safeArea.y);
   assert.ok(anchored.x + anchored.width <= info.safeArea.x + info.safeArea.width);
   assert.ok(anchored.y + anchored.height <= info.safeArea.y + info.safeArea.height);
+});
+
+test('asset diagnostics identify missing required assets without hiding the failure', async () => {
+  const scope = { dispatchEvent(){} };
+  const runtime = await bootPlushboundEngineV1({
+    scope,
+    manifest: {
+      required: ['portrait/player'],
+      assets: []
+    },
+    strictBindings: true
+  });
+  assert.equal(runtime.validation.valid, false);
+  assert.equal(runtime.diagnostics.valid, false);
+  assert.deepEqual(runtime.diagnostics.missingRequired, ['portrait/player']);
+  assert.match(runtime.diagnostics.messages.join('\n'), /portrait\/player/);
+});
+
+test('strict asset mode refuses to boot an incomplete content package', async () => {
+  const scope = {};
+  await assert.rejects(
+    () => bootPlushboundEngineV1({
+      scope,
+      manifest: { required: ['ui/windowskin/core'], assets: [] },
+      strictBindings: true,
+      strictAssets: true
+    }),
+    /Missing required asset: ui\/windowskin\/core/
+  );
 });

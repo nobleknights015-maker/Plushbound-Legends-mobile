@@ -48,11 +48,12 @@ export class CutsceneController {
 
   #advance() {
     let safety = 100;
-    while (this.running && this.waitMs === 0 && safety-- > 0) {
+    while (this.running && this.waitMs === 0 && safety > 0) {
       if (this.index >= this.steps.length) {
         this.#finish();
         break;
       }
+      safety -= 1;
       const step = this.steps[this.index++] || {};
       try {
         step.run?.(this.context);
@@ -64,7 +65,13 @@ export class CutsceneController {
       const wait = Math.max(0, Number(step.waitMs || 0));
       if (wait > 0) this.waitMs = wait;
     }
-    if (safety <= 0) {
+
+    if (this.running && this.waitMs === 0 && this.index >= this.steps.length) {
+      this.#finish();
+      return;
+    }
+
+    if (this.running && this.waitMs === 0 && safety === 0 && this.index < this.steps.length) {
       this.logger.error?.('Cutscene runaway detected');
       this.#finish();
       throw new Error('Cutscene runaway detected');

@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "starters": [
+    {
+      "id": "cinder",
+      "name": "Cinder",
+      "species": "Emberfox",
+      "role": "Striker",
+      "bond": "ember",
+      "description": "A quick-footed fox Guardian whose warmth flares strongest when its partner acts with courage.",
+      "assetBindings": {
+        "sprite": "guardian/cinder/sprite",
+        "portrait": "guardian/cinder/portrait",
+        "silhouette": "guardian/cinder/silhouette",
+        "battle": "guardian/cinder/battle"
+      }
+    },
+    {
+      "id": "mallow",
+      "name": "Mallow",
+      "species": "Grovebear",
+      "role": "Guardian",
+      "bond": "grove",
+      "description": "A steady bear Guardian that protects allies and strengthens through patience and trust.",
+      "assetBindings": {
+        "sprite": "guardian/mallow/sprite",
+        "portrait": "guardian/mallow/portrait",
+        "silhouette": "guardian/mallow/silhouette",
+        "battle": "guardian/mallow/battle"
+      }
+    },
+    {
+      "id": "ripple",
+      "name": "Ripple",
+      "species": "Tideotter",
+      "role": "Controller",
+      "bond": "tide",
+      "description": "A playful otter Guardian that redirects pressure, disrupts enemies, and rewards clever timing.",
+      "assetBindings": {
+        "sprite": "guardian/ripple/sprite",
+        "portrait": "guardian/ripple/portrait",
+        "silhouette": "guardian/ripple/silhouette",
+        "battle": "guardian/ripple/battle"
+      }
+    },
+    {
+      "id": "wisp",
+      "name": "Wisp",
+      "species": "Galebun",
+      "role": "Skirmisher",
+      "bond": "gale",
+      "description": "A light-footed rabbit Guardian that excels at movement, tempo, and slipping through danger.",
+      "assetBindings": {
+        "sprite": "guardian/wisp/sprite",
+        "portrait": "guardian/wisp/portrait",
+        "silhouette": "guardian/wisp/silhouette",
+        "battle": "guardian/wisp/battle"
+      }
+    }
+  ]
+}

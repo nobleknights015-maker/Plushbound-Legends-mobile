@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "regionId": "verdancia",
+  "productionTier": 2,
+  "guardianFamilies": [
+    {"id":"mosskit","species":"Mosskit","role":"support","bond":"grove","habitats":["verdancia-threadwood-verge","verdancia-lanternbough"]},
+    {"id":"lanternmoth","species":"Lanternmoth","role":"controller","bond":"glow","habitats":["verdancia-lanternbough","verdancia-mossveil-hollow"]},
+    {"id":"thimblehare","species":"Thimblehare","role":"skirmisher","bond":"gale","habitats":["verdancia-threadwood-verge","verdancia-elderstitch-grove"]},
+    {"id":"barkback","species":"Barkback","role":"guardian","bond":"grove","habitats":["verdancia-elderstitch-grove","verdancia-rootbound-depths"]},
+    {"id":"dewfinch","species":"Dewfinch","role":"healer","bond":"tide","habitats":["verdancia-mossveil-hollow","verdancia-elderstitch-grove"]},
+    {"id":"spoolmouse","species":"Spoolmouse","role":"utility","bond":"thread","habitats":["verdancia-lanternbough","verdancia-threadwood-verge"]},
+    {"id":"bramblecub","species":"Bramblecub","role":"striker","bond":"thorn","habitats":["verdancia-mossveil-hollow","verdancia-rootbound-depths"]},
+    {"id":"silkwing","species":"Silkwing","role":"support","bond":"thread","habitats":["verdancia-lanternbough","verdancia-weavers-sanctum"]},
+    {"id":"rootram","species":"Rootram","role":"breaker","bond":"grove","habitats":["verdancia-rootbound-depths"]},
+    {"id":"bellfrog","species":"Bellfrog","role":"controller","bond":"tide","habitats":["verdancia-mossveil-hollow"]},
+    {"id":"stitchowl","species":"Stitchowl","role":"seer","bond":"thread","habitats":["verdancia-elderstitch-grove","verdancia-weavers-sanctum"]},
+    {"id":"velvetstag","species":"Velvetstag","role":"guardian","bond":"glow","habitats":["verdancia-weavers-sanctum"]}
+  ],
+  "monsterFamilies": ["snagling","bramblemaw","hollowcap","ragged-wing","needleback","rotroot","gloommite","tanglehound","sporepuff","fraycrawler","sap-slime","thornbeak","mimic-bloom","stumpstalker","threadleech","briar-shell","mosswraith","hushbat","rootclaw","patchwork-boar"],
+  "elites": ["elder-snagling","iron-briar","hollowcap-matriarch","gloomwing","needleback-alpha","rotroot-ancient","tanglehound-packlord","mosswraith-seer","rootclaw-bulwark","patchwork-tusker"],
+  "minibosses": ["the-knotted-one","bellcap-brute","old-thornhide","lantern-eater","rootwarden-gone-frayed","silken-husk"],
+  "regionalBosses": [
+    {"id":"frayheart-of-verdancia","mapId":"verdancia-rootbound-depths","phaseCount":3},
+    {"id":"the-unraveling-weaver","mapId":"verdancia-weavers-sanctum","phaseCount":4}
+  ],
+  "encounterTables": [
+    {"id":"verdancia-threadwood-early","maps":["verdancia-threadwood-verge"],"families":["snagling","sap-slime","thornbeak","spoolmouse"]},
+    {"id":"verdancia-lanternbough","maps":["verdancia-lanternbough"],"families":["gloommite","ragged-wing","hushbat","lanternmoth"]},
+    {"id":"verdancia-mossveil","maps":["verdancia-mossveil-hollow"],"families":["hollowcap","sporepuff","mosswraith","bellfrog"]},
+    {"id":"verdancia-elderstitch","maps":["verdancia-elderstitch-grove"],"families":["needleback","stumpstalker","mimic-bloom","thimblehare"]},
+    {"id":"verdancia-rootbound","maps":["verdancia-rootbound-depths"],"families":["rotroot","rootclaw","threadleech","bramblecub"]},
+    {"id":"verdancia-sanctum","maps":["verdancia-weavers-sanctum"],"families":["fraycrawler","tanglehound","briar-shell","silkwing"]}
+  ],
+  "questChains": [
+    {"id":"verdancia-main-fraying-roots","type":"regional","stages":8,"boss":"frayheart-of-verdancia"},
+    {"id":"verdancia-main-weavers-silence","type":"regional","stages":10,"boss":"the-unraveling-weaver"},
+    {"id":"verdancia-guardian-lantern-oath","type":"guardian","stages":5,"guardian":"lanternmoth"},
+    {"id":"verdancia-guardian-old-grove-promise","type":"guardian","stages":6,"guardian":"velvetstag"},
+    {"id":"verdancia-settlement-lanternbough","type":"settlement","stages":7},
+    {"id":"verdancia-secret-stitches-below","type":"secret","stages":4}
+  ],
+  "populationTargets": {"persistentNpcs":64,"childNpcs":12,"sideQuests":30,"guardianQuestChains":12,"regionalQuestChains":10,"dynamicEvents":20,"secrets":18,"treasurePlacements":36},
+  "assetIdPattern": {"guardian":"guardian/{id}/{sprite|portrait|silhouette|battle}","monster":"monster/verdancia/{id}/{sprite|battle}","npc":"npc/verdancia/{id}/{sprite|portrait}"}
+}

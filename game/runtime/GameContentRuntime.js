@@ -32,6 +32,16 @@ export class GameContentRuntime {
     if (existing?.status === 'complete') return clone(existing);
     if (existing?.status === 'active' || existing?.status === 'ready') return clone(existing);
 
+    for (const prerequisite of definition.prerequisites || []) {
+      if (prerequisite.questComplete) {
+        const required = this.state.quests.get(String(prerequisite.questComplete));
+        if (required?.status !== 'complete') throw new Error(`Quest ${id} prerequisite not met: ${prerequisite.questComplete}`);
+      }
+      if (prerequisite.switchId && this.state.sw(prerequisite.switchId) !== (prerequisite.switchValue ?? true)) {
+        throw new Error(`Quest ${id} prerequisite switch not met: ${prerequisite.switchId}`);
+      }
+    }
+
     const objectives = {};
     for (const objective of definition.objectives || []) objectives[objective.id] = 0;
     const firstTalk = (definition.objectives || []).find(objective => objective.type === 'talk' && objective.target === definition.giver && /^speak-|^meet-|^talk-/.test(objective.id));

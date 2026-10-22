@@ -19,7 +19,7 @@ export async function bootPlushboundGame({ scope = globalThis, baseUrl } = {}) {
   const contentBase = new URL('content/', root);
   const runtimeDataBase = new URL('runtime/', root);
 
-  const [index, opening, route, maps] = await Promise.all([
+  const [index, opening, route, mapPackage] = await Promise.all([
     loadJson(new URL('content-index.json', contentBase)),
     loadJson(new URL('opening-elyndor.json', contentBase)),
     loadJson(new URL('elyndor-route-one.json', contentBase)),
@@ -35,7 +35,7 @@ export async function bootPlushboundGame({ scope = globalThis, baseUrl } = {}) {
   const session = new PlushboundGameSession({
     state,
     contentPackages: [opening, route],
-    maps: maps.maps
+    mapPackage
   });
   session.enter(index.start.mapId);
 

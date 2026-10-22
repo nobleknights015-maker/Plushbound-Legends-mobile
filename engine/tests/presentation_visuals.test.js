@@ -8,9 +8,9 @@ import { PresentationSceneModel } from '../src/scenes/PresentationSceneModel.js'
 test('classic message and command windows use stable MV-style JRPG geometry', () => {
   const ui = new ClassicWindowSystem({ viewportWidth: 1604, viewportHeight: 720 });
   const message = ui.messageWindow({ hasFace: true, name: 'Lio' });
-  assert.equal(message.rect.x, 0);
-  assert.equal(message.rect.width, 1604);
-  assert.equal(message.rect.y + message.rect.height, 720);
+  assert.equal(message.rect.x, ui.theme.margin);
+  assert.equal(message.rect.width, 1604 - ui.theme.margin * 2);
+  assert.equal(message.rect.y + message.rect.height, 720 - ui.theme.margin);
   assert.equal(message.frame.nineSlice, true);
   assert.ok(message.contents.x > message.face.x + message.face.width);
 

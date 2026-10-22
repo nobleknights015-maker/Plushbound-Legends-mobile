@@ -29,13 +29,39 @@ test('session exposes one gameplay surface for maps, interactions, battles and s
   assert.equal(game.snapshot().currentMap, 'elyndor-sunthread-crossing');
 });
 
-test('session opens shops from resolved map events and records UI history', () => {
+test('session pages interaction dialogue in event order', () => {
+  const game = session();
+  game.enter('elyndor-sunny-plains');
+  game.interact('lio');
+  let snapshot = game.snapshot();
+  assert.equal(snapshot.dialogue.length, 2);
+  assert.equal(snapshot.dialogue.remaining, 1);
+  assert.equal(snapshot.dialogue.current.speaker, 'Lio');
+  assert.match(snapshot.dialogue.current.text, /pull too/);
+
+  const second = game.advanceDialogue();
+  assert.match(second.text, /plains are usually gentle/);
+  snapshot = game.snapshot();
+  assert.equal(snapshot.dialogue.remaining, 0);
+
+  assert.equal(game.advanceDialogue(), null);
+  assert.equal(game.snapshot().dialogue.current, null);
+});
+
+test('session opens shops from resolved map events and keeps active shop state separate from history', () => {
   const game = session();
   game.enter('elyndor-menders-rest', 10, 7, 2);
   game.interact('nessa');
-  const snapshot = game.snapshot();
+  let snapshot = game.snapshot();
   assert.deepEqual(snapshot.shopHistory, ['menders-rest-provisions']);
+  assert.equal(snapshot.activeShop.id, 'menders-rest-provisions');
+  assert.equal(snapshot.activeShop.inventory.length, 3);
   assert.ok(snapshot.messages.some(entry => entry.speaker === 'Nessa'));
+
+  game.closeShop();
+  snapshot = game.snapshot();
+  assert.equal(snapshot.activeShop, null);
+  assert.deepEqual(snapshot.shopHistory, ['menders-rest-provisions']);
 });
 
 test('session snapshot is serializable game state rather than engine-internal objects', () => {

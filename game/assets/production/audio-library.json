@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "libraryId": "plushtopia-audio",
+  "productionMode": "asset-first-2x-reserve",
+  "formatTargets": {"music":"ogg","ambience":"ogg","soundEffects":"ogg","mobileOptimized":true,"loopMetadataRequired":true},
+  "targets": {
+    "regionalThemes": 48,
+    "settlementThemes": 48,
+    "dungeonThemes": 40,
+    "battleThemes": 32,
+    "bossThemes": 24,
+    "guardianThemes": 24,
+    "characterAndFactionThemes": 32,
+    "eventCutsceneThemes": 48,
+    "interiorUtilityMusic": 24,
+    "nightWeatherVariants": 48,
+    "ambientLoops": 192,
+    "uiSounds": 128,
+    "combatSounds": 256,
+    "guardianSounds": 192,
+    "environmentSounds": 256,
+    "craftingShopEconomySounds": 128,
+    "movementInteractionSounds": 160,
+    "cinematicStingers": 96
+  },
+  "musicalIdentity": ["warm textile percussion","woodwinds","strings","plucked instruments","soft bells","regional acoustic colors","select clockwork/brass Victorian accents"],
+  "rules": ["no unlicensed commercial music","seamless loops for exploration ambience and most field music","combat cues require clean intro-loop-outro points when practical","Guardian audio should distinguish species/family without becoming speech-like noise spam","important interaction sounds remain audible on phone speakers","provide quieter alternate ambience layers for interiors and nighttime","2x reserve emphasizes alternate moods and situations rather than duplicated tracks"]
+}

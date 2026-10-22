@@ -1,0 +1,138 @@
+{
+  "schemaVersion": 1,
+  "regionId": "tideglass-coast",
+  "regionName": "Tideglass Coast",
+  "status": "full-region-asset-specification",
+  "tileSize": 48,
+  "style": "Plushbound-original coastal JRPG art with MV/Trinity-inspired functional readability; no proprietary RPG Maker artwork.",
+  "identity": {
+    "theme": "A bright maritime coast of sea-glass harbors, wind-polished cliffs, tidal gardens, stitched sails and ancient flooded Waystitches.",
+    "materials": ["sea-glass", "saltwood", "shell-lacquer", "blue ceramic", "brass", "rope", "canvas", "pearl-thread", "weathered stone"],
+    "fashion": "Chinese/Japanese/Victorian silhouettes adapted for humid ports, sailing, fishing, diving and formal merchant culture.",
+    "paletteFamilies": ["seafoam", "deep-tide", "coral", "storm-slate", "pearl", "sunlit-sand", "harbor-brass", "night-ocean"],
+    "silhouetteRule": "Harbor, cliff, island, reef, storm and submerged spaces must remain recognizable without relying only on palette swaps."
+  },
+  "subregions": [
+    {"id":"glasswake-harbor","role":"regional capital and trade port","visual":"tiered saltwood docks, sea-glass roofs, merchant halls, ferries, cranes and lantern piers"},
+    {"id":"pearlstitch-bay","role":"fishing and textile settlement","visual":"shallow turquoise water, drying nets, stitched sails, tidal gardens and family workshops"},
+    {"id":"windspool-cliffs","role":"cliff roads and lighthouse country","visual":"high grass, rope bridges, gull roosts, windmills, signal towers and sheer ocean drops"},
+    {"id":"coralweft-isles","role":"island exploration zone","visual":"small beaches, coral shelves, mangroves, shell shrines and boat landings"},
+    {"id":"stormglass-reach","role":"dangerous storm coast","visual":"black surf, shattered sea-glass, lightning rods, wreckage and flooded caves"},
+    {"id":"undertide-gardens","role":"tidal cavern and reef dungeon","visual":"bioluminescent pools, shell mosaics, kelp curtains, submerged passages and tide mechanisms"},
+    {"id":"drowned-spindle","role":"ancient ruin complex","visual":"partially submerged towers, broken thread-machinery, flooded halls and Fraying distortions"},
+    {"id":"mooncurrent-sanctuary","role":"Guardian sanctuary and secret coast","visual":"calm moonlit lagoon, pale reefs, floating lantern buoys and intact ancient Waystitch structures"}
+  ],
+  "worldArt": {
+    "tilesetSheets": 30,
+    "buildingFamilies": 44,
+    "interiorKits": 22,
+    "dungeonKits": 18,
+    "environmentProps": 240,
+    "coastalFlora": 144,
+    "marineAndTidalDecor": 96,
+    "parallaxes": 36,
+    "battlebacks": 52,
+    "weatherSets": 14,
+    "environmentOverlays": 48,
+    "vehicleAndDockSets": 40,
+    "requiredThemes": ["harbor-day-night", "fishing-village", "cliff-road", "lighthouse", "beach", "island", "reef", "mangrove", "storm-coast", "sea-cave", "tidal-dungeon", "flooded-ruin", "guardian-lagoon", "merchant-interiors", "homes", "inns", "shipyard", "market", "warehouse", "bathhouse", "shrine", "bank-branch"]
+  },
+  "populationArt": {
+    "persistentNpcIdentities": 112,
+    "children": 24,
+    "teens": 18,
+    "elders": 14,
+    "storyNpcExpressionSets": 24,
+    "ambientSpriteVariants": 176,
+    "occupations": ["fishers", "sailors", "dockhands", "shipwrights", "net-menders", "divers", "pearl-workers", "merchants", "innkeepers", "cooks", "couriers", "lighthouse-keepers", "ferry-operators", "weather-watchers", "bank-clerks", "Guardian-menders", "scholars", "guards", "teachers", "children-playing", "travelers"],
+    "childPolicy": "Children use age-appropriate proportions, clothing, activities and dialogue-supporting expressions; no adult occupational or combat styling.",
+    "assetSet": ["4-direction-3-frame-sprite", "portrait", "story-expressions-when-needed", "occupation-props-when-needed"]
+  },
+  "characterCreator": {
+    "regionalPieces": 272,
+    "childPieces": 56,
+    "collections": ["glasswake-merchant", "pearlstitch-workwear", "windspool-traveler", "coralweft-islander", "stormglass-weatherwear", "undertide-diver", "mooncurrent-ceremonial", "tideglass-formal"],
+    "pieceTypes": ["tops", "bottoms", "full-outfits", "outerwear", "footwear", "headwear", "hair-accessories", "belts", "pouches", "scarves", "gloves", "jewelry", "Guardian-charms"],
+    "rule": "Clothing remains cosmetic-first and compatible with appearance overrides rather than forcing combat stats."
+  },
+  "guardians": {
+    "coreFamilies": 26,
+    "rareRegionalVariants": 18,
+    "visualConceptFamilies": ["otter", "seal", "tern", "gull", "heron", "crab", "turtle", "seahorse", "ray", "dolphin", "frog", "gecko", "shell-snail", "lantern-fish", "moon-jelly", "reef-drake", "tide-fox", "pearl-hare"],
+    "assetSetPerGuardian": ["overworld-sprite", "portrait", "silhouette", "battle-idle", "battle-action", "battle-hit", "bond-expression", "icon"],
+    "habitatPresentation": ["shoreline", "harbor", "cliff", "island", "reef", "tidal-cave", "lagoon"],
+    "rule": "Guardians are inhabitants and companions, not hostile loot creatures; their silhouettes must remain distinct from monsters and readable at mobile scale."
+  },
+  "enemiesBosses": {
+    "commonFamilies": 52,
+    "veteranVariants": 28,
+    "elites": 16,
+    "minibosses": 10,
+    "regionalBosses": 3,
+    "secretBosses": 3,
+    "conceptFamilies": ["salt-slime", "wreck-crab", "ragfin", "needle-eel", "reef-mimic", "barnacle-brute", "frayed-gull", "kelp-stalker", "shellback", "storm-ray", "tide-wraith", "ropecoil", "glassjaw", "drowned-mariner-construct", "coral-husk", "undertide-crawler"],
+    "regionalBossConcepts": [
+      {"id":"stormglass-leviathan","phases":3,"arena":"stormglass-reach","artNeeds":["full-battle-set", "phase-overlays", "telegraphs", "storm-arena-states", "cut-in"]},
+      {"id":"drowned-spindle-warden","phases":4,"arena":"drowned-spindle","artNeeds":["full-battle-set", "mechanism-states", "Fraying-states", "telegraphs", "arena-damage-states"]},
+      {"id":"undertide-crown","phases":3,"arena":"undertide-gardens","artNeeds":["full-battle-set", "tide-level-states", "reef-arena-states", "telegraphs", "cut-in"]}
+    ],
+    "rule": "Marine enemies use readable fantasy silhouettes and do not visually collapse into Plush Guardian designs."
+  },
+  "itemsEquipment": {
+    "regionalIcons": 416,
+    "weaponsFocuses": 56,
+    "outfitAppearances": 72,
+    "accessories": 48,
+    "guardianCharms": 28,
+    "consumables": 36,
+    "ingredients": 48,
+    "materials": 56,
+    "keyItemsTreasures": 36,
+    "themes": ["saltwood-tools", "pearl-thread", "sea-glass", "shell-lacquer", "reef-herbs", "tidefruit", "stormglass", "shipwright-parts", "navigation-tools", "merchant-goods", "Guardian-care"],
+    "guardianMaterialRule": "Guardian-associated crafting materials come from gifts, grooming, bonding, shed fibers or habitat finds rather than harming Guardians."
+  },
+  "effectsUi": {
+    "regionalVfxSets": 112,
+    "weatherVfx": 20,
+    "waterAndTideVfx": 32,
+    "guardianBondVfx": 20,
+    "bossTelegraphSets": 18,
+    "uiAccentSets": 8,
+    "motifs": ["wave-thread", "sea-glass", "shell", "rope-knot", "pearl", "navigation-star"],
+    "accessibility": "Interactive water, hazards and boss telegraphs must remain identifiable without color alone."
+  },
+  "audio": {
+    "bgm": 18,
+    "ambientLoops": 24,
+    "battleAndBossTracks": 10,
+    "regionalStingers": 10,
+    "worldSfx": 72,
+    "combatSfx": 64,
+    "guardianSfx": 40,
+    "themes": ["harbor", "fishing-village", "cliffs", "islands", "storm-coast", "tidal-caves", "flooded-ruins", "moon-lagoon", "open-water-travel", "night-coast"],
+    "technical": ["seamless loops where appropriate", "mobile-friendly compression targets", "clean loop points", "layerable storm and surf ambience"]
+  },
+  "productionBatches": [
+    "TG-01-harbor-and-capital",
+    "TG-02-bay-and-fishing-life",
+    "TG-03-cliffs-and-lighthouse",
+    "TG-04-islands-and-reef",
+    "TG-05-stormglass",
+    "TG-06-undertide-dungeon",
+    "TG-07-drowned-spindle",
+    "TG-08-mooncurrent-sanctuary",
+    "TG-09-population-and-fashion",
+    "TG-10-guardians",
+    "TG-11-enemies-and-bosses",
+    "TG-12-items-ui-vfx-audio"
+  ],
+  "definitionOfComplete": [
+    "Every planned asset has a stable logical ID before implementation binding.",
+    "Art dimensions and transparency policy match engine import requirements.",
+    "All eight subregions possess unique environment, NPC, encounter and audio identities.",
+    "Two-times reserve is meaningful variation rather than duplicate recolors.",
+    "Visual QA checks normal anatomy, readable silhouettes, clean transparency and mobile-scale readability.",
+    "Generated files are not marked ready until the actual asset exists and passes QA.",
+    "No gameplay/runtime implementation is required during this asset-first phase."
+  ]
+}

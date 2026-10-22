@@ -6,7 +6,8 @@
     { "id": "guardians", "path": "guardians.json", "required": true },
     { "id": "opening-elyndor", "path": "opening-elyndor.json", "required": true },
     { "id": "elyndor-route-one", "path": "elyndor-route-one.json", "required": true },
-    { "id": "elyndor-map-layouts", "path": "elyndor-map-layouts.json", "required": true }
+    { "id": "elyndor-map-layouts", "path": "elyndor-map-layouts.json", "required": true },
+    { "id": "elyndor-asset-slots", "path": "elyndor-asset-slots.json", "required": true }
   ],
   "start": {
     "worldId": "plustopia",
@@ -20,6 +21,7 @@
     "settlementMapId": "elyndor-menders-rest",
     "secondQuestId": "threads-out-of-tune",
     "firstShopId": "menders-rest-provisions",
-    "layoutPackageId": "elyndor-map-layouts"
+    "layoutPackageId": "elyndor-map-layouts",
+    "assetSlotPackageId": "elyndor-asset-slots"
   }
 }

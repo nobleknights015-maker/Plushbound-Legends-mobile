@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 1,
+  "auditId": "whole-game-placeholder-coverage-audit",
+  "project": "Plushbound Legends",
+  "world": "Plushtopia",
+  "phase": "asset-preparation-only",
+  "gameDevelopmentStarted": false,
+  "purpose": "Verify that the complete placeholder asset library has capacity for a large JRPG before any gameplay implementation begins.",
+  "workflow": {
+    "current": "placeholder-asset-coverage-and-gap-filling",
+    "next": "placeholder-asset-manifest-finalization",
+    "later": "actual-game-development",
+    "finalVisualPass": "replace stable placeholder bindings with original polished Plushbound artwork inspired by MV cover-art and Trinity presentation",
+    "rule": "No placeholder may be represented as finished artwork. No gameplay systems, quests, maps, encounters or story implementation are created by this audit."
+  },
+  "regions": [
+    "elyndor",
+    "verdancia",
+    "cinderreach",
+    "tideglass-coast",
+    "silkspire",
+    "moonpatch-steppe",
+    "frostlace",
+    "gloamfen",
+    "sunspool-desert",
+    "crownweave"
+  ],
+  "coverage": {
+    "characterCreator": {
+      "status": "covered-with-reserve",
+      "requirements": ["age-band bodies", "skin tones", "hair layers", "faces", "tops", "bottoms", "full outfits", "outerwear", "footwear", "headwear", "accessories", "regional fashion", "workwear", "formalwear", "child-safe wardrobe", "palette variants"],
+      "gapPolicy": "Prefer modular additions and meaningful silhouettes rather than recolor-only padding."
+    },
+    "canonCharacters": {
+      "status": "covered",
+      "reserved": ["Chris Bourn", "Penney Nguyen", "Lily", "Ethan"],
+      "requirements": ["unique overworld sets", "portraits", "expressions", "battle presentation slots", "event-state variants", "regional clothing compatibility"],
+      "rule": "Never derive ambient NPC recipes from canon character designs."
+    },
+    "npcPopulation": {
+      "status": "covered-with-reserve",
+      "requirements": ["adults", "teens", "children", "elders", "merchants", "craftspeople", "guards", "teachers", "healers", "travelers", "officials", "Order contacts", "Guardian caretakers", "family groups", "regional occupations"],
+      "childPolicy": "Children receive age-appropriate anatomy, clothing, expressions, school/home/play/errand/festival assets and Guardian interactions."
+    },
+    "guardians": {
+      "status": "covered-with-reserve",
+      "requirements": ["family identity", "regional variants", "rare variants", "overworld sprites", "silhouettes", "portraits", "battle states", "bond expressions", "icons", "field interactions", "resting poses"],
+      "rule": "Guardians remain visually and mechanically identifiable as companions rather than hostile monsters."
+    },
+    "enemiesAndBosses": {
+      "status": "covered-with-reserve",
+      "requirements": ["common", "veteran", "elite", "miniboss", "regional boss", "major boss", "secret boss", "telegraphs", "damage states", "phase states", "battle silhouettes"],
+      "rule": "Reserve variants must introduce meaningful anatomy, equipment, behavior silhouette or Fraying state changes rather than blind recolors."
+    },
+    "worldEnvironment": {
+      "status": "covered-with-reserve",
+      "requirements": ["48px tiles", "autotiles", "terrain", "roads", "bridges", "water", "buildings", "interiors", "dungeons", "props", "foliage", "weather", "parallaxes", "battlebacks", "story-state overlays", "secret-area pieces", "Waystitches"],
+      "compatibility": "RPG Maker MV/Trinity-inspired functional readability without using proprietary RPG Maker artwork."
+    },
+    "settlementServices": {
+      "status": "covered",
+      "requirements": ["inn", "shop", "crafting", "tailor", "healer", "bank", "school", "civic", "transport", "Guardian care", "guild/order facilities", "housing", "food service", "market"],
+      "note": "Coverage is visual/asset-side only; service behavior is not implemented here."
+    },
+    "equipmentAndItems": {
+      "status": "covered-with-reserve",
+      "requirements": ["weapons/focuses", "outfits", "armor appearances", "accessories", "Guardian charms", "consumables", "ingredients", "materials", "key items", "treasures", "tools", "books/maps/letters", "trade goods", "food", "cosmetics", "icons"],
+      "rule": "Appearance assets remain separable from eventual statistics and progression."
+    },
+    "portraitsAndFaces": {
+      "status": "covered",
+      "requirements": ["major NPC expression sets", "secondary portraits", "canon character sets", "merchant/service faces", "Guardian portraits", "boss presentation", "event variants"],
+      "qa": ["normal anatomy", "consistent identity", "legible small-scale expressions", "no malformed hands/faces", "age-appropriate child depiction"]
+    },
+    "vfx": {
+      "status": "covered-with-reserve",
+      "requirements": ["combat", "Guardian Arts", "Bond Arts", "Limit Arts", "status", "boss telegraphs", "field interaction", "weather", "Waystitch", "crafting", "UI feedback", "reduced-flash alternatives"],
+      "mobile": "Effects must preserve combat readability on phone-sized screens."
+    },
+    "ui": {
+      "status": "covered",
+      "requirements": ["system icons", "status icons", "ability icons", "Guardian/bond icons", "map markers", "quest badges", "shop signs", "frames", "buttons", "tabs", "gauges", "touch prompts", "loading placeholders", "title/menu presentation"],
+      "accessibility": ["large touch targets", "high contrast", "no color-only information", "safe-area awareness", "small-screen readability"]
+    },
+    "audio": {
+      "status": "covered-with-reserve",
+      "requirements": ["regional music", "settlement music", "wilderness music", "dungeon music", "battle music", "boss music", "Guardian themes", "event themes", "night/weather variants", "ambience", "UI SFX", "combat SFX", "Guardian SFX", "environment SFX", "crafting/shop SFX", "movement/interaction", "cinematic stingers"],
+      "rule": "Only original or properly cleared audio may enter final production."
+    },
+    "storyPresentationAssets": {
+      "status": "covered",
+      "requirements": ["event portraits", "location states", "damage/restoration states", "festival variants", "weather variants", "boss phase presentation", "secret-area presentation", "loading illustration slots"],
+      "note": "This reserves presentation capacity only and does not write or implement story content."
+    },
+    "crossRegionTravelAssets": {
+      "status": "gap-filled",
+      "requirements": ["caravan", "wagon", "ferry", "small boat", "coastal ship", "mountain lift", "desert caravan", "winter sled", "bridge mechanisms", "Waystitch travel presentation", "road signs", "region-border markers"],
+      "stablePrefix": "global/travel/{id}"
+    },
+    "sharedCivilianAssets": {
+      "status": "gap-filled",
+      "requirements": ["common cookware", "storage", "beds", "tables", "chairs", "lamps", "signage", "books", "toys", "school objects", "market containers", "tools", "laundry", "bath fixtures", "public seating", "street clutter", "festival decorations"],
+      "stablePrefix": "global/civilian/{id}"
+    },
+    "accessibilityAndStateVariants": {
+      "status": "gap-filled",
+      "requirements": ["reduced-flash VFX", "high-contrast interactables", "alternate UI indicators", "weather readability variants", "night readability variants", "damage/restoration overlays", "low-vision-friendly map marker variants"],
+      "stablePrefix": "global/accessibility/{id}"
+    }
+  },
+  "newSharedReserve": {
+    "crossRegionTravelVisuals": 128,
+    "sharedCivilianProps": 320,
+    "sharedFestivalAndSeasonalProps": 128,
+    "schoolAndChildActivityProps": 96,
+    "GuardianCareProps": 96,
+    "merchantAndCraftingDisplayProps": 128,
+    "accessibilityVariants": 96,
+    "genericStoryStateOverlays": 96,
+    "globalSignsAndMarkers": 96,
+    "sharedInteriorUtilityPieces": 192
+  },
+  "stableIdNamespaces": {
+    "creator": "creator/{category}/{id}",
+    "canon": "canon/{character}/{category}/{id}",
+    "npc": "reg/{region}/npc/{id}",
+    "guardian": "reg/{region}/guardian/{id}",
+    "enemy": "reg/{region}/enemy/{id}",
+    "tiles": "reg/{region}/tiles/{id}",
+    "item": "reg/{region}/item/{id}",
+    "vfx": "reg/{region}/vfx/{id}",
+    "audio": "reg/{region}/audio/{id}",
+    "travel": "global/travel/{id}",
+    "civilian": "global/civilian/{id}",
+    "accessibility": "global/accessibility/{id}"
+  },
+  "qualityGates": [
+    "All ten regions have complete placeholder production specifications.",
+    "Every placeholder category has a stable logical namespace for later replacement.",
+    "48px environment assets preserve MV-compatible functional grid behavior.",
+    "Placeholder assets are clearly distinguishable from final artwork in metadata.",
+    "No proprietary RPG Maker artwork is required by the production plan.",
+    "Children are represented with age-appropriate designs and activities.",
+    "Guardians remain distinct from hostile monsters.",
+    "Final replacement can occur without changing gameplay-facing stable IDs.",
+    "Mobile readability and accessibility variants are reserved before implementation.",
+    "Meaningful reserve capacity exists for a full-length JRPG rather than minimum viable coverage."
+  ],
+  "auditResult": {
+    "regionalCoverage": "pass",
+    "globalCategoryCoverage": "pass-after-shared-gap-reserve",
+    "placeholderCapacity": "sufficient-with-large-reserve",
+    "readyForManifestFinalization": true,
+    "readyForGameDevelopment": false,
+    "reasonGameDevelopmentFalse": "The user explicitly requested completion of the asset phase before actual game development."
+  },
+  "nextAssetOnlyCheckpoint": {
+    "name": "whole-game-placeholder-manifest-finalization",
+    "tasks": [
+      "normalize category names across regional specifications",
+      "reserve deterministic placeholder IDs",
+      "define expected dimensions and sheet layouts by category",
+      "define replacement/provenance metadata fields",
+      "define completeness checks for the future ZIP asset audit",
+      "keep gameDevelopmentStarted false"
+    ]
+  }
+}

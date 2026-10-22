@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "project": "Plushbound Legends",
+  "world": "Plushtopia",
+  "phase": "assets-only-placeholder-production",
+  "gameDevelopmentStarted": false,
+  "purpose": "Canonical pack/folder index for the complete placeholder asset library before gameplay development or final visual production.",
+  "rules": {
+    "tileSize": 48,
+    "placeholderIsFinalArt": false,
+    "stableLogicalIds": true,
+    "preserveIdsDuringFinalArtPass": true,
+    "finalArtDeferredUntilFinishedGameZip": true,
+    "finalArtDirection": "original Plushbound MV-cover/Trinity-inspired polished JRPG art",
+    "noProprietaryRpgMakerArtCopies": true,
+    "twoTimesReservePolicy": "Use meaningful alternate silhouettes, states, occupations, age bands, materials and regional variants rather than blind recolors."
+  },
+  "roots": {
+    "creator": "game/assets/placeholders/creator/",
+    "characters": "game/assets/placeholders/characters/",
+    "guardians": "game/assets/placeholders/guardians/",
+    "enemies": "game/assets/placeholders/enemies/",
+    "world": "game/assets/placeholders/world/",
+    "architecture": "game/assets/placeholders/architecture/",
+    "props": "game/assets/placeholders/props/",
+    "items": "game/assets/placeholders/items/",
+    "portraits": "game/assets/placeholders/portraits/",
+    "vfx": "game/assets/placeholders/vfx/",
+    "ui": "game/assets/placeholders/ui/",
+    "audio": "game/assets/placeholders/audio/"
+  },
+  "packFamilies": [
+    {"id":"creator-core","root":"creator","folders":["body","skin","hair/front","hair/back","eyes","brows","mouth","facial-detail","tops","bottoms","full-outfits","outerwear","footwear","headwear","accessories","palettes"],"requiredMetadata":["logicalId","ageBand","layer","dimensions","paletteFamily","regionalTags","replacementClass"]},
+    {"id":"npc-population","root":"characters","folders":["adult","teen","child","elder","merchant-specialist","guard-official","traveler","order","story","ambient"],"requiredMetadata":["logicalId","ageBand","region","occupation","spriteLayout","portraitBinding","replacementClass"]},
+    {"id":"canon-ocs","root":"characters","folders":["canon/chris-bourn","canon/penney-nguyen","canon/lily","canon/ethan"],"policy":"Closed-canon identities; never generated from ambient NPC recipes or silently substituted."},
+    {"id":"guardian-library","root":"guardians","folders":["families","regional-variants","rare","overworld","portrait","silhouette","battle","bond-expression","icons","field-interaction","resting"],"requiredMetadata":["logicalId","familyId","variantId","habitatTags","spriteLayout","battleLayout","replacementClass"]},
+    {"id":"enemy-library","root":"enemies","folders":["common","veteran","elite","miniboss","regional-boss","major-boss","secret-postgame","battle","telegraphs","phase-states"],"requiredMetadata":["logicalId","tier","regionTags","footprint","battleLayout","telegraphBindings","replacementClass"]},
+    {"id":"world-environment","root":"world","folders":["tilesets","autotiles","terrain","foliage","water","weather","parallaxes","battlebacks","story-overlays","secrets","waystitch"],"requiredMetadata":["logicalId","region","tileSize","dimensions","stateTags","collisionSemanticClass","replacementClass"]},
+    {"id":"architecture-interiors","root":"architecture","folders":["exteriors","homes","shops","civic","guardian-facilities","schools","inns","workshops","dungeons","secret-spaces","interior-kits"],"requiredMetadata":["logicalId","regionTags","footprint","doorAnchors","stateVariants","replacementClass"]},
+    {"id":"props-shared","root":"props","folders":["foliage","rocks","furniture","market","farm","road-travel","dungeon","waystitch","treasure","interactive","children-activities","guardian-care","transport","seasonal","accessibility","signage"],"requiredMetadata":["logicalId","regionTags","dimensions","interactionClass","stateVariants","replacementClass"]},
+    {"id":"items-equipment","root":"items","folders":["consumables","ingredients","materials","key","treasure-trade","weapons-focuses","outfits-armor","accessories","guardian-charms","crafting-tools","food","books-maps-letters","currency-trade","cosmetics"],"iconContract":{"master":96,"runtime":48},"requiredMetadata":["logicalId","category","masterDimensions","runtimeDimensions","regionalTags","replacementClass"]},
+    {"id":"portrait-library","root":"portraits","folders":["major-story","secondary","npc","canon","guardian","boss","expressions"],"requiredMetadata":["logicalId","subjectId","expression","dimensions","cropSafeArea","replacementClass"]},
+    {"id":"vfx-library","root":"vfx","folders":["combat","guardian-arts","bond-arts","limit-arts","boss-telegraphs","field","weather","waystitch","crafting","ui","cutscene","reduced-flash"],"requiredMetadata":["logicalId","frameCount","fps","dimensions","anchor","reducedFlashAlternative","replacementClass"]},
+    {"id":"ui-library","root":"ui","folders":["system-icons","status-icons","ability-icons","bond-icons","map-icons","quest-icons","shop-service","frames","buttons","tabs","gauges","cursors","touch","battle","shop","map","title","loading","accessibility"],"requiredMetadata":["logicalId","dimensions","safeArea","mobileMinTarget","contrastClass","replacementClass"]},
+    {"id":"audio-library","root":"audio","folders":["bgm/region","bgm/settlement","bgm/dungeon","bgm/battle","bgm/boss","bgm/guardian","bgm/character-faction","bgm/event","bgm/night-weather","ambience","sfx/ui","sfx/combat","sfx/guardian","sfx/environment","sfx/crafting-shop-economy","sfx/movement-interaction","stingers"],"requiredMetadata":["logicalId","role","loop","loopStart","loopEnd","mobileEncoding","regionTags","replacementClass"]}
+  ],
+  "regionalPacks": [
+    "elyndor","verdancia","cinderreach","tideglass-coast","silkspire","moonpatch-steppe","frostlace","gloamfen","sunspool-desert","crownweave"
+  ],
+  "regionalFolderContract": ["environment","architecture","props","population","fashion","guardians","enemies","bosses","items","portraits","vfx","ui","audio","states","secrets"],
+  "collisionAndNamingChecks": {
+    "logicalIdsGloballyUnique": true,
+    "caseSensitiveIdsForbidden": true,
+    "spacesInLogicalIdsForbidden": true,
+    "canonOcIdsReserved": ["chris-bourn","penney-nguyen","lily","ethan"],
+    "guardianAndEnemyNamespacesSeparate": true,
+    "rareGuardianAppearancesNeverUseHostileEncounterNamespace": true,
+    "regionalPrefixRequiredForRegionExclusiveAssets": true,
+    "sharedPrefixRequiredForCrossRegionAssets": true,
+    "variantSuffixes": ["day","night","rain","storm","festival","damaged","fraying","restored","crisis","post-crisis"],
+    "stateVariantsMustPreserveGameplayFootprint": true
+  },
+  "placeholderGenerationPolicy": {
+    "goal": "Every reserved asset slot can receive a simple functional stand-in without implying final visual quality.",
+    "visualPlaceholderTypes": ["flat-shape-tile","silhouette-sprite","labeled-prop","simple-icon","portrait-card","telegraph-shape","ui-wireframe"],
+    "audioPlaceholderTypes": ["silent-valid-file","simple-original-tone","temporary-original-loop"],
+    "mustBeReplaceableOneForOne": true,
+    "mustNotUseThirdPartyProprietaryArt": true,
+    "mustRemainReadableOnPhone": true
+  },
+  "completionGates": [
+    "Every production-spec category maps to a pack family.",
+    "Every region maps to the regional folder contract.",
+    "Every reserved logical ID has exactly one namespace owner.",
+    "No Guardian logical ID is treated as a hostile enemy ID.",
+    "Canon OC IDs remain reserved and unique.",
+    "All raster placeholders declare dimensions and transparency expectations.",
+    "All animated placeholders declare frame layout and timing.",
+    "All audio placeholders declare role and loop behavior.",
+    "All UI placeholders meet mobile readability/touch contracts.",
+    "No placeholder is marked final art.",
+    "Final-art replacement can occur without changing logical IDs or content references."
+  ],
+  "nextAssetOnlyBatches": [
+    "namespace-collision-audit",
+    "regional-pack-completeness-matrix",
+    "placeholder-generation-batch-plan",
+    "asset-side-final-readiness-gate"
+  ]
+}

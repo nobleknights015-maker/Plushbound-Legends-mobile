@@ -18,6 +18,7 @@
   "runtimePackages": [
     { "id": "elyndor-route-one-maps", "path": "../runtime/elyndor-route-one.maps.json", "required": true },
     { "id": "elyndor-runtime-contract", "path": "../runtime/elyndor-runtime-contract.json", "required": true },
+    { "id": "verdancia-region-maps", "path": "../runtime/verdancia-region.maps.json", "required": true },
     { "id": "verdancia-runtime-contract", "path": "../runtime/verdancia-runtime-contract.json", "required": true }
   ],
   "assetLibraries": [
@@ -30,26 +31,10 @@
     "thirdPartyNoticesFile": "../../THIRD_PARTY_NOTICES.md",
     "assetProvenancePolicy": "../assets/ASSET_PROVENANCE.md"
   },
-  "start": {
-    "worldId": "plustopia",
-    "regionId": "elyndor",
-    "mapId": "elyndor-sunny-plains",
-    "openingId": "opening-first-bond",
-    "firstQuestId": "a-thread-begins"
-  },
-  "earlyGame": {
-    "routeId": "elyndor-route-one",
-    "settlementMapId": "elyndor-menders-rest",
-    "secondQuestId": "threads-out-of-tune",
-    "firstShopId": "menders-rest-provisions",
-    "layoutPackageId": "elyndor-map-layouts",
-    "assetSlotPackageId": "elyndor-asset-slots",
-    "assetLibraryId": "plushbound-game-assets",
-    "runtimeMapPackageId": "elyndor-route-one-maps",
-    "runtimeContractPackageId": "elyndor-runtime-contract"
-  },
+  "start": {"worldId":"plustopia","regionId":"elyndor","mapId":"elyndor-sunny-plains","openingId":"opening-first-bond","firstQuestId":"a-thread-begins"},
+  "earlyGame": {"routeId":"elyndor-route-one","settlementMapId":"elyndor-menders-rest","secondQuestId":"threads-out-of-tune","firstShopId":"menders-rest-provisions","layoutPackageId":"elyndor-map-layouts","assetSlotPackageId":"elyndor-asset-slots","assetLibraryId":"plushbound-game-assets","runtimeMapPackageId":"elyndor-route-one-maps","runtimeContractPackageId":"elyndor-runtime-contract"},
   "regionalProgression": [
-    { "regionId": "elyndor", "tier": 1 },
-    { "regionId": "verdancia", "tier": 2, "regionPackageId": "verdancia-region", "populationPackageId": "verdancia-population", "npcPackageId": "verdancia-npcs", "questEventPackageId": "verdancia-quests-events", "assetSlotPackageId": "verdancia-asset-slots", "runtimeContractPackageId": "verdancia-runtime-contract" }
+    {"regionId":"elyndor","tier":1},
+    {"regionId":"verdancia","tier":2,"regionPackageId":"verdancia-region","populationPackageId":"verdancia-population","npcPackageId":"verdancia-npcs","questEventPackageId":"verdancia-quests-events","assetSlotPackageId":"verdancia-asset-slots","runtimeMapPackageId":"verdancia-region-maps","runtimeContractPackageId":"verdancia-runtime-contract"}
   ]
 }

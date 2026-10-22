@@ -1,3 +1,5 @@
+function clone(value){ return value == null ? value : structuredClone(value); }
+
 export class GameState {
   constructor() { this.reset(); }
   reset() {
@@ -21,6 +23,35 @@ export class GameState {
   setSelfSw(mapId,eventId,key,value){ this.selfSwitches.set(this.selfKey(mapId,eventId,key),!!value); }
   gain(kind,id,amount=1){ const bag=this.inventory[kind]; if(!bag) throw new Error(`Unknown inventory kind ${kind}`); const k=String(id); const next=Math.max(0,(bag.get(k)||0)+amount); if(next) bag.set(k,next); else bag.delete(k); return next; }
   count(kind,id){ const bag=this.inventory[kind]; if(!bag) throw new Error(`Unknown inventory kind ${kind}`); return Number(bag.get(String(id)) || 0); }
-  serialize(){ return {switches:Object.fromEntries(this.switches),variables:Object.fromEntries(this.variables),selfSwitches:Object.fromEntries(this.selfSwitches),party:this.party,actors:Object.fromEntries(this.actors),inventory:{items:Object.fromEntries(this.inventory.items),weapons:Object.fromEntries(this.inventory.weapons),armor:Object.fromEntries(this.inventory.armor)},quests:Object.fromEntries(this.quests),map:this.map,guardian:this.guardian,system:this.system}; }
-  restore(raw={}){ this.reset(); for(const [k,v] of Object.entries(raw.switches||{}))this.switches.set(k,!!v); for(const [k,v] of Object.entries(raw.variables||{}))this.variables.set(k,v); for(const [k,v] of Object.entries(raw.selfSwitches||{}))this.selfSwitches.set(k,!!v); this.party=[...(raw.party||[])]; for(const [k,v] of Object.entries(raw.actors||{}))this.actors.set(k,v); for(const type of ['items','weapons','armor'])for(const [k,v] of Object.entries(raw.inventory?.[type]||{}))this.inventory[type].set(k,v); for(const [k,v] of Object.entries(raw.quests||{}))this.quests.set(k,v); Object.assign(this.map,raw.map||{}); this.guardian=raw.guardian??null; Object.assign(this.system,raw.system||{}); }
+  serialize(){
+    return {
+      switches:Object.fromEntries(this.switches),
+      variables:clone(Object.fromEntries(this.variables)),
+      selfSwitches:Object.fromEntries(this.selfSwitches),
+      party:clone(this.party),
+      actors:clone(Object.fromEntries(this.actors)),
+      inventory:{
+        items:clone(Object.fromEntries(this.inventory.items)),
+        weapons:clone(Object.fromEntries(this.inventory.weapons)),
+        armor:clone(Object.fromEntries(this.inventory.armor))
+      },
+      quests:clone(Object.fromEntries(this.quests)),
+      map:clone(this.map),
+      guardian:clone(this.guardian),
+      system:clone(this.system)
+    };
+  }
+  restore(raw={}){
+    this.reset();
+    for(const [k,v] of Object.entries(raw.switches||{}))this.switches.set(k,!!v);
+    for(const [k,v] of Object.entries(raw.variables||{}))this.variables.set(k,clone(v));
+    for(const [k,v] of Object.entries(raw.selfSwitches||{}))this.selfSwitches.set(k,!!v);
+    this.party=clone(raw.party||[]);
+    for(const [k,v] of Object.entries(raw.actors||{}))this.actors.set(k,clone(v));
+    for(const type of ['items','weapons','armor'])for(const [k,v] of Object.entries(raw.inventory?.[type]||{}))this.inventory[type].set(k,clone(v));
+    for(const [k,v] of Object.entries(raw.quests||{}))this.quests.set(k,clone(v));
+    Object.assign(this.map,clone(raw.map||{}));
+    this.guardian=clone(raw.guardian??null);
+    Object.assign(this.system,clone(raw.system||{}));
+  }
 }

@@ -27,6 +27,23 @@ jobs:
         working-directory: engine
         run: npm test
 
+      - name: Run final release acceptance gate explicitly
+        working-directory: engine
+        run: node --test tests/final_acceptance_gate.test.js
+
+      - name: Record tested release-gate commit
+        run: |
+          cat > engine-v1-release-gate.json <<JSON
+          {
+            "engine": "Plushbound Engine v1",
+            "branch": "engine-v1-rebuild",
+            "commit": "${GITHUB_SHA}",
+            "acceptanceTest": "engine/tests/final_acceptance_gate.test.js",
+            "status": "passed"
+          }
+          JSON
+          python -m json.tool engine-v1-release-gate.json >/dev/null
+
       - name: Reconstruct clean Android project source
         run: |
           cat source_chunks/part_* > project-source.b64
@@ -38,6 +55,7 @@ jobs:
           rm -rf app/src/main/assets/engine-v1
           mkdir -p app/src/main/assets/engine-v1
           cp -R engine/src/. app/src/main/assets/engine-v1/
+          cp engine-v1-release-gate.json app/src/main/assets/engine-v1/release-gate.json
           cat > app/src/main/assets/engine-v1/package-manifest.json <<'JSON'
           {
             "engine": "Plushbound Engine v1",
@@ -45,7 +63,8 @@ jobs:
             "entrypoints": {
               "kernel": "core/EngineKernel.js",
               "androidHost": "platform/AndroidHostBridge.js"
-            }
+            },
+            "releaseGate": "release-gate.json"
           }
           JSON
 
@@ -54,8 +73,11 @@ jobs:
           test -f app/src/main/assets/engine-v1/core/EngineKernel.js
           test -f app/src/main/assets/engine-v1/platform/AndroidHostBridge.js
           test -f app/src/main/assets/engine-v1/platform/PerformanceBudget.js
+          test -f app/src/main/assets/engine-v1/release-gate.json
+          grep -q "${GITHUB_SHA}" app/src/main/assets/engine-v1/release-gate.json
           find app/src/main/assets/engine-v1 -name '*.js' -print0 | xargs -0 -n1 node --check
           python -m json.tool app/src/main/assets/engine-v1/package-manifest.json >/dev/null
+          python -m json.tool app/src/main/assets/engine-v1/release-gate.json >/dev/null
 
       - name: Set up Java 17
         uses: actions/setup-java@v5
@@ -94,6 +116,8 @@ jobs:
           unzip -l "$APK" | grep -q 'assets/engine-v1/platform/AndroidHostBridge.js'
           unzip -l "$APK" | grep -q 'assets/engine-v1/platform/PerformanceBudget.js'
           unzip -l "$APK" | grep -q 'assets/engine-v1/package-manifest.json'
+          unzip -l "$APK" | grep -q 'assets/engine-v1/release-gate.json'
+          unzip -p "$APK" assets/engine-v1/release-gate.json | grep -q "${GITHUB_SHA}"
 
       - name: Verify Android installability metadata
         run: |
@@ -120,6 +144,7 @@ jobs:
           path: |
             app/build/outputs/apk/debug/app-debug.apk
             engine-v1-apk.sha256
+            engine-v1-release-gate.json
             apk-badging.txt
             apk-permissions.txt
           if-no-files-found: error

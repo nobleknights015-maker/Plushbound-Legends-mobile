@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "checkpointId": "placeholder-materialization-readiness",
+  "phase": "asset-production-only",
+  "gameDevelopmentStarted": false,
+  "gameplayImplementation": false,
+  "status": "ready-for-binary-generation",
+  "completed": [
+    "ten-regional-production-specs",
+    "global-production-catalog",
+    "character-creator-plan",
+    "guardian-roster",
+    "npc-visual-library",
+    "wardrobe-equipment-library",
+    "enemy-boss-library",
+    "world-environment-library",
+    "items-crafting-library",
+    "ui-library",
+    "vfx-library",
+    "audio-library",
+    "whole-game-placeholder-coverage-audit",
+    "whole-game-placeholder-inventory",
+    "whole-game-manifest-contract",
+    "whole-game-integration-contract",
+    "placeholder-file-folder-plan",
+    "namespace-collision-and-completeness-audit",
+    "binary-materialization-plan",
+    "canonical-output-path-registry",
+    "nine-batch-materialization-manifests",
+    "materialization-validation-contract",
+    "asset-phase-status-gate",
+    "materialization-execution-contract",
+    "binary-pack-registry"
+  ],
+  "coverage": {
+    "regions": ["elyndor","verdancia","cinderreach","tideglass-coast","silkspire","moonpatch-steppe","frostlace","gloamfen","sunspool-desert","crownweave"],
+    "protectedCanon": ["chris-bourn","penney-nguyen","lily","ethan"],
+    "families": ["creator","canon-characters","npcs","children","guardians","enemies","bosses","world-environment","architecture","props","items","equipment","crafting","portraits","vfx","ui","audio","shared-cross-region","accessibility","story-state-variants"]
+  },
+  "binaryGenerationRequirements": {
+    "images": "valid PNG binaries, not text files renamed .png",
+    "audio": "valid OGG binaries, not text files renamed .ogg",
+    "metadata": "UTF-8 JSON",
+    "checksums": "SHA-256 per binary",
+    "index": "one record per logical asset",
+    "mobileCompatibility": true,
+    "tileSize48": true
+  },
+  "notYetComplete": [
+    "physical-placeholder-png-generation",
+    "physical-placeholder-ogg-generation",
+    "per-file-metadata-generation",
+    "checksum-index-generation",
+    "binary-dimension-and-decode-validation",
+    "repair-of-any-binary-validation-failures",
+    "asset-library-freeze"
+  ],
+  "importantConstraint": "GitHub text-file planning commits do not count as physical binary materialization. The asset library may only be declared frozen after valid PNG/OGG files have been generated, indexed, checksummed, and validated.",
+  "freezeAllowedNow": false,
+  "readyForGameplayDevelopment": false,
+  "nextAction": "Generate valid placeholder PNG and OGG binaries in the registered packs, emit metadata and SHA-256 index, run binary QA, repair failures, then freeze assets."
+}

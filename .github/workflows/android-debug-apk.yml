@@ -17,24 +17,35 @@ jobs:
           cat source_chunks/part_* > project-source.b64
           base64 -d project-source.b64 > project-source-fixed.zip
           unzip -o project-source-fixed.zip -d .
+          node --check app/src/main/assets/game.js
 
       - name: Apply Android Guardian-selection hotfix
-        run: python overrides/patch_game.py
+        run: |
+          python overrides/patch_game.py
+          node --check app/src/main/assets/game.js
 
       - name: Apply Moto G creator layout override
         run: cat overrides/creator_landscape.css >> app/src/main/assets/style.css
 
       - name: Apply in-game MV-inspired character visuals
-        run: python overrides/patch_mv_visuals.py
+        run: |
+          python overrides/patch_mv_visuals.py
+          node --check app/src/main/assets/game.js
 
       - name: Apply startup runtime fixes
-        run: python overrides/patch_runtime_startup.py
+        run: |
+          python overrides/patch_runtime_startup.py
+          node --check app/src/main/assets/game.js
 
       - name: Apply live creator, Guardian, and field sprite pass
-        run: python overrides/run_visuals_v2_compat.py
+        run: |
+          python overrides/run_visuals_v2_compat.py
+          node --check app/src/main/assets/game.js
 
       - name: Apply opening Elyndor cutscene
-        run: python overrides/patch_opening_cutscene.py
+        run: |
+          python overrides/patch_opening_cutscene.py
+          node --check app/src/main/assets/game.js
 
       - name: Package scalable world manifest
         run: |

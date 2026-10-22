@@ -1,0 +1,220 @@
+{
+  "schemaVersion": 1,
+  "inventoryId": "plushbound-whole-game-placeholder-inventory",
+  "phase": "asset-production-only",
+  "gameDevelopmentStarted": false,
+  "status": "placeholder-inventory-populated",
+  "purpose": "Concrete whole-game placeholder inventory derived from the ten regional production specifications and shared production libraries. This inventory reserves stable logical IDs and file families before gameplay implementation. Final MV-cover/Trinity-inspired Plushbound artwork is intentionally deferred until the finished-game ZIP replacement pass.",
+  "engineCompatibility": {
+    "tileSize": 48,
+    "mapGrid": "48px MV-compatible",
+    "mobileReadable": true,
+    "transparentSpriteBackgrounds": true,
+    "originalAssetsOnly": true,
+    "proprietaryRpgMakerArtAllowed": false
+  },
+  "regions": [
+    "elyndor",
+    "verdancia",
+    "cinderreach",
+    "tideglass-coast",
+    "silkspire",
+    "moonpatch-steppe",
+    "frostlace",
+    "gloamfen",
+    "sunspool-desert",
+    "crownweave"
+  ],
+  "stableNamespaces": {
+    "regional": "reg/{region}/{category}/{id}",
+    "global": "global/{category}/{id}",
+    "creator": "creator/{layer}/{id}",
+    "guardian": "guardian/{id}/{asset}",
+    "npc": "npc/{id}/{asset}",
+    "enemy": "enemy/{id}/{asset}",
+    "boss": "boss/{id}/{asset}",
+    "item": "item/{id}/{asset}",
+    "ui": "ui/{family}/{id}",
+    "vfx": "vfx/{family}/{id}",
+    "audio": "audio/{family}/{id}"
+  },
+  "inventoryFamilies": {
+    "characterCreator": {
+      "logicalFamilies": 936,
+      "reservedVariants": 7488,
+      "families": {
+        "baseBodies": 24,
+        "skinTones": 18,
+        "frontHair": 96,
+        "backHair": 96,
+        "eyes": 48,
+        "brows": 32,
+        "mouths": 32,
+        "facialDetails": 48,
+        "tops": 120,
+        "bottoms": 96,
+        "fullOutfits": 96,
+        "outerwear": 72,
+        "footwear": 64,
+        "headwear": 64,
+        "accessories": 96,
+        "paletteFamilies": 24
+      },
+      "ageBands": ["child", "teen", "adult", "elder"],
+      "spriteContract": {"directions": 4, "walkFrames": 3, "cellWidth": 48, "cellHeight": 48},
+      "placeholderPolicy": "silhouette-and-layer-safe stand-ins; final art replacement preserves layer IDs"
+    },
+    "npc": {
+      "persistentIdentitiesReserved": 1120,
+      "ambientRecipesReserved": 2048,
+      "childIdentitiesMinimum": 200,
+      "teenIdentitiesMinimum": 160,
+      "elderIdentitiesMinimum": 40,
+      "majorPortraitSets": 280,
+      "secondaryPortraitSets": 480,
+      "expressionsPerMajorSet": 8,
+      "canonicalReservations": ["Chris Bourn", "Penney Nguyen", "Lily", "Ethan"],
+      "rules": [
+        "canonical OCs never collapse into ambient recipes",
+        "children remain age appropriate in clothing, proportions, activities and expressions",
+        "regional occupation and climate variants remain meaningful rather than recolors"
+      ]
+    },
+    "guardians": {
+      "regionalFamilyCapacity": 270,
+      "rareRegionalVariantCapacity": 178,
+      "globalCoreFamilyCapacity": 96,
+      "assetSlotsPerFamily": ["overworld-sprite", "portrait", "silhouette", "battle-idle", "battle-action", "battle-hurt", "bond-expression", "icon", "field-interaction", "resting-pose"],
+      "ethicalMaterialRule": "Guardian materials originate from bonding, care, gifts, shedding or environmental discovery; Guardians are not killed for crafting drops",
+      "hostileSeparation": "Guardian encounter IDs are never reused as hostile monster spawn IDs"
+    },
+    "enemiesAndBosses": {
+      "commonFamilyCapacity": 536,
+      "veteranVariantCapacity": 276,
+      "eliteCapacity": 138,
+      "minibossCapacity": 98,
+      "regionalBossCapacity": 31,
+      "secretBossCapacity": 20,
+      "battlePoseSetCapacity": 1120,
+      "telegraphSetCapacity": 392,
+      "phaseDamageVariantCapacity": 312,
+      "assetSlots": ["battle-idle", "action", "hurt", "defeat", "telegraph", "phase-state", "icon", "encounter-silhouette"]
+    },
+    "worldEnvironment": {
+      "tilesetSheetCapacity": 292,
+      "autotileFamilyCapacity": 416,
+      "terrainVariantCapacity": 864,
+      "buildingFamilyCapacity": 448,
+      "buildingStateCapacity": 896,
+      "interiorKitCapacity": 212,
+      "dungeonRuinKitCapacity": 174,
+      "environmentPropCapacity": 2304,
+      "floraNaturalCapacity": 1792,
+      "roadBridgeFenceCapacity": 960,
+      "waystitchCapacity": 304,
+      "waterSpecialTerrainCapacity": 736,
+      "parallaxCapacity": 304,
+      "battlebackCapacity": 536,
+      "weatherLightingCapacity": 320,
+      "storyStateOverlayCapacity": 464,
+      "secretAreaPieceCapacity": 384,
+      "tileContract": {"tileWidth": 48, "tileHeight": 48, "collisionReadable": true, "mobileReadable": true}
+    },
+    "itemsEquipmentCrafting": {
+      "regionalIconCapacity": 4080,
+      "consumableCapacity": 760,
+      "ingredientCapacity": 944,
+      "materialCapacity": 944,
+      "keyQuestCapacity": 480,
+      "treasureTradeCapacity": 496,
+      "weaponAppearanceCapacity": 816,
+      "outfitArmorAppearanceCapacity": 896,
+      "accessoryCapacity": 752,
+      "guardianCharmCapacity": 464,
+      "craftingToolCapacity": 400,
+      "foodMealCapacity": 496,
+      "iconContract": {"master": 96, "runtime": 48, "transparent": true, "smallSizeReadable": true}
+    },
+    "vfx": {
+      "combatSetCapacity": 1088,
+      "guardianArtCapacity": 544,
+      "bondArtCapacity": 384,
+      "bossTelegraphCapacity": 304,
+      "fieldInteractionCapacity": 400,
+      "weatherCapacity": 256,
+      "waystitchCapacity": 176,
+      "craftingUiCapacity": 272,
+      "accessibility": "intense flash/pulse effects require reduced-flash alternates"
+    },
+    "ui": {
+      "regionalMapMarkers": 352,
+      "regionalQuestBadges": 196,
+      "regionalShopServiceSigns": 276,
+      "regionalFrames": 88,
+      "regionalLoadingIllustrations": 124,
+      "globalRequirements": ["touch-safe controls", "safe-area support", "high contrast", "no color-only critical information", "phone-readable text and silhouettes"]
+    },
+    "audio": {
+      "regionalThemeCapacity": 96,
+      "settlementThemeCapacity": 76,
+      "wildernessThemeCapacity": 108,
+      "dungeonThemeCapacity": 76,
+      "battleThemeCapacity": 58,
+      "bossThemeCapacity": 49,
+      "guardianThemeCapacity": 60,
+      "eventThemeCapacity": 92,
+      "ambienceLoopCapacity": 304,
+      "environmentSfxCapacity": 1216,
+      "combatSfxCapacity": 1424,
+      "guardianSfxCapacity": 704,
+      "uiInteractionSfxCapacity": 704,
+      "contract": ["original-or-cleared-only", "seamless-loop-where-applicable", "mobile-speaker-readable", "role-stable-filenames"]
+    }
+  },
+  "sharedCrossRegionReserve": {
+    "transport": ["caravan", "coach", "ferry", "skiff", "lift", "sled", "pack-cart", "desert-carrier"],
+    "civic": ["bank", "school", "clinic", "guild", "guard-post", "inn", "market", "workshop", "guardian-shelter"],
+    "familyLife": ["home-interiors", "child-play", "school-props", "festival-props", "family-meals", "guardian-care", "weather-clothing"],
+    "storyStates": ["normal", "festival", "damaged", "repaired", "Fraying", "post-story", "night", "weather-emergency"],
+    "accessibility": ["high-contrast-markers", "reduced-flash-vfx", "large-touch-prompts", "non-color-state-indicators"]
+  },
+  "placeholderFileClasses": {
+    "tiles": {"extension": "png", "transparentWhereApplicable": true},
+    "sprites": {"extension": "png", "transparent": true},
+    "portraits": {"extension": "png", "transparentOrFramed": true},
+    "icons": {"extension": "png", "transparent": true},
+    "battlebacks": {"extension": "png", "transparent": false},
+    "parallaxes": {"extension": "png", "transparentWhereApplicable": true},
+    "vfx": {"extension": "png", "transparent": true},
+    "audio": {"extension": "ogg"},
+    "metadata": {"extension": "json"}
+  },
+  "replacementMetadataRequired": [
+    "logicalId",
+    "category",
+    "regionOrGlobalScope",
+    "runtimeDimensions",
+    "frameLayout",
+    "transparencyPolicy",
+    "placeholderStatus",
+    "finalArtTarget",
+    "provenance",
+    "qaStatus"
+  ],
+  "qualityGates": [
+    "Every concrete placeholder must map to exactly one stable logical ID.",
+    "No placeholder may be represented as finished artwork.",
+    "All regional libraries must remain compatible with the 48px functional map grid.",
+    "Character and NPC placeholders must preserve normal readable anatomy and age bands.",
+    "Guardian assets must remain visually and logically separate from hostile enemy assets.",
+    "Reserve variants must be meaningful modular alternatives rather than blind recolors.",
+    "Final visual replacement must preserve logical IDs, file bindings and engine dimensions unless an explicit migration record exists.",
+    "No proprietary RPG Maker artwork is bundled as placeholder or final art.",
+    "The asset phase does not implement quests, combat logic, economy logic, maps, progression or other gameplay systems."
+  ],
+  "nextAssetPhase": {
+    "id": "placeholder-file-plan-and-packaging",
+    "description": "Generate the concrete folder/file plan and placeholder pack index for every inventory family, then run completeness and collision checks before declaring the asset-only package ready for downstream game development.",
+    "gameplayImplementation": false
+  }
+}

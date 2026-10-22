@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "libraryId": "plushtopia-ui-hud-menu",
+  "productionMode": "asset-first-2x-reserve",
+  "designLanguage": "stitched fantasy interfaces with restrained plush motifs and mobile-first readability",
+  "targets": {
+    "systemIcons": 160,
+    "statusIcons": 96,
+    "abilityIcons": 256,
+    "bondIcons": 96,
+    "mapIcons": 128,
+    "questIcons": 80,
+    "controllerTouchPrompts": 96,
+    "windowFrames": 24,
+    "dialogueFrames": 24,
+    "menuBackgrounds": 24,
+    "buttonsAndTabs": 96,
+    "gaugesMeters": 48,
+    "cursorSelectors": 32,
+    "battleHudPieces": 96,
+    "shopCraftingHudPieces": 80,
+    "mapQuestHudPieces": 80,
+    "titleSaveLoadPieces": 64,
+    "accessibilityIndicators": 48
+  },
+  "screenFamilies": ["title","save-load","main-menu","inventory","equipment","wardrobe","guardian","bond","skills","quests","map","journal","crafting","shop","bank","settings","battle","party","character-creator","credits"],
+  "mobileRules": ["large touch targets","no information encoded only by color","high-contrast text zones","legible at phone resolution","safe-area aware composition","important controls distinguishable from decoration"],
+  "styleRules": ["MV/Trinity-inspired functional density without copying proprietary art","Chinese Japanese Victorian motifs blended through stitching lacquer paper textile brass and carved wood cues","regional skins may decorate the same functional component","core navigation remains visually consistent across regions"]
+}

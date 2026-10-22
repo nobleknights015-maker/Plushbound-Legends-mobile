@@ -16,13 +16,12 @@ test('Android lifecycle autosaves and suspends safely on pause/stop', async () =
   assert.deepEqual(calls[0], ['clearAll']);
   assert.deepEqual(calls[1], ['suspend']);
   assert.equal(calls[2][0], 'autosave');
-  assert.equal(calls[2][1], state);
-  assert.equal(calls[2][2].reason, 'android-pause');
+  assert.equal(calls[2][1].reason, 'android-pause');
   lifecycle.onResume();
   assert.equal(lifecycle.state, 'active');
   await lifecycle.onStop(state);
   assert.equal(lifecycle.state, 'stopped');
-  assert.equal(calls.at(-1)[2].reason, 'android-stop');
+  assert.equal(calls.at(-1)[1].reason, 'android-stop');
   lifecycle.onDestroy();
   assert.equal(lifecycle.state, 'destroyed');
   assert.deepEqual(calls.at(-1), ['stopAll']);

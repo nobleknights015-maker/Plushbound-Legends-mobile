@@ -1,0 +1,168 @@
+name: Plushbound Moto G Production Gate
+
+on:
+  workflow_run:
+    workflows: ["Plushbound Game Android APK"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  moto-g-simulation:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Check out game development
+        uses: actions/checkout@v4
+        with:
+          ref: plushbound-game-development
+
+      - name: Resolve source Android build run
+        id: buildrun
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+          TRIGGER_RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "workflow_run" ]; then
+            RUN_ID="$TRIGGER_RUN_ID"
+          else
+            RUN_ID=$(gh api "/repos/$REPOSITORY/actions/workflows/plushbound-game-android-apk.yml/runs?branch=plushbound-game-development&status=success&per_page=1" --jq '.workflow_runs[0].id')
+          fi
+          test -n "$RUN_ID"
+          echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "Using Plushbound Android build run $RUN_ID"
+
+      - name: Download exact APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: plushbound-game-debug-apk
+          path: moto-g-artifact
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.buildrun.outputs.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Validate downloaded APK
+        run: |
+          set -euo pipefail
+          APK=$(find moto-g-artifact -name '*.apk' -type f | head -n 1)
+          test -n "$APK"
+          test -f "$APK"
+          test "$(stat -c%s "$APK")" -gt 10000
+          unzip -t "$APK" >/dev/null
+          cp "$APK" plushbound-moto-g-test.apk
+          sha256sum plushbound-moto-g-test.apk | tee moto-g-tested-apk.sha256
+
+      - name: Enable KVM acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Moto G class launch and lifecycle smoke test
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          avd-name: plushbound-moto-g
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -memory 4096 -skin 720x1600
+          script: |
+            set -euo pipefail
+            PACKAGE=com.plushbound.legends
+            APK=plushbound-moto-g-test.apk
+
+            adb wait-for-device
+            adb shell wm size 720x1600
+            adb shell wm density 270
+            adb logcat -c
+
+            echo "Installing APK on Moto G class emulator..."
+            adb install -r "$APK"
+
+            echo "Cold launching game..."
+            adb shell monkey -p "$PACKAGE" -c android.intent.category.LAUNCHER 1 >/dev/null
+            sleep 8
+            PID=$(adb shell pidof "$PACKAGE" | tr -d '\r')
+            test -n "$PID"
+
+            echo "Recording initial memory footprint..."
+            adb shell dumpsys meminfo "$PACKAGE" | tee moto-g-meminfo-initial.txt
+
+            echo "Running constrained interaction smoke..."
+            adb shell monkey -p "$PACKAGE" --pct-touch 35 --pct-motion 20 --pct-nav 15 --pct-majornav 10 --pct-appswitch 5 --throttle 80 -s 20261022 180 >/dev/null || true
+            sleep 3
+            PID=$(adb shell pidof "$PACKAGE" | tr -d '\r')
+            test -n "$PID"
+
+            echo "Background / foreground lifecycle check..."
+            adb shell input keyevent KEYCODE_HOME
+            sleep 2
+            adb shell monkey -p "$PACKAGE" -c android.intent.category.LAUNCHER 1 >/dev/null
+            sleep 4
+            PID=$(adb shell pidof "$PACKAGE" | tr -d '\r')
+            test -n "$PID"
+
+            echo "Memory pressure check..."
+            adb shell am send-trim-memory "$PACKAGE" RUNNING_LOW || true
+            sleep 2
+            PID=$(adb shell pidof "$PACKAGE" | tr -d '\r')
+            test -n "$PID"
+
+            echo "Force-stop / clean relaunch check..."
+            adb shell am force-stop "$PACKAGE"
+            sleep 1
+            adb shell monkey -p "$PACKAGE" -c android.intent.category.LAUNCHER 1 >/dev/null
+            sleep 6
+            PID=$(adb shell pidof "$PACKAGE" | tr -d '\r')
+            test -n "$PID"
+
+            adb shell dumpsys meminfo "$PACKAGE" | tee moto-g-meminfo-final.txt
+            adb shell dumpsys gfxinfo "$PACKAGE" framestats | tee moto-g-gfxinfo.txt || true
+            adb logcat -d > moto-g-logcat.txt
+
+            echo "Checking for application crashes and ANRs..."
+            if grep -E -A12 -B5 'FATAL EXCEPTION|ANR in com\.plushbound\.legends|Process com\.plushbound\.legends .* has died' moto-g-logcat.txt | grep -q 'com.plushbound.legends'; then
+              echo "Moto G simulation detected a Plushbound crash/ANR"
+              grep -E -A12 -B5 'FATAL EXCEPTION|ANR in com\.plushbound\.legends|Process com\.plushbound\.legends .* has died' moto-g-logcat.txt || true
+              exit 1
+            fi
+
+            echo "Moto G class simulation gate passed."
+
+      - name: Record Moto G production gate result
+        if: always()
+        run: |
+          cat > moto-g-production-gate.txt <<EOF
+          Plushbound Legends Moto G production simulation
+          Target class: 2025 Moto G baseline
+          Physical RAM assumption: 4 GB
+          Virtual RAM is not counted as guaranteed process RAM
+          Emulator viewport: 720x1600
+          Android API: 35
+          Result: ${{ job.status }}
+          Source Android workflow run: ${{ steps.buildrun.outputs.run_id }}
+          EOF
+
+      - name: Upload Moto G diagnostic bundle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: plushbound-moto-g-production-gate
+          path: |
+            moto-g-production-gate.txt
+            moto-g-tested-apk.sha256
+            moto-g-meminfo-initial.txt
+            moto-g-meminfo-final.txt
+            moto-g-gfxinfo.txt
+            moto-g-logcat.txt
+          if-no-files-found: warn

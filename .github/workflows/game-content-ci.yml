@@ -24,6 +24,11 @@ jobs:
           node-version: 20
       - name: Validate game JSON syntax
         run: |
-          find game/content game/runtime -name '*.json' -print0 | xargs -0 -n1 node -e "JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8'))"
-      - name: Run game content and runtime contract tests
+          find game/content game/runtime game/assets -name '*.json' -print0 | xargs -0 -r -n1 node -e "JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8'))"
+      - name: Validate asset library root
+        run: |
+          test -f game/assets/asset-manifest.json
+          test -f game/assets/README.md
+          node -e "const m=require('./game/assets/asset-manifest.json'); if(m.schemaVersion!==1 || !Array.isArray(m.entries)) process.exit(1)"
+      - name: Run game content, runtime and asset contract tests
         run: node --test game/tests/*.test.js

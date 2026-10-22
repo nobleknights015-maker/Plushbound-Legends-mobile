@@ -15,8 +15,7 @@ export class LogicalViewport {
     this.cssWidth = Math.max(1, Number(cssWidth) || this.logicalWidth);
     this.cssHeight = Math.max(1, Number(cssHeight) || this.logicalHeight);
     this.scale = Math.min(this.cssWidth / this.logicalWidth, this.cssHeight / this.logicalHeight);
-    const drawnWidth = this.logicalWidth * this.scale;
-    const drawnHeight = this.logicalHeight * this.scale;
+    const drawnWidth = this.logicalWidth * this.scale, drawnHeight = this.logicalHeight * this.scale;
     this.offsetX = (this.cssWidth - drawnWidth) / 2;
     this.offsetY = (this.cssHeight - drawnHeight) / 2;
     return this.snapshot();
@@ -29,24 +28,8 @@ export class LogicalViewport {
     };
   }
 
-  logicalToScreen(x, y) {
-    return {
-      x: this.offsetX + Number(x || 0) * this.scale,
-      y: this.offsetY + Number(y || 0) * this.scale
-    };
-  }
-
-  snapshot() {
-    return {
-      logicalWidth: this.logicalWidth,
-      logicalHeight: this.logicalHeight,
-      cssWidth: this.cssWidth,
-      cssHeight: this.cssHeight,
-      scale: this.scale,
-      offsetX: this.offsetX,
-      offsetY: this.offsetY
-    };
-  }
+  logicalToScreen(x, y) { return { x: this.offsetX + Number(x || 0) * this.scale, y: this.offsetY + Number(y || 0) * this.scale }; }
+  snapshot() { return { logicalWidth: this.logicalWidth, logicalHeight: this.logicalHeight, cssWidth: this.cssWidth, cssHeight: this.cssHeight, scale: this.scale, offsetX: this.offsetX, offsetY: this.offsetY }; }
 }
 
 export class Canvas2DRenderBackend {
@@ -66,8 +49,7 @@ export class Canvas2DRenderBackend {
   resize(cssWidth = this.canvas.clientWidth || this.scope.innerWidth || this.viewport.logicalWidth,
          cssHeight = this.canvas.clientHeight || this.scope.innerHeight || this.viewport.logicalHeight,
          devicePixelRatio = this.scope.devicePixelRatio || 1) {
-    const fit = this.viewport.fit(cssWidth, cssHeight);
-    const dpr = clamp(devicePixelRatio, 1, 3);
+    const fit = this.viewport.fit(cssWidth, cssHeight), dpr = clamp(devicePixelRatio, 1, 3);
     this.canvas.width = Math.max(1, Math.round(cssWidth * dpr));
     this.canvas.height = Math.max(1, Math.round(cssHeight * dpr));
     this.canvas.style && Object.assign(this.canvas.style, { width: `${cssWidth}px`, height: `${cssHeight}px`, touchAction: 'none' });
@@ -87,6 +69,55 @@ export class Canvas2DRenderBackend {
     this.ctx.fillRect(0, 0, width, height);
   }
 
+  assetFor(command = {}) {
+    const source = command.source || {};
+    const id = command.assetId || source.assetId || source.image || command.image || null;
+    if (!id) return null;
+    const key = String(id);
+    const image = this.assetManager?.cache?.get?.(key);
+    if (!image && this.assetManager?.has?.(key) && !this.pending.has(key)) {
+      this.pending.add(key);
+      this.assetManager.load(key).finally(() => this.pending.delete(key));
+    }
+    return image || null;
+  }
+
+  drawText(command) {
+    const ctx = this.ctx;
+    const size = Math.max(8, Number(command.fontSize) || 24);
+    const lineHeight = Math.max(size, Number(command.lineHeight) || Math.round(size * 1.25));
+    const maxWidth = Math.max(1, Number(command.maxWidth) || this.viewport.logicalWidth);
+    ctx.save();
+    ctx.globalAlpha = clamp(command.opacity ?? 1, 0, 1);
+    ctx.fillStyle = command.color || '#f4f1ea';
+    ctx.font = `${command.bold ? '700 ' : ''}${size}px sans-serif`;
+    ctx.textBaseline = 'top';
+    const text = String(command.text ?? '');
+    if (!command.wrap) ctx.fillText(text, Number(command.x) || 0, Number(command.y) || 0, maxWidth);
+    else {
+      const words = text.split(/\s+/), lines = [];
+      let line = '';
+      for (const word of words) {
+        const trial = line ? `${line} ${word}` : word;
+        if (line && ctx.measureText(trial).width > maxWidth) { lines.push(line); line = word; }
+        else line = trial;
+      }
+      if (line) lines.push(line);
+      lines.forEach((value, i) => ctx.fillText(value, Number(command.x) || 0, (Number(command.y) || 0) + i * lineHeight, maxWidth));
+    }
+    ctx.restore();
+  }
+
+  drawGauge(command) {
+    const d = command.destination || { x: 0, y: 0, width: 1, height: 1 };
+    const ratio = clamp((Number(command.value) || 0) / Math.max(1, Number(command.max) || 1), 0, 1);
+    this.ctx.fillStyle = command.backColor || '#1e2430';
+    this.ctx.fillRect(d.x, d.y, d.width, d.height);
+    this.ctx.fillStyle = command.color || '#ffffff';
+    this.ctx.fillRect(d.x, d.y, d.width * ratio, d.height);
+    if (command.label) this.drawText({ kind: 'ui-text', text: command.label, x: d.x, y: d.y - 18, fontSize: 14, color: command.color || '#ffffff' });
+  }
+
   draw(command = {}) {
     if (command.kind === 'ui-dimmer' || command.kind === 'ui-fade' || command.kind === 'ui-selection-highlight') {
       const d = command.destination || { x: 0, y: 0, width: this.viewport.logicalWidth, height: this.viewport.logicalHeight };
@@ -97,33 +128,37 @@ export class Canvas2DRenderBackend {
       this.ctx.globalAlpha = previous;
       return;
     }
-
+    if (command.kind === 'ui-text') return this.drawText(command);
+    if (command.kind === 'ui-gauge') return this.drawGauge(command);
     if (command.kind === 'hud' || command.kind === 'battlefield') return;
-    if (!command.assetId) return;
 
-    const image = this.assetManager?.cache?.get?.(String(command.assetId));
-    if (!image) {
-      if (this.assetManager?.has?.(command.assetId) && !this.pending.has(command.assetId)) {
-        this.pending.add(command.assetId);
-        this.assetManager.load(command.assetId).finally(() => this.pending.delete(command.assetId));
-      }
-      return;
-    }
-
+    const image = this.assetFor(command);
+    if (!image) return;
     const previous = this.ctx.globalAlpha;
     this.ctx.globalAlpha = clamp(command.opacity ?? 1, 0, 1);
-    const d = command.destination || {
-      x: Number(command.x) || 0,
-      y: Number(command.y) || 0,
-      width: Number(image.width) || this.viewport.logicalWidth,
-      height: Number(image.height) || this.viewport.logicalHeight
-    };
 
-    if (command.kind === 'ui-nine-slice' && command.source) {
+    if (command.kind === 'tile' && command.source) {
       const s = command.source;
-      this.ctx.drawImage(image, s.x, s.y, s.width, s.height, d.x, d.y, d.width, d.height);
+      this.ctx.drawImage(image, s.sx ?? s.x ?? 0, s.sy ?? s.y ?? 0, s.sw ?? s.width ?? 48, s.sh ?? s.height ?? 48, Number(command.screenX) || 0, Number(command.screenY) || 0, s.dw ?? s.sw ?? 48, s.dh ?? s.sh ?? 48);
+    } else if (command.kind === 'sprite' && command.source) {
+      const s = command.source;
+      const sw = s.sw ?? s.width ?? 48, sh = s.sh ?? s.height ?? 48;
+      const dx = Number(command.screenX) || 0, dy = Number(command.screenY) || 0;
+      this.ctx.drawImage(image, s.sx ?? s.x ?? 0, s.sy ?? s.y ?? 0, sw, sh, dx, dy, s.dw ?? sw, s.dh ?? sh);
+    } else if (command.kind === 'parallax') {
+      const w = Number(image.width) || this.viewport.logicalWidth, h = Number(image.height) || this.viewport.logicalHeight;
+      let startX = -(Number(command.offsetX) || 0) % w, startY = -(Number(command.offsetY) || 0) % h;
+      if (startX > 0) startX -= w;
+      if (startY > 0) startY -= h;
+      const endX = command.loopX === false ? startX + w : this.viewport.logicalWidth + w;
+      const endY = command.loopY === false ? startY + h : this.viewport.logicalHeight + h;
+      for (let y = startY; y < endY; y += h) for (let x = startX; x < endX; x += w) this.ctx.drawImage(image, x, y, w, h);
     } else {
-      this.ctx.drawImage(image, d.x, d.y, d.width, d.height);
+      const d = command.destination || { x: Number(command.x) || 0, y: Number(command.y) || 0, width: Number(image.width) || this.viewport.logicalWidth, height: Number(image.height) || this.viewport.logicalHeight };
+      if (command.kind === 'ui-nine-slice' && command.source) {
+        const s = command.source;
+        this.ctx.drawImage(image, s.x, s.y, s.width, s.height, d.x, d.y, d.width, d.height);
+      } else this.ctx.drawImage(image, d.x, d.y, d.width, d.height);
     }
     this.ctx.globalAlpha = previous;
   }

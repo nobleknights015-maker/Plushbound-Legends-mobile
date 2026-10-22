@@ -3,6 +3,8 @@ import { ContentAssetCatalog } from '../assets/ContentAssetCatalog.js';
 import { AssetBindingRegistry } from '../ui/AssetBindingRegistry.js';
 import { SceneRenderExecutor } from '../render/SceneRenderExecutor.js';
 import { Canvas2DRenderBackend } from '../render/Canvas2DRenderBackend.js';
+import { InputManager } from '../input/InputManager.js';
+import { LiveInputRouter } from '../input/LiveInputRouter.js';
 
 function imageLoader(descriptor, scope = globalThis) {
   if (descriptor.type !== 'image' || typeof scope.Image !== 'function') {
@@ -32,6 +34,7 @@ function ensureCanvas(scope, canvas = null) {
     created.style.height = '100vh';
     created.style.background = '#000';
     created.style.zIndex = '2147483000';
+    created.style.touchAction = 'none';
   }
   document.body?.appendChild?.(created);
   return created;
@@ -43,6 +46,8 @@ export async function bootPlushboundEngineV1({
   manifestUrl = null,
   backend = null,
   canvas = null,
+  input = null,
+  onAction = null,
   strictBindings = false
 } = {}) {
   if (scope.__PLUSHBOUND_ENGINE_V1__?.booted) return scope.__PLUSHBOUND_ENGINE_V1__;
@@ -64,6 +69,18 @@ export async function bootPlushboundEngineV1({
   const renderCanvas = backend ? canvas : ensureCanvas(scope, canvas);
   const liveBackend = backend || (renderCanvas ? new Canvas2DRenderBackend({ canvas: renderCanvas, assetManager, scope }) : null);
   const executor = new SceneRenderExecutor({ backend: liveBackend });
+  const inputManager = input || new InputManager({ touchDeadzone: 14 });
+  const actionListeners = new Set();
+  if (typeof onAction === 'function') actionListeners.add(onAction);
+  const inputRouter = new LiveInputRouter({
+    input: inputManager,
+    mapPoint: (x, y) => liveBackend?.pointFromClient?.(x, y) || { x: Number(x) || 0, y: Number(y) || 0 },
+    onAction: action => {
+      for (const listener of actionListeners) listener(action);
+      scope.dispatchEvent?.(new (scope.CustomEvent || class { constructor(type, init) { this.type = type; this.detail = init?.detail; } })('plushbound-engine-v1-action', { detail: action }));
+    }
+  });
+  inputRouter.attach(renderCanvas);
 
   const resize = () => liveBackend?.resize?.(
     renderCanvas?.clientWidth || scope.innerWidth || 1604,
@@ -82,16 +99,29 @@ export async function bootPlushboundEngineV1({
     executor,
     backend: liveBackend,
     canvas: renderCanvas,
+    input: inputManager,
+    inputRouter,
     validation,
     resize,
     mapClientPoint: (x, y) => liveBackend?.pointFromClient?.(x, y) || { x: Number(x) || 0, y: Number(y) || 0 },
+    onAction: listener => { if (typeof listener === 'function') actionListeners.add(listener); return () => actionListeners.delete(listener); },
     composeScene: (scene, options = {}) => executor.compose(scene, options),
-    renderScene: (scene, options = {}) => executor.execute(scene, options)
+    renderScene: (scene, options = {}) => {
+      inputRouter.setScene(scene);
+      return executor.execute(scene, options);
+    },
+    destroy: () => {
+      inputRouter.detach();
+      inputManager.clearAll();
+      scope.removeEventListener?.('resize', resize);
+      scope.removeEventListener?.('orientationchange', resize);
+      actionListeners.clear();
+    }
   };
 
   scope.__PLUSHBOUND_ENGINE_V1__ = runtime;
   scope.dispatchEvent?.(new (scope.CustomEvent || class { constructor(type, init) { this.type = type; this.detail = init?.detail; } })('plushbound-engine-v1-ready', {
-    detail: { version: runtime.version, validAssets: validation.valid, liveRenderer: !!liveBackend }
+    detail: { version: runtime.version, validAssets: validation.valid, liveRenderer: !!liveBackend, liveInput: !!renderCanvas }
   }));
   return runtime;
 }

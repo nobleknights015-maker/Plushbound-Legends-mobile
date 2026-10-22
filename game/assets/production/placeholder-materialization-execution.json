@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "executionId": "whole-game-placeholder-materialization-execution",
+  "project": "Plushbound Legends",
+  "world": "Plushtopia",
+  "phase": "asset-production-only",
+  "gameDevelopmentStarted": false,
+  "gameplayImplementation": false,
+  "status": "materialization-execution-ready",
+  "purpose": "Convert the completed whole-game placeholder specifications into deterministic engine-compatible placeholder binaries without beginning gameplay development.",
+  "sourceHead": "f1eaa2c9975055412d1e181cf49c736e6f9e94b9",
+  "executionPolicy": {
+    "placeholderOnly": true,
+    "placeholderIsFinalArt": false,
+    "finalVisualReplacementDeferredUntilFinishedGameZip": true,
+    "preserveStableLogicalIds": true,
+    "preserveRuntimeDimensions": true,
+    "preserveFrameLayouts": true,
+    "noProprietaryRpgMakerArtwork": true,
+    "tileSize": 48,
+    "imageFormat": "png",
+    "audioFormat": "ogg",
+    "metadataFormat": "json"
+  },
+  "materializationBatches": [
+    {"batch":1,"id":"global-foundation","includes":["shared-cross-region","accessibility","story-state-overlays","global-signs-markers","shared-interior-utility"],"required":true},
+    {"batch":2,"id":"protected-canon","includes":["chris-bourn","penney-nguyen","lily","ethan"],"required":true,"ambientReuse":false},
+    {"batch":3,"id":"character-creator","includes":["body","skin","hair-front","hair-back","eyes","brows","mouths","facial-details","tops","bottoms","full-outfits","outerwear","footwear","headwear","accessories","palettes"],"required":true},
+    {"batch":4,"id":"guardians-and-npcs","includes":["guardian-families","guardian-rare-variants","persistent-npcs","ambient-npc-recipes","child-npcs","teen-npcs","elder-npcs","major-portraits","secondary-portraits"],"required":true},
+    {"batch":5,"id":"enemies-and-bosses","includes":["common","veteran","elite","miniboss","regional-boss","secret-boss","battle-poses","telegraphs","phase-damage"],"required":true},
+    {"batch":6,"id":"regional-world","regions":["elyndor","verdancia","cinderreach","tideglass-coast","silkspire","moonpatch-steppe","frostlace","gloamfen","sunspool-desert","crownweave"],"includes":["tilesets","autotiles","terrain","buildings","building-states","interiors","dungeons-ruins","props","flora","roads-bridges-fences","waystitch","water-special","parallaxes","battlebacks","weather-lighting","story-overlays","secret-pieces"],"required":true},
+    {"batch":7,"id":"items-equipment-crafting","includes":["consumables","ingredients","materials","key-quest","treasure-trade","weapons","outfits-armor","accessories","guardian-charms","tools","food","master-icons-96","runtime-icons-48"],"required":true},
+    {"batch":8,"id":"presentation","includes":["combat-vfx","guardian-art-vfx","bond-art-vfx","boss-telegraphs","field-vfx","weather-vfx","waystitch-vfx","crafting-ui-vfx","reduced-flash-alternates","map-markers","quest-badges","shop-service-signs","frames","loading-illustrations","touch-ui","non-color-state-indicators"],"required":true},
+    {"batch":9,"id":"audio","includes":["regional-themes","settlement","wilderness","dungeon","battle","boss","guardian","event","ambience","environment-sfx","combat-sfx","guardian-sfx","ui-sfx"],"required":true}
+  ],
+  "binaryTemplates": {
+    "walkSprite": {"cell":"48x48","directions":4,"framesPerDirection":3,"transparent":true},
+    "creatorLayer": {"alignment":"shared-origin","cell":"48x48","transparent":true},
+    "portrait": {"transparentOrFramed":true,"normalAnatomy":true},
+    "guardian": {"requiredSlots":["overworld","portrait","silhouette","battle-idle","battle-action","battle-hurt","bond-expression","icon","field-interaction","resting-pose"]},
+    "enemy": {"requiredSlots":["battle-idle","battle-action","battle-hurt","battle-defeat","telegraph","phase","icon","encounter-silhouette"]},
+    "itemIcon": {"master":"96x96","runtime":"48x48","pairRequired":true},
+    "tile": {"grid":"48x48","collisionReadable":true},
+    "vfx": {"transparent":true,"timingMetadataRequired":true,"reducedFlashAlternateWhereApplicable":true},
+    "audio": {"loopMetadataRequired":true,"mobileSpeakerReadable":true}
+  },
+  "perAssetMetadataRequired": ["logicalId","category","regionOrGlobalScope","runtimeDimensions","frameLayout","transparencyPolicy","placeholderStatus","finalArtTarget","provenance","qaStatus"],
+  "validationPipeline": [
+    "enumerate-all-planned-logical-ids",
+    "normalize-lowercase-kebab-case-paths",
+    "reject-duplicate-logical-ids",
+    "reject-case-insensitive-path-collisions",
+    "reject-canon-id-reuse",
+    "reject-guardian-enemy-namespace-overlap",
+    "validate-required-subassets",
+    "validate-48px-world-grid",
+    "validate-creator-layer-alignment",
+    "validate-item-master-runtime-pairs",
+    "validate-reduced-flash-vfx-alternates",
+    "validate-ui-accessibility-variants",
+    "validate-audio-loop-metadata",
+    "validate-provenance",
+    "validate-final-replacement-contract",
+    "emit-checksum-index",
+    "emit-repair-list-if-needed"
+  ],
+  "knownDeferredDataRepair": {
+    "id": "verdancia-guardian-hostile-encounter-separation",
+    "classification": "runtime-data-repair-not-asset-production",
+    "actionDuringAssetPhase": "record-only",
+    "mustBeFixedBeforeGameplayValidation": true
+  },
+  "freezeGate": {
+    "required": [
+      "all-nine-batches-materialized",
+      "all-ten-regions-present",
+      "four-protected-canon-identities-present",
+      "zero-logical-id-collisions",
+      "zero-path-collisions",
+      "zero-missing-required-subassets",
+      "zero-invalid-dimensions-or-layouts",
+      "zero-unpaired-item-icons",
+      "accessibility-variants-complete",
+      "audio-metadata-complete",
+      "checksum-index-complete",
+      "provenance-complete"
+    ],
+    "onPass": "asset-library-freeze-ready",
+    "onFail": "repair-placeholders-only",
+    "startsGameplayDevelopment": false
+  },
+  "nextAction": "Materialize placeholder binary packs from batches 1-9, generate checksum/index metadata, validate, repair failures, then freeze the placeholder asset library."
+}

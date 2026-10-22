@@ -1,0 +1,182 @@
+{
+  "schemaVersion": 1,
+  "route": {
+    "id": "elyndor-route-one",
+    "name": "First Threads of Elyndor",
+    "maps": ["elyndor-sunny-plains", "elyndor-sunthread-crossing", "elyndor-menders-rest"],
+    "progression": ["a-thread-begins", "threads-out-of-tune"]
+  },
+  "transfers": [
+    {
+      "id": "sunny-plains-to-crossing",
+      "from": { "mapId": "elyndor-sunny-plains", "x": 31, "y": 10 },
+      "to": { "mapId": "elyndor-sunthread-crossing", "x": 2, "y": 12, "direction": "right" },
+      "condition": { "questComplete": "a-thread-begins" }
+    },
+    {
+      "id": "crossing-to-sunny-plains",
+      "from": { "mapId": "elyndor-sunthread-crossing", "x": 0, "y": 12 },
+      "to": { "mapId": "elyndor-sunny-plains", "x": 29, "y": 10, "direction": "left" }
+    },
+    {
+      "id": "crossing-to-menders-rest",
+      "from": { "mapId": "elyndor-sunthread-crossing", "x": 35, "y": 8 },
+      "to": { "mapId": "elyndor-menders-rest", "x": 3, "y": 10, "direction": "right" }
+    },
+    {
+      "id": "menders-rest-to-crossing",
+      "from": { "mapId": "elyndor-menders-rest", "x": 0, "y": 10 },
+      "to": { "mapId": "elyndor-sunthread-crossing", "x": 33, "y": 8, "direction": "left" }
+    }
+  ],
+  "npcs": [
+    {
+      "id": "nessa",
+      "name": "Nessa",
+      "role": "Traveling Clothier and Provisioner",
+      "mapId": "elyndor-menders-rest",
+      "position": { "x": 11, "y": 7, "direction": "down" },
+      "shopId": "menders-rest-provisions",
+      "assetBindings": {
+        "sprite": "npc/nessa/sprite",
+        "portrait": "npc/nessa/portrait"
+      },
+      "dialogue": {
+        "intro": [
+          "New bond, fresh road, and not enough supplies. I know the look.",
+          "Mender's Rest is small, but the road beyond it isn't. Take what you need before the next Waystitch."
+        ]
+      }
+    },
+    {
+      "id": "bram",
+      "name": "Bram",
+      "role": "Threadfarmer",
+      "mapId": "elyndor-menders-rest",
+      "position": { "x": 18, "y": 11, "direction": "left" },
+      "assetBindings": {
+        "sprite": "npc/bram/sprite",
+        "portrait": "npc/bram/portrait"
+      },
+      "dialogue": {
+        "intro": [
+          "Hear that hum under the bridge? That's not wind.",
+          "The crossing's anchor threads have gone sour. If they snap, this whole little road folds in on itself."
+        ],
+        "questActive": [
+          "Three snags. One near the old marker stones, two under the eastern rail. Clear the Fraylings and steady each anchor."
+        ],
+        "questComplete": [
+          "That's the old sound again. Clean and quiet. You and your Guardian make a good stitch."
+        ]
+      }
+    }
+  ],
+  "quests": [
+    {
+      "id": "threads-out-of-tune",
+      "name": "Threads Out of Tune",
+      "stage": 2,
+      "giver": "bram",
+      "prerequisites": [{ "questComplete": "a-thread-begins" }],
+      "summary": "Stabilize the damaged anchor threads beneath Sunthread Crossing before the road begins to collapse.",
+      "objectives": [
+        { "id": "inspect-west-anchor", "type": "interact", "target": "anchor-west", "count": 1 },
+        { "id": "inspect-east-anchor", "type": "interact", "target": "anchor-east", "count": 1 },
+        { "id": "defeat-crossing-fraylings", "type": "battle", "targetTag": "crossing-frayling", "count": 3 },
+        { "id": "return-to-bram", "type": "talk", "target": "bram", "count": 1 }
+      ],
+      "rewards": {
+        "gold": 180,
+        "items": [
+          { "id": "threadmend-tonic", "count": 2 },
+          { "id": "woven-charm", "count": 1 }
+        ]
+      },
+      "unlocks": ["waystitch-menders-rest"]
+    }
+  ],
+  "events": [
+    {
+      "id": "anchor-west",
+      "mapId": "elyndor-sunthread-crossing",
+      "position": { "x": 13, "y": 14 },
+      "type": "quest-interaction",
+      "questId": "threads-out-of-tune",
+      "assetBindings": { "sprite": "environment/elyndor/thread-anchor-damaged" }
+    },
+    {
+      "id": "anchor-east",
+      "mapId": "elyndor-sunthread-crossing",
+      "position": { "x": 26, "y": 6 },
+      "type": "quest-interaction",
+      "questId": "threads-out-of-tune",
+      "assetBindings": { "sprite": "environment/elyndor/thread-anchor-damaged" }
+    }
+  ],
+  "shops": [
+    {
+      "id": "menders-rest-provisions",
+      "name": "Nessa's Traveling Provisions",
+      "keeper": "nessa",
+      "inventory": [
+        { "itemId": "threadmend-tonic", "price": 35 },
+        { "itemId": "waybread", "price": 10 },
+        { "itemId": "spool-salve", "price": 55 }
+      ]
+    }
+  ],
+  "encounterTables": [
+    {
+      "id": "elyndor-sunthread-crossing",
+      "regionTags": ["bridge", "grass", "anchor-field"],
+      "entries": [
+        { "enemyId": "frayling-tuft", "weight": 35 },
+        { "enemyId": "frayling-scritch", "weight": 35 },
+        { "enemyId": "frayling-knotling", "weight": 30 }
+      ]
+    }
+  ],
+  "enemies": [
+    {
+      "id": "frayling-knotling",
+      "name": "Knotling Frayling",
+      "tags": ["frayling", "crossing-frayling", "elyndor", "early"],
+      "role": "bruiser",
+      "assetBindings": { "sprite": "enemy/frayling/knotling" }
+    }
+  ],
+  "items": [
+    {
+      "id": "waybread",
+      "name": "Waybread",
+      "type": "consumable",
+      "description": "Dense travel bread sold near Waystitches. Restores a small amount of health.",
+      "assetBindings": { "icon": "item/waybread/icon" }
+    },
+    {
+      "id": "spool-salve",
+      "name": "Spool Salve",
+      "type": "consumable",
+      "description": "A fragrant salve used to settle minor threadburn and restore a little bond energy.",
+      "assetBindings": { "icon": "item/spool-salve/icon" }
+    },
+    {
+      "id": "woven-charm",
+      "name": "Woven Charm",
+      "type": "accessory",
+      "description": "A simple Elyndor charm knotted around a polished wooden bead. Slightly improves resilience.",
+      "stats": { "defense": 2, "spirit": 1 },
+      "assetBindings": { "icon": "equipment/woven-charm/icon" }
+    }
+  ],
+  "waystitches": [
+    {
+      "id": "waystitch-menders-rest",
+      "mapId": "elyndor-menders-rest",
+      "position": { "x": 22, "y": 5 },
+      "unlockCondition": { "questComplete": "threads-out-of-tune" },
+      "assetBindings": { "sprite": "environment/waystitch/elyndor-small" }
+    }
+  ]
+}

@@ -28,7 +28,8 @@ const DEFAULT_BINDINGS = Object.freeze({
 export class AssetBindingRegistry {
   constructor({ bindings = {}, fallback = true } = {}) {
     this.fallback = fallback !== false;
-    this.bindings = new Map(Object.entries({ ...DEFAULT_BINDINGS, ...bindings }).map(([k, v]) => [normalizeId(k), normalizeId(v)]));
+    const source = this.fallback ? { ...DEFAULT_BINDINGS, ...bindings } : { ...bindings };
+    this.bindings = new Map(Object.entries(source).map(([k, v]) => [normalizeId(k), normalizeId(v)]));
   }
 
   bind(logicalId, assetId) {

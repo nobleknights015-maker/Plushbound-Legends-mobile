@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "libraryId": "plushtopia-npc-visual-library",
+  "purpose": "Oversized MV-inspired persistent NPC visual library for the full Plushbound Legends world.",
+  "tileSize": 48,
+  "productionRule": "Favor reusable component depth without cloning persistent identities. Every named persistent NPC receives a stable visual recipe.",
+  "targets": {
+    "persistentIdentityCapacity": 512,
+    "adultIdentities": 304,
+    "teenIdentities": 80,
+    "childIdentities": 96,
+    "elderIdentities": 32,
+    "uniqueStoryNpcSets": 48,
+    "ambientVariationRecipes": 256,
+    "portraitExpressionSets": 512
+  },
+  "ageBands": [
+    {"id":"child-young","visualRule":"short child proportions; playful readable silhouette; age-appropriate clothing"},
+    {"id":"child-older","visualRule":"child proportions distinct from teens; school, errand and festival variants"},
+    {"id":"teen","visualRule":"distinct adolescent silhouette; never simple adult sprite scaling"},
+    {"id":"adult","visualRule":"broad profession and regional body-language variety"},
+    {"id":"elder","visualRule":"posture, hair and clothing variation without caricature"}
+  ],
+  "bodyVariation": {
+    "frames": ["slender","average","broad","soft","athletic"],
+    "heightBands": ["short","average","tall"],
+    "mobilityVariants": ["standard","cane","staff","walking-aid"],
+    "spriteDirections": 4,
+    "walkFramesPerDirection": 3
+  },
+  "regionalFashionFamilies": [
+    "sunthread-rural",
+    "mender-craft",
+    "verdant-court",
+    "lantern-grove",
+    "river-trade",
+    "mountain-weave",
+    "imperial-thread",
+    "wayfarer",
+    "guardian-order",
+    "festival-formal",
+    "scholar-artisan",
+    "working-class"
+  ],
+  "professionKits": [
+    "farmer","herbalist","tailor","weaver","blacksmith","carpenter","merchant","banker","innkeeper","cook","baker","fisher","hunter","ranger","guard","courier","teacher","healer","scholar","librarian","engineer","miner","performer","priest-attendant","guardian-handler","stablekeeper","dockworker","traveler","noble","civil-servant","student","apprentice"
+  ],
+  "portraitExpressions": ["neutral","happy","laughing","concerned","sad","angry","surprised","determined"],
+  "childNpcPolicy": {
+    "minimumPersistentChildren": 96,
+    "activities": ["school","home","play","errands","festival","guardian-care","chores","exploration-club"],
+    "wardrobeSets": ["everyday","school","festival","winter","rain","sleepwear","apprentice","travel"],
+    "safety": "Children use age-appropriate designs and are never derived from adult fan-service silhouettes or clothing.",
+    "uniqueCanonChildren": ["lily","ethan"]
+  },
+  "uniqueCanonCharacters": [
+    {"id":"chris-bourn","assetRule":"unique sprite, portrait expression sheet, field variants and formal/casual wardrobe; never genericized"},
+    {"id":"penney-nguyen","assetRule":"unique sprite, portrait expression sheet, field variants and formal/casual wardrobe; never genericized"},
+    {"id":"lily","assetRule":"unique child OC sprite and portrait set; separate from generic child pool"},
+    {"id":"ethan","assetRule":"unique child OC sprite and portrait set; separate from generic child pool"}
+  ],
+  "outputBindings": {
+    "sprite":"characters/npcs/{region}/{npcId}/sprite.png",
+    "portrait":"characters/npcs/{region}/{npcId}/portrait.webp",
+    "expressions":"characters/npcs/{region}/{npcId}/expressions.webp",
+    "recipe":"characters/npcs/{region}/{npcId}/visual-recipe.json"
+  }
+}

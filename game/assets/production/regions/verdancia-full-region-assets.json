@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 1,
+  "regionId": "verdancia",
+  "regionName": "Verdancia",
+  "productionMode": "full-region-asset-library",
+  "tileSize": 48,
+  "style": "Original Plushbound Legends art with MV/Trinity-inspired functional readability, layered forest textile motifs, luminous stitching, moss, roots, lantern flora and handcrafted plush-world materials.",
+  "rule": "This package specifies art/audio production only. It does not implement gameplay or mark ungenerated media ready.",
+  "canonicalLocations": [
+    "verdancia-threadwood-verge",
+    "verdancia-lanternbough",
+    "verdancia-mossveil-hollow",
+    "verdancia-elderstitch-grove",
+    "verdancia-rootbound-depths",
+    "verdancia-weavers-sanctum"
+  ],
+  "environment": {
+    "tilesetSheets": 28,
+    "buildingFamilies": 40,
+    "interiorKits": 20,
+    "dungeonAndRuinKits": 16,
+    "environmentProps": 224,
+    "foliageAndFungi": 192,
+    "parallaxes": 32,
+    "battlebacks": 48,
+    "weatherAndAtmosphereSets": 20,
+    "storyStateVariants": 48,
+    "locationKits": {
+      "threadwoodVerge": ["woven woodland paths", "threadgrass", "root bridges", "travel markers", "edge-of-forest clearings"],
+      "lanternbough": ["lantern-tree settlement", "homes", "shops", "inn", "tailor", "guardian-care", "crafting", "market", "child play spaces"],
+      "mossveilHollow": ["mist forest", "moss basins", "fungal groves", "wet roots", "hidden pools", "low-visibility overlays"],
+      "elderstitchGrove": ["ancient trees", "ritual clearings", "old Waystitch structures", "Guardian shrines", "woven bark monuments"],
+      "rootboundDepths": ["root tunnels", "underground chambers", "spore caverns", "Fraying damage", "boss approach ecology"],
+      "weaversSanctum": ["ancient loom architecture", "threadspace effects", "ceremonial halls", "broken tapestry structures", "multi-state boss arena"]
+    }
+  },
+  "populationArt": {
+    "persistentNpcIdentities": 96,
+    "children": 20,
+    "teens": 16,
+    "elders": 12,
+    "majorStoryNpcSets": 16,
+    "ambientVariationRecipes": 128,
+    "portraitExpressionsPerMajorNpc": 8,
+    "occupationalSets": ["lantern keeper", "weaver", "mender", "herbalist", "mushroom tender", "root farmer", "carpenter", "merchant", "innkeeper", "guardian caretaker", "ranger", "scholar", "guard", "cook", "child", "traveler"],
+    "childAssetRule": "Children receive age-appropriate proportions, clothing, expressions, play props and school/home/community visual variants; they are not scaled-down adult sprites."
+  },
+  "fashionAndCreator": {
+    "regionalCreatorPieces": 240,
+    "hairAndHeadpieces": 48,
+    "tops": 40,
+    "bottoms": 28,
+    "coatsAndRobes": 28,
+    "fullOutfits": 32,
+    "footwear": 24,
+    "accessories": 40,
+    "childPieces": 40,
+    "paletteFamilies": 12,
+    "motifs": ["leaf embroidery", "woven bark trims", "lantern tassels", "moss velvet", "silk thread knots", "Victorian fitted layers", "Japanese-inspired wrap silhouettes", "Chinese-inspired collars and closures"],
+    "rule": "Cultural influences are blended into original Plushtopian clothing rather than copied historical costumes."
+  },
+  "guardians": {
+    "canonicalFamilies": ["mosskit", "lanternmoth", "thimblehare", "barkback", "dewfinch", "spoolmouse", "bramblecub", "silkwing", "rootram", "bellfrog", "stitchowl", "velvetstag"],
+    "additionalRegionalFamiliesReserved": 12,
+    "rareVisualVariants": 24,
+    "requiredPerFamily": ["map sprite sheet", "portrait", "silhouette", "battle art", "bond expression set", "icon", "rest pose", "happy pose", "alert pose", "hurt pose", "field-interaction pose"],
+    "animationSets": 36,
+    "rule": "Guardian silhouettes remain immediately identifiable. Guardian visual encounters are separate from hostile monster presentation."
+  },
+  "enemies": {
+    "canonicalCommonFamilies": ["snagling", "bramblemaw", "hollowcap", "ragged-wing", "needleback", "rotroot", "gloommite", "tanglehound", "sporepuff", "fraycrawler", "sap-slime", "thornbeak", "mimic-bloom", "stumpstalker", "threadleech", "briar-shell", "mosswraith", "hushbat", "rootclaw", "patchwork-boar"],
+    "additionalCommonFamiliesReserved": 28,
+    "veteranVariants": 32,
+    "canonicalElites": ["elder-snagling", "iron-briar", "hollowcap-matriarch", "gloomwing", "needleback-alpha", "rotroot-ancient", "tanglehound-packlord", "mosswraith-seer", "rootclaw-bulwark", "patchwork-tusker"],
+    "additionalElitesReserved": 6,
+    "canonicalMinibosses": ["the-knotted-one", "bellcap-brute", "old-thornhide", "lantern-eater", "rootwarden-gone-frayed", "silken-husk"],
+    "regionalBosses": [
+      {"id":"frayheart-of-verdancia","phaseArtSets":3,"arenaStates":4},
+      {"id":"the-unraveling-weaver","phaseArtSets":4,"arenaStates":5}
+    ],
+    "battleAnimationSets": 56,
+    "rule": "Boss production includes silhouettes, telegraphs, phase states, arena damage states and environmental tells, not only larger battlers."
+  },
+  "itemsEquipmentCrafting": {
+    "consumableIcons": 80,
+    "ingredientIcons": 112,
+    "materialIcons": 112,
+    "treasureAndTradeIcons": 64,
+    "weaponFocusAppearances": 64,
+    "outfitArmorAppearances": 80,
+    "accessoryAppearances": 56,
+    "guardianCharmAppearances": 40,
+    "craftingToolAndStationAssets": 48,
+    "regionalResourceThemes": ["moss fiber", "lantern sap", "spore silk", "rootwood", "dewglass", "woven bark", "elder thread", "sanctum filament"],
+    "guardianEthicsRule": "Guardian-associated crafting visuals represent gifts, shed fibers, naturally found traces or bonded materials; Guardians are not harvested for parts."
+  },
+  "vfx": {
+    "regionalCombatEffects": 96,
+    "guardianEffects": 72,
+    "bossTelegraphsAndPhaseEffects": 48,
+    "fieldEffects": 48,
+    "weatherEffects": 24,
+    "waystitchAndSecretEffects": 24,
+    "visualLanguage": ["luminous thread", "leaf motes", "moss glow", "spore drift", "root pulses", "Fraying strands", "loom-space distortion"]
+  },
+  "uiAccents": {
+    "regionalFrames": 12,
+    "mapMarkers": 32,
+    "questAndFactionIcons": 32,
+    "shopAndServiceIcons": 24,
+    "regionalMotif": "leaf-thread filigree with lantern highlights and stitched bark framing"
+  },
+  "audio": {
+    "bgm": 20,
+    "ambientLoops": 28,
+    "battleAndBossThemes": 8,
+    "guardianThemesAndStingers": 12,
+    "environmentSfx": 96,
+    "creatureAndGuardianSfx": 96,
+    "uiCraftingAndInteractionSfx": 64,
+    "locationThemes": ["Threadwood Verge", "Lanternbough day", "Lanternbough night", "Mossveil Hollow", "Elderstitch Grove", "Rootbound Depths", "Weaver's Sanctum"]
+  },
+  "twoTimesReserve": {
+    "principle": "Reserve volume must provide meaningful composition, state, age, occupation, biome and encounter alternatives rather than blind duplicates or simple recolors.",
+    "priority": ["foliage", "props", "NPC variation", "children", "fashion", "Guardian states", "enemy variants", "interiors", "dungeon pieces", "boss phase assets"]
+  },
+  "productionAcceptance": [
+    "All six canonical locations have distinct visual kits.",
+    "Settlement art supports adult, teen, child and elder populations.",
+    "Every canonical Guardian has sprite, portrait, silhouette and battle requirements.",
+    "Every canonical enemy and boss has a reserved battle-art path.",
+    "Regional clothing remains recognizably Verdancian while compatible with global character creation.",
+    "Missing generated media remains planned or placeholder and is never falsely marked ready.",
+    "All generated visual assets remain original Plushbound work and do not copy proprietary RPG Maker artwork."
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "suiteId": "verdancia-content-validation",
+  "regionId": "verdancia",
+  "requiredPackages": ["verdancia-region","verdancia-population","verdancia-npcs","verdancia-quests-events","verdancia-asset-slots","verdancia-region-maps","verdancia-runtime-contract"],
+  "gates": [
+    {"id":"reference-validation","assert":["all-map-ids-unique","all-encounter-table-ids-resolve","all-quest-map-references-resolve","all-guardian-habitats-resolve"]},
+    {"id":"dependency-validation","assert":["elyndor-entry-prerequisite-exists","sanctum-gate-prerequisite-exists","quest-chains-have-valid-next-state"]},
+    {"id":"map-validation","assert":["six-runtime-maps-present","all-map-connections-bidirectional-or-explicit-one-way","tile-size-is-48","lanternbough-services-present","weavers-sanctum-regional-boss-present"]},
+    {"id":"combat-validation","assert":["twelve-guardian-families-present","twenty-monster-families-present","ten-elites-present","six-minibosses-present","two-regional-bosses-present","encounter-tiers-within-region-tier"]},
+    {"id":"population-validation","assert":["sixty-four-persistent-npc-slots-present","twelve-child-npc-slots-present","child-dialogue-age-appropriate","npc-schedules-have-safe-fallback"]},
+    {"id":"asset-validation","assert":["logical-asset-ids-stable","missing-optional-assets-use-placeholder","missing-assets-do-not-crash-runtime"]}
+  ],
+  "acceptance": {"allRequiredGatesMustPass":true,"engineBaselineMustRemainFrozen":true,"androidPackageMustIncludeRuntimeMaps":true}
+}

@@ -1,3 +1,5 @@
+import { normalizeSafeInsets, safeViewport, classifyScreen } from '../platform/ScreenAdaptation.js';
+
 function clamp(value, min, max) { return Math.max(min, Math.min(max, Number(value) || 0)); }
 
 export class LogicalViewport {
@@ -9,15 +11,21 @@ export class LogicalViewport {
     this.scale = 1;
     this.offsetX = 0;
     this.offsetY = 0;
+    this.safeInsets = normalizeSafeInsets();
+    this.safeArea = safeViewport({ width: this.cssWidth, height: this.cssHeight });
+    this.screen = classifyScreen({ width: this.cssWidth, height: this.cssHeight });
   }
 
-  fit(cssWidth, cssHeight) {
+  fit(cssWidth, cssHeight, safeInsets = {}) {
     this.cssWidth = Math.max(1, Number(cssWidth) || this.logicalWidth);
     this.cssHeight = Math.max(1, Number(cssHeight) || this.logicalHeight);
-    this.scale = Math.min(this.cssWidth / this.logicalWidth, this.cssHeight / this.logicalHeight);
+    this.safeInsets = normalizeSafeInsets(safeInsets);
+    this.safeArea = safeViewport({ width: this.cssWidth, height: this.cssHeight, insets: this.safeInsets });
+    this.screen = classifyScreen({ width: this.cssWidth, height: this.cssHeight });
+    this.scale = Math.min(this.safeArea.width / this.logicalWidth, this.safeArea.height / this.logicalHeight);
     const drawnWidth = this.logicalWidth * this.scale, drawnHeight = this.logicalHeight * this.scale;
-    this.offsetX = (this.cssWidth - drawnWidth) / 2;
-    this.offsetY = (this.cssHeight - drawnHeight) / 2;
+    this.offsetX = this.safeArea.x + (this.safeArea.width - drawnWidth) / 2;
+    this.offsetY = this.safeArea.y + (this.safeArea.height - drawnHeight) / 2;
     return this.snapshot();
   }
 
@@ -29,7 +37,20 @@ export class LogicalViewport {
   }
 
   logicalToScreen(x, y) { return { x: this.offsetX + Number(x || 0) * this.scale, y: this.offsetY + Number(y || 0) * this.scale }; }
-  snapshot() { return { logicalWidth: this.logicalWidth, logicalHeight: this.logicalHeight, cssWidth: this.cssWidth, cssHeight: this.cssHeight, scale: this.scale, offsetX: this.offsetX, offsetY: this.offsetY }; }
+  snapshot() {
+    return {
+      logicalWidth: this.logicalWidth,
+      logicalHeight: this.logicalHeight,
+      cssWidth: this.cssWidth,
+      cssHeight: this.cssHeight,
+      scale: this.scale,
+      offsetX: this.offsetX,
+      offsetY: this.offsetY,
+      safeInsets: { ...this.safeInsets },
+      safeArea: { ...this.safeArea, insets: { ...this.safeArea.insets } },
+      screen: { ...this.screen }
+    };
+  }
 }
 
 export class Canvas2DRenderBackend {
@@ -43,19 +64,31 @@ export class Canvas2DRenderBackend {
     this.viewport = new LogicalViewport({ logicalWidth, logicalHeight });
     this.background = background;
     this.pending = new Set();
+    this.safeInsets = normalizeSafeInsets();
     this.resize();
   }
 
   resize(cssWidth = this.canvas.clientWidth || this.scope.innerWidth || this.viewport.logicalWidth,
          cssHeight = this.canvas.clientHeight || this.scope.innerHeight || this.viewport.logicalHeight,
-         devicePixelRatio = this.scope.devicePixelRatio || 1) {
-    const fit = this.viewport.fit(cssWidth, cssHeight), dpr = clamp(devicePixelRatio, 1, 3);
+         devicePixelRatio = this.scope.devicePixelRatio || 1,
+         safeInsets = this.safeInsets) {
+    this.safeInsets = normalizeSafeInsets(safeInsets);
+    const fit = this.viewport.fit(cssWidth, cssHeight, this.safeInsets), dpr = clamp(devicePixelRatio, 1, 3);
     this.canvas.width = Math.max(1, Math.round(cssWidth * dpr));
     this.canvas.height = Math.max(1, Math.round(cssHeight * dpr));
     this.canvas.style && Object.assign(this.canvas.style, { width: `${cssWidth}px`, height: `${cssHeight}px`, touchAction: 'none' });
     this.ctx.setTransform(dpr * fit.scale, 0, 0, dpr * fit.scale, dpr * fit.offsetX, dpr * fit.offsetY);
     this.ctx.imageSmoothingEnabled = false;
     return fit;
+  }
+
+  setSafeAreaInsets(insets = {}) {
+    return this.resize(
+      this.canvas.clientWidth || this.scope.innerWidth || this.viewport.logicalWidth,
+      this.canvas.clientHeight || this.scope.innerHeight || this.viewport.logicalHeight,
+      this.scope.devicePixelRatio || 1,
+      insets
+    );
   }
 
   pointFromClient(clientX, clientY) {

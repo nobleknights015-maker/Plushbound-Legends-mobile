@@ -4,7 +4,8 @@
   "packages": [
     { "id": "world", "path": "world.json", "required": true },
     { "id": "guardians", "path": "guardians.json", "required": true },
-    { "id": "opening-elyndor", "path": "opening-elyndor.json", "required": true }
+    { "id": "opening-elyndor", "path": "opening-elyndor.json", "required": true },
+    { "id": "elyndor-route-one", "path": "elyndor-route-one.json", "required": true }
   ],
   "start": {
     "worldId": "plustopia",
@@ -12,5 +13,11 @@
     "mapId": "elyndor-sunny-plains",
     "openingId": "opening-first-bond",
     "firstQuestId": "a-thread-begins"
+  },
+  "earlyGame": {
+    "routeId": "elyndor-route-one",
+    "settlementMapId": "elyndor-menders-rest",
+    "secondQuestId": "threads-out-of-tune",
+    "firstShopId": "menders-rest-provisions"
   }
 }

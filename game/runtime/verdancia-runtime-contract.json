@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "regionId": "verdancia",
+  "tileSize": 48,
+  "contentPackages": [
+    "verdancia-region",
+    "verdancia-population",
+    "verdancia-npcs",
+    "verdancia-quests-events",
+    "verdancia-asset-slots"
+  ],
+  "requiredMaps": [
+    "verdancia-threadwood-verge",
+    "verdancia-lanternbough",
+    "verdancia-mossveil-hollow",
+    "verdancia-elderstitch-grove",
+    "verdancia-rootbound-depths",
+    "verdancia-weavers-sanctum"
+  ],
+  "validation": {
+    "requireUniqueIds": true,
+    "requireMapBindings": true,
+    "requireEncounterTables": true,
+    "requireQuestReferences": true,
+    "requireAssetSlotResolution": true,
+    "allowDevelopmentPlaceholders": true
+  },
+  "progression": {
+    "tier": 2,
+    "entryFromRegion": "elyndor",
+    "entryMap": "verdancia-threadwood-verge",
+    "settlementMap": "verdancia-lanternbough",
+    "finalDungeonMap": "verdancia-weavers-sanctum"
+  }
+}

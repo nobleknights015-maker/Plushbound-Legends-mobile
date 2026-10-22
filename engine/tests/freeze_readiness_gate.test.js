@@ -46,6 +46,14 @@ test('Engine v1 freeze gate: screen, touch, assets and runtime error contracts r
   await assert.rejects(
     () => bootPlushboundEngineV1({
       scope: {},
+      strictAssets: true
+    }),
+    /No asset manifest was loaded/
+  );
+
+  await assert.rejects(
+    () => bootPlushboundEngineV1({
+      scope: {},
       manifest: { required: ['ui/windowskin/core'], assets: [] },
       strictBindings: true,
       strictAssets: true

@@ -59,6 +59,58 @@ test('missing migration path keeps incompatible saves out of Continue', async ()
   await assert.rejects(() => saves.load(1), /Unsupported save schema 1/);
 });
 
+test('failed migrations leave live state and raw stored save untouched', async () => {
+  const live = new GameState();
+  live.system.gold = 91;
+  const legacy = new GameState();
+  legacy.system.gold = 10;
+  const raw = JSON.stringify({ schemaVersion: 1, savedAt: 123, slot: 1, state: legacy.serialize() });
+  const storage = new MemorySaveStorage({ 'plushbound:v1:slot:1': raw });
+  const saves = new SaveManager({
+    storage,
+    gameState: live,
+    schemaVersion: 2,
+    migrations: { 1: () => { throw new Error('migration exploded'); } }
+  });
+
+  const before = live.serialize();
+  await assert.rejects(() => saves.load(1), /migration exploded/);
+  assert.deepEqual(live.serialize(), before);
+  assert.equal(await storage.get('plushbound:v1:slot:1'), raw);
+});
+
+test('successful migration does not rewrite the raw stored legacy payload', async () => {
+  const legacy = new GameState();
+  legacy.system.gold = 5;
+  const raw = JSON.stringify({ schemaVersion: 1, savedAt: 100, slot: 1, state: legacy.serialize() });
+  const storage = new MemorySaveStorage({ 'plushbound:v1:slot:1': raw });
+  const live = new GameState();
+  const saves = new SaveManager({
+    storage,
+    gameState: live,
+    schemaVersion: 2,
+    migrations: { 1: payload => { payload.state.system.gold = 6; return payload; } }
+  });
+
+  await saves.load(1);
+  assert.equal(live.system.gold, 6);
+  assert.equal(await storage.get('plushbound:v1:slot:1'), raw);
+});
+
+test('future save schemas remain invalid and cannot mutate live state', async () => {
+  const live = new GameState();
+  live.system.gold = 44;
+  const future = new GameState();
+  future.system.gold = 999;
+  const storage = new MemorySaveStorage({
+    'plushbound:v1:slot:1': JSON.stringify({ schemaVersion: 99, savedAt: 100, slot: 1, state: future.serialize() })
+  });
+  const saves = new SaveManager({ storage, gameState: live, schemaVersion: 2 });
+  assert.equal((await saves.listSlots())[0].valid, false);
+  await assert.rejects(() => saves.load(1), /Unsupported save schema 99/);
+  assert.equal(live.system.gold, 44);
+});
+
 test('return to title discards live runtime state but preserves Continue from storage', async () => {
   const storage = new MemorySaveStorage();
   const state = new GameState();
@@ -106,6 +158,22 @@ test('opening cutscene locks input, honors waits, and restores control on normal
   controller.update(200);
   assert.deepEqual(events, ['fade-in', 'guardian-turn', 'field-control', 'complete']);
   assert.deepEqual(locks, [true, false]);
+  assert.equal(controller.snapshot().running, false);
+});
+
+test('exactly one safety-window of zero-wait cutscene steps completes normally', () => {
+  let count = 0;
+  const locks = [];
+  const controller = new CutsceneController({ input: { setLocked: value => locks.push(value) }, logger: { error() {} } });
+  controller.start(Array.from({ length: 100 }, () => ({ run: () => { count += 1; } })));
+  assert.equal(count, 100);
+  assert.equal(controller.snapshot().completed, true);
+  assert.deepEqual(locks, [true, false]);
+});
+
+test('more than one safety-window of zero-wait steps is rejected as runaway', () => {
+  const controller = new CutsceneController({ input: { setLocked() {} }, logger: { error() {} } });
+  assert.throws(() => controller.start(Array.from({ length: 101 }, () => ({ run() {} }))), /Cutscene runaway detected/);
   assert.equal(controller.snapshot().running, false);
 });
 

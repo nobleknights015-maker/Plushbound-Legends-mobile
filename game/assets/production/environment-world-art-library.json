@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "libraryId": "plushtopia-environment-world-art-library",
+  "purpose": "Large MV/Trinity-inspired environmental production inventory sized for a full open-world JRPG rather than only current maps.",
+  "tileSize": 48,
+  "targets": {
+    "regionalTilesetFamilies": 24,
+    "tilesetVariants": 96,
+    "settlementExteriorSets": 32,
+    "interiorSets": 40,
+    "dungeonSets": 40,
+    "buildingFamilies": 160,
+    "environmentProps": 640,
+    "foliageAssets": 256,
+    "roadBridgeAssets": 96,
+    "waterAssets": 80,
+    "waystitchAssets": 48,
+    "parallaxes": 96,
+    "battlebacks": 192,
+    "weatherEffectSets": 32,
+    "storyStateOverlays": 96,
+    "secretAreaKits": 32
+  },
+  "biomeKits": [
+    "sunny-plains","temperate-forest","ancient-grove","moss-hollow","riverlands","wetlands","coast","highlands","mountains","snowfield","frozen-forest","desert","badlands","bamboo-wood","flower-meadow","autumn-forest","crystal-cavern","deep-cavern","ruined-city","ancient-sanctum","industrial-threadworks","floating-isles","shadow-fray","endgame-realm"
+  ],
+  "settlementKits": [
+    "hamlet","village","market-town","river-port","fort-town","mountain-town","forest-enclave","scholar-town","crafting-city","capital-district","guardian-sanctuary","frontier-outpost"
+  ],
+  "interiorFamilies": [
+    "home-common","home-affluent","home-rural","inn","tavern","shop-general","shop-tailor","shop-smith","bank","school","library","clinic","guildhall","guard-post","workshop","warehouse","temple","guardian-hall","manor","palace","farmhouse","mill","bakery","restaurant","bathhouse","station","dock-office","mine-office","theater","secret-society-room","laboratory","dungeon-room"
+  ],
+  "propFamilies": [
+    "furniture","market","crafting","farm","school","kitchen","storage","signage","lighting","books","textiles","guardian-care","banking","travel","festival","children-play","garden","industrial","ruins","secret-society"
+  ],
+  "mapStateVariants": ["normal","festival","rain","storm","night","damaged","restored","frayed","quest-changed"],
+  "productionRules": {
+    "mvInspiredNotCopied": true,
+    "engineTileGridCompatible": true,
+    "collisionReadable": true,
+    "doorAndStairReadability": true,
+    "interactivePropsDistinct": true,
+    "reserveRule": "Produce modular alternates and state variants rather than simple duplicate images."
+  },
+  "outputRoots": {
+    "tilesets":"tilesets",
+    "buildings":"environment/buildings",
+    "props":"environment/props",
+    "overlays":"environment/overlays",
+    "parallaxes":"environment/parallaxes",
+    "battlebacks":"environment/battlebacks",
+    "weather":"environment/weather"
+  }
+}

@@ -3,7 +3,54 @@ import { MapRuntime } from '../../engine/src/maps/MapRuntime.js';
 import { EventInterpreter, EventCommandRegistry, registerCoreEventCommands } from '../../engine/src/events/EventInterpreter.js';
 import { GameContentRuntime } from './GameContentRuntime.js';
 
-function clone(value) { return value == null ? value : structuredClone(value); }
+function clone(value) {
+  if (value == null) return value;
+  if (typeof structuredClone === 'function') return structuredClone(value);
+  return JSON.parse(JSON.stringify(value));
+}
+
+function titleCase(value = '') {
+  return String(value)
+    .replace(/^elyndor-/, '')
+    .replace(/^waystitch-/, '')
+    .replace(/-/g, ' ')
+    .replace(/\b\w/g, letter => letter.toUpperCase());
+}
+
+function actionDescriptor(raw, resolved) {
+  const commands = resolved?.commands || [];
+  const message = commands.find(command => command.code === 'MESSAGE');
+  const shop = commands.find(command => command.code === 'SHOP');
+  const transfer = commands.find(command => command.code === 'TRANSFER');
+  const hook = commands.find(command => command.code === 'SCRIPT_HOOK');
+  const speaker = message?.parameters?.[1]?.speaker;
+  const hookName = hook?.parameters?.[0];
+  let kind = resolved?.trigger === 'touch' ? 'travel' : 'interact';
+  if (shop) kind = 'shop';
+  else if (transfer) kind = 'travel';
+  else if (hookName === 'waystitch.activate') kind = 'waystitch';
+  else if (String(raw.id).includes('chest')) kind = 'chest';
+  else if (String(raw.id).includes('anchor')) kind = 'anchor';
+
+  let label = speaker ? `Talk to ${speaker}` : titleCase(raw.id);
+  if (kind === 'shop') label = speaker ? `Shop with ${speaker}` : 'Open Shop';
+  else if (kind === 'travel') label = transfer ? `Travel to ${titleCase(transfer.parameters?.[0])}` : titleCase(raw.id);
+  else if (kind === 'waystitch') label = 'Activate Waystitch';
+  else if (kind === 'chest') label = 'Check Chest';
+  else if (kind === 'anchor') label = `Inspect ${titleCase(raw.id)}`;
+
+  return {
+    eventId: String(raw.id),
+    label,
+    kind,
+    trigger: resolved?.trigger || 'action',
+    x: Number(raw.x) || 0,
+    y: Number(raw.y) || 0,
+    assetId: resolved?.assetId || raw.assetId || null,
+    shopId: shop?.parameters?.[0] || null,
+    destinationMapId: transfer?.parameters?.[0] || null
+  };
+}
 
 export class PlushboundGameSession {
   constructor({
@@ -63,6 +110,17 @@ export class PlushboundGameSession {
     return raw ? this.maps.resolveEvent(raw) : null;
   }
 
+  actions() {
+    if (!this.maps.current) return [];
+    const result = [];
+    for (const raw of this.maps.current.events || []) {
+      const resolved = this.maps.resolveEvent(raw);
+      if (!resolved) continue;
+      result.push(actionDescriptor(raw, resolved));
+    }
+    return clone(result);
+  }
+
   interact(eventId) {
     const event = this.event(eventId);
     if (!event) throw new Error(`Unknown or inactive event ${eventId}`);
@@ -92,6 +150,8 @@ export class PlushboundGameSession {
     return {
       map: clone(this.state.map),
       currentMap: this.maps.current?.id || null,
+      mapName: this.maps.current?.name || this.maps.current?.id || null,
+      actions: this.actions(),
       gold: Number(this.state.variable('gold')) || 0,
       quests: clone(Object.fromEntries(this.state.quests)),
       inventory: {

@@ -15,6 +15,7 @@ export class LiveInputRouter {
     this.scene = null;
     this.element = null;
     this.listeners = null;
+    this.gestureConsumed = new Set();
   }
 
   setScene(scene = null) {
@@ -52,24 +53,34 @@ export class LiveInputRouter {
 
   pointerDown(event = {}) {
     if (this.input?.isLocked?.()) return null;
+    const id = event.pointerId ?? 0;
+    this.gestureConsumed.delete(id);
     const point = this.mapPoint(event.clientX, event.clientY);
-    this.input?.pointerDown?.({ id: event.pointerId ?? 0, ...point });
+    this.input?.pointerDown?.({ id, ...point });
     return point;
   }
 
   pointerMove(event = {}) {
     if (this.input?.isLocked?.()) return null;
+    const id = event.pointerId ?? 0;
+    if (this.gestureConsumed.has(id)) return null;
     const point = this.mapPoint(event.clientX, event.clientY);
-    const direction = this.input?.pointerMove?.({ id: event.pointerId ?? 0, ...point }) || null;
-    if (direction) return this.dispatch({ type: 'navigate', direction });
+    const direction = this.input?.pointerMove?.({ id, ...point }) || null;
+    if (direction) {
+      this.gestureConsumed.add(id);
+      return this.dispatch({ type: 'navigate', direction });
+    }
     return null;
   }
 
   pointerUp(event = {}) {
     if (this.input?.isLocked?.()) return null;
+    const id = event.pointerId ?? 0;
+    const consumed = this.gestureConsumed.has(id);
+    this.gestureConsumed.delete(id);
     const point = this.mapPoint(event.clientX, event.clientY);
-    const gesture = this.input?.pointerUp?.({ id: event.pointerId ?? 0, ...point }) || null;
-    if (!gesture) return null;
+    const gesture = this.input?.pointerUp?.({ id, ...point }) || null;
+    if (!gesture || consumed) return null;
     if (gesture.type === 'tap') return this.dispatch(this.actionFromTap(gesture.x, gesture.y) || { type: 'tap', x: gesture.x, y: gesture.y });
     return this.dispatch({ type: 'navigate', direction: gesture.direction });
   }
@@ -82,7 +93,7 @@ export class LiveInputRouter {
       down: event => { event.preventDefault?.(); element.setPointerCapture?.(event.pointerId); this.pointerDown(event); },
       move: event => { event.preventDefault?.(); this.pointerMove(event); },
       up: event => { event.preventDefault?.(); this.pointerUp(event); },
-      cancel: () => this.input?.clearAll?.()
+      cancel: event => { this.gestureConsumed.delete(event?.pointerId ?? 0); this.input?.clearAll?.(); }
     };
     element.addEventListener('pointerdown', this.listeners.down, { passive: false });
     element.addEventListener('pointermove', this.listeners.move, { passive: false });
@@ -97,6 +108,7 @@ export class LiveInputRouter {
     this.element.removeEventListener?.('pointermove', this.listeners.move);
     this.element.removeEventListener?.('pointerup', this.listeners.up);
     this.element.removeEventListener?.('pointercancel', this.listeners.cancel);
+    this.gestureConsumed.clear();
     this.element = null;
     this.listeners = null;
     return true;

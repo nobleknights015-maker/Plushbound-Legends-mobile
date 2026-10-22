@@ -36,6 +36,22 @@ export class EngineKernel {
     await this.pushScene(scene, payload);
   }
 
+  async clearScenes() {
+    while (this.sceneStack.length) {
+      const current = this.sceneStack.pop();
+      await current?.exit?.(this);
+    }
+    const input = this.service('input');
+    input.setContext?.('default');
+    input.clearAll?.();
+  }
+
+  async replaceRootScene(scene, payload) {
+    if (!scene) throw new Error('replaceRootScene requires a scene');
+    await this.clearScenes();
+    await this.pushScene(scene, payload);
+  }
+
   async popScene() {
     const current = this.sceneStack.pop();
     if (current) await current.exit?.(this);
@@ -43,6 +59,20 @@ export class EngineKernel {
     next?.resume?.();
     this.service('input').setContext?.(next?.inputContext || 'default');
     return current;
+  }
+
+  async handleBack() {
+    const current = this.scene;
+    if (!current) return false;
+    if (typeof current.handleBack === 'function') {
+      const handled = await current.handleBack(this);
+      if (handled !== false) return true;
+    }
+    if (this.sceneStack.length > 1) {
+      await this.popScene();
+      return true;
+    }
+    return false;
   }
 
   async boot(initialScene, payload) {

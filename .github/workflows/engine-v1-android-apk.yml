@@ -31,6 +31,10 @@ jobs:
         working-directory: engine
         run: node --test tests/final_acceptance_gate.test.js
 
+      - name: Run Engine v1 freeze readiness gate explicitly
+        working-directory: engine
+        run: node --test tests/freeze_readiness_gate.test.js
+
       - name: Record tested release-gate commit
         run: |
           cat > engine-v1-release-gate.json <<JSON
@@ -39,6 +43,7 @@ jobs:
             "branch": "engine-v1-rebuild",
             "commit": "${GITHUB_SHA}",
             "acceptanceTest": "engine/tests/final_acceptance_gate.test.js",
+            "freezeTest": "engine/tests/freeze_readiness_gate.test.js",
             "status": "passed"
           }
           JSON
@@ -112,6 +117,7 @@ jobs:
           test -f app/src/main/assets/engine-v1/content/asset-manifest.json
           test -f app/src/main/assets/engine-v1/release-gate.json
           grep -q "${GITHUB_SHA}" app/src/main/assets/engine-v1/release-gate.json
+          grep -q 'freeze_readiness_gate.test.js' app/src/main/assets/engine-v1/release-gate.json
           grep -R -q 'engine-v1/runtime/BrowserRuntimeEntry.js' app/src/main/assets --include='*.html'
           grep -R -q 'engine-v1/content/asset-manifest.json' app/src/main/assets --include='*.html'
           find app/src/main/assets/engine-v1 -name '*.js' -print0 | xargs -0 -n1 node --check
@@ -160,11 +166,12 @@ jobs:
           unzip -l "$APK" | grep -q 'assets/engine-v1/package-manifest.json'
           unzip -l "$APK" | grep -q 'assets/engine-v1/release-gate.json'
           unzip -p "$APK" assets/engine-v1/release-gate.json | grep -q "${GITHUB_SHA}"
+          unzip -p "$APK" assets/engine-v1/release-gate.json | grep -q 'freeze_readiness_gate.test.js'
           HTML=$(unzip -Z1 "$APK" | grep '^assets/.*\.html$' | head -n 1)
           test -n "$HTML"
           unzip -p "$APK" "$HTML" | grep -q 'data-plushbound-engine-v1="runtime"'
           unzip -p "$APK" "$HTML" | grep -q 'engine-v1/runtime/BrowserRuntimeEntry.js'
-          unzip -p "$APK" "$HTML" | grep -q 'data-asset-manifest=' 
+          unzip -p "$APK" "$HTML" | grep -q 'data-asset-manifest='
 
       - name: Verify Android installability metadata
         run: |

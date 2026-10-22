@@ -111,12 +111,31 @@ export async function bootPlushboundEngineV1({
   const executor = new SceneRenderExecutor({ backend: liveBackend });
   const inputManager = input || new InputManager({ touchDeadzone: 14 });
   const actionListeners = new Set();
+  const interactionErrors = [];
+  const emitInteractionError = (error, action = null) => {
+    const detail = { error: String(error?.stack || error), action };
+    interactionErrors.push(detail);
+    if (interactionErrors.length > 20) interactionErrors.shift();
+    scope.dispatchEvent?.(new (scope.CustomEvent || class { constructor(type, init) { this.type = type; this.detail = init?.detail; } })('plushbound-engine-v1-interaction-error', { detail }));
+    scope.console?.error?.('[Plushbound Engine v1] interaction failed', error);
+    return detail;
+  };
+  const invokeActionListener = (listener, action) => {
+    try {
+      const result = listener(action);
+      if (result && typeof result.then === 'function') result.catch(error => emitInteractionError(error, action));
+      return result;
+    } catch (error) {
+      emitInteractionError(error, action);
+      return null;
+    }
+  };
   if (typeof onAction === 'function') actionListeners.add(onAction);
   const inputRouter = new LiveInputRouter({
     input: inputManager,
     mapPoint: (x, y) => liveBackend?.pointFromClient?.(x, y) || { x: Number(x) || 0, y: Number(y) || 0 },
     onAction: action => {
-      for (const listener of actionListeners) listener(action);
+      for (const listener of actionListeners) invokeActionListener(listener, action);
       scope.dispatchEvent?.(new (scope.CustomEvent || class { constructor(type, init) { this.type = type; this.detail = init?.detail; } })('plushbound-engine-v1-action', { detail: action }));
     }
   });
@@ -156,6 +175,7 @@ export async function bootPlushboundEngineV1({
     validation,
     diagnostics,
     resize,
+    interactionErrors: () => structuredClone(interactionErrors),
     viewportInfo: () => liveBackend?.viewport?.snapshot?.() || null,
     screenProfile: () => {
       const info = liveBackend?.viewport?.snapshot?.();
@@ -183,7 +203,10 @@ export async function bootPlushboundEngineV1({
       inputRouter.setScene(scene);
       return executor.execute(scene, options);
     },
-    handleAction: action => interaction.handle(action),
+    handleAction: async action => {
+      try { return await interaction.handle(action); }
+      catch (error) { emitInteractionError(error, action); return { error: true }; }
+    },
     destroy: () => {
       inputRouter.detach();
       inputManager.clearAll();

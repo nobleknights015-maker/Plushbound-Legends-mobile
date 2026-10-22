@@ -26,6 +26,7 @@ export class GameContentRuntime {
 
   questDefinition(id) { return clone(this.quests.get(String(id)) || null); }
   questState(id) { return clone(this.state.quests.get(String(id)) || null); }
+  itemDefinition(id) { return clone(this.items.get(String(id)) || null); }
   shop(id) { return clone(this.shops.get(String(id)) || null); }
 
   startQuest(id) {

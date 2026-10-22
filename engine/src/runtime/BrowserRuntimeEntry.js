@@ -84,7 +84,7 @@ function assetDiagnostics({ validation, manifestUrl, manifest, preloadIds = [] }
   return {
     manifestLoaded: !!manifest,
     manifestUrl: manifestUrl || null,
-    valid: validation?.valid !== false,
+    valid: !!manifest && validation?.valid !== false,
     registered: Number(validation?.registered) || 0,
     preloadCount: preloadIds.length,
     missingRequired,

@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "project": "Plushbound Legends",
+  "world": "Plushtopia",
+  "phase": "asset-preparation-only",
+  "gameDevelopmentStarted": false,
+  "status": "materialization-manifest-ready",
+  "batches": [
+    {
+      "batch":5,
+      "id":"enemies-and-bosses",
+      "targets":{"common":160,"veteran":96,"elite":64,"miniboss":48,"regionalBoss":24,"majorBoss":16,"secretPostgame":16,"battleSets":424},
+      "namespace":"reg/{region}/enemy/{id}",
+      "requiredClasses":["battle-idle","action","hit","defeat","telegraph","portrait-or-bestiary-icon","metadata"],
+      "bossRequirements":["phase-form-slots","arena-state-binding","telegraph-readability","mobile-readable-silhouette"],
+      "safeguards":["no Guardian IDs in hostile namespace","phase variants retain logical family binding"]
+    },
+    {
+      "batch":6,
+      "id":"world-environment-architecture-props",
+      "regions":["elyndor","verdancia","cinderreach","tideglass-coast","silkspire","moonpatch-steppe","frostlace","gloamfen","sunspool-desert","crownweave"],
+      "tileSize":48,
+      "globalTargets":{"regionalTilesets":24,"settlementTilesets":24,"dungeonTilesets":32,"interiorTilesets":32,"parallaxes":64,"battlebacks":96,"weatherSets":24,"storyOverlays":96,"buildingExteriors":160,"roomKits":96,"shops":48,"homes":64,"civicBuildings":32,"guardianFacilities":32,"secretArchitecture":32,"foliage":192,"rocks":128,"furniture":192,"marketProps":96,"farmProps":64,"roadTravelProps":96,"dungeonProps":128,"waystitchProps":48,"treasureProps":48,"interactiveProps":96},
+      "namespace":"reg/{region}/tiles/{id}",
+      "requiredMetadata":["logicalId","region","assetClass","pixelDimensions","tileFootprint","alphaMode","storyState","replacementStatus","qaStatus"],
+      "safeguards":["all terrain aligns to 48px grid","state variants preserve footprint unless explicit migration exists","Waystitch visuals remain identifiable across regions"]
+    },
+    {
+      "batch":7,
+      "id":"equipment-items-crafting",
+      "targets":{"weaponsFocuses":192,"armorOutfits":192,"accessories":160,"guardianItems":128,"consumables":192,"ingredients":256,"materials":256,"keyItems":96,"treasures":128,"tools":80,"booksMapsLetters":96,"currencyTrade":64},
+      "iconContract":{"master":96,"runtime":48,"format":"png"},
+      "namespace":"reg/{region}/item/{id}",
+      "appearanceRule":"equipment appearance is separable from gameplay statistics; placeholder visual IDs remain stable through final replacement",
+      "safeguards":["Guardian materials emphasize charms/bonding/care rather than killing Guardians","key items receive unique silhouettes"]
+    },
+    {
+      "batch":8,
+      "id":"presentation-vfx-ui",
+      "vfxTargets":{"battle":128,"guardianBond":64,"field":64,"statusIcons":48,"bossTelegraphs":40,"weather":24,"waystitch":32,"craftingUi":32},
+      "uiTargets":{"systemIcons":96,"mapIcons":64,"frames":24,"cursors":12,"regionalMarkers":48,"questBadges":24,"shopServiceSigns":40},
+      "requiredClasses":["portraits","faces","battle-vfx","field-vfx","status","menu","hud","map","quest","shop","title","loading","accessibility-variants"],
+      "safeguards":["mobile touch targets remain readable","no critical state communicated by color alone","reduced-flash alternatives available for intense effects","text-bearing placeholder graphics avoided where runtime text is preferable"]
+    },
+    {
+      "batch":9,
+      "id":"audio-library",
+      "runtimeFormat":"ogg",
+      "targets":{"regionalThemes":48,"settlementThemes":48,"dungeonThemes":40,"battleThemes":32,"bossThemes":24,"guardianThemes":24,"characterFactionThemes":32,"eventThemes":48,"interiorUtility":24,"nightWeather":48,"ambience":192,"uiSfx":128,"combatSfx":256,"guardianSfx":192,"environmentSfx":256,"craftingShopEconomySfx":128,"movementInteractionSfx":160,"stingers":96},
+      "requiredMetadata":["logicalId","category","duration","looping","loopStart","loopEnd","loudnessQa","replacementStatus","provenance"],
+      "safeguards":["loop metadata mandatory for looping tracks","replacement audio keeps logical IDs","mobile package size considered during encoding"]
+    }
+  ],
+  "crossBatchAcceptance": [
+    "every planned slot has one deterministic logical ID",
+    "every binary output has a canonical path",
+    "every raster asset has dimensions or layout contract",
+    "every audio asset has encoding and loop metadata requirements",
+    "every placeholder declares replacement and QA state",
+    "protected canon identities never enter ambient generators",
+    "Guardian and hostile namespaces never overlap",
+    "case-insensitive duplicate paths fail validation",
+    "gameDevelopmentStarted remains false"
+  ],
+  "materializationState":"not-yet-binary-materialized",
+  "nextCheckpoint":"materialization-validation-and-freeze-readiness"
+}

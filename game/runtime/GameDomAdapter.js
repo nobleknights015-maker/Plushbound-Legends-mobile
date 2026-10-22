@@ -42,17 +42,44 @@ function ensureLiveHud(root) {
   const quest = root.createElement('span');
   quest.dataset.plushboundQuestInfo = 'true';
   Object.assign(quest.style || {}, { gridColumn: '1 / -1', opacity: '0.9' });
+
   const dialogue = root.createElement('div');
   dialogue.dataset.plushboundDialogue = 'true';
   Object.assign(dialogue.style || {}, {
     gridColumn: '1 / -1',
     minHeight: '34px',
-    maxHeight: '48px',
+    maxHeight: '58px',
     overflow: 'hidden',
     padding: '6px 8px',
     borderRadius: '6px',
     background: 'rgba(0,0,0,0.28)'
   });
+  const dialogueButton = root.createElement('button');
+  dialogueButton.type = 'button';
+  dialogueButton.dataset.plushboundAction = 'dialogue-next';
+  dialogueButton.dataset.plushboundDialogueNext = 'true';
+  dialogueButton.textContent = 'Next';
+  Object.assign(dialogueButton.style || {}, {
+    gridColumn: '1 / -1',
+    minHeight: '30px',
+    padding: '4px 8px',
+    display: 'none'
+  });
+
+  const shop = root.createElement('div');
+  shop.dataset.plushboundShop = 'true';
+  Object.assign(shop.style || {}, {
+    gridColumn: '1 / -1',
+    display: 'none',
+    gridTemplateColumns: 'repeat(3,minmax(0,1fr))',
+    gap: '5px',
+    maxHeight: '82px',
+    overflow: 'hidden',
+    padding: '6px',
+    borderRadius: '6px',
+    background: 'rgba(0,0,0,0.24)'
+  });
+
   const actions = root.createElement('div');
   actions.dataset.plushboundActions = 'true';
   Object.assign(actions.style || {}, {
@@ -63,10 +90,13 @@ function ensureLiveHud(root) {
     maxHeight: '96px',
     overflow: 'hidden'
   });
+
   hud.appendChild(map);
   hud.appendChild(gold);
   hud.appendChild(quest);
   hud.appendChild(dialogue);
+  hud.appendChild(dialogueButton);
+  hud.appendChild(shop);
   hud.appendChild(actions);
   host.appendChild(hud);
   return hud;
@@ -100,13 +130,15 @@ function renderActions(root, actions = []) {
   host.dataset.actionCount = String(actions.length);
 }
 
-function renderDialogue(root, messages = []) {
+function renderDialogue(root, dialogue = {}, messages = []) {
   const host = find(root, ['[data-plushbound-dialogue]', '#dialogueText', '#messageText']);
+  const next = find(root, ['[data-plushbound-dialogue-next]']);
   if (!host) return;
-  const latest = messages.at?.(-1) || messages[messages.length - 1];
+  const latest = dialogue?.current || messages.at?.(-1) || messages[messages.length - 1];
   if (!latest) {
     text(host, 'Explore the area and interact with nearby people or landmarks.');
     delete host.dataset.speaker;
+    if (next?.style) next.style.display = 'none';
     return;
   }
   const speaker = latest.speaker ? `${latest.speaker}: ` : '';
@@ -115,6 +147,43 @@ function renderDialogue(root, messages = []) {
   else delete host.dataset.speaker;
   if (latest.portrait) host.dataset.portrait = latest.portrait;
   else delete host.dataset.portrait;
+  if (next) {
+    next.textContent = dialogue?.remaining > 0 ? `Next (${dialogue.remaining})` : 'Close';
+    if (next.style) next.style.display = 'block';
+  }
+}
+
+function renderShop(root, shop) {
+  const host = find(root, ['[data-plushbound-shop]']);
+  if (!host || !root?.createElement || !host.replaceChildren) return;
+  if (!shop) {
+    host.replaceChildren();
+    if (host.style) host.style.display = 'none';
+    delete host.dataset.shopId;
+    return;
+  }
+
+  const nodes = [];
+  const title = root.createElement('strong');
+  title.textContent = shop.name || shop.id;
+  Object.assign(title.style || {}, { gridColumn: '1 / -1' });
+  nodes.push(title);
+  for (const entry of (shop.inventory || []).slice(0, 5)) {
+    const item = root.createElement('div');
+    item.textContent = `${entry.itemId} — ${Number(entry.price) || 0} G`;
+    item.dataset.itemId = entry.itemId;
+    item.dataset.price = String(Number(entry.price) || 0);
+    Object.assign(item.style || {}, { padding: '3px 5px', fontSize: '11px' });
+    nodes.push(item);
+  }
+  const close = root.createElement('button');
+  close.type = 'button';
+  close.textContent = 'Close Shop';
+  close.dataset.plushboundAction = 'shop-close';
+  nodes.push(close);
+  host.replaceChildren(...nodes);
+  host.dataset.shopId = shop.id;
+  if (host.style) host.style.display = 'grid';
 }
 
 export class GameDomAdapter {
@@ -169,7 +238,8 @@ export class GameDomAdapter {
       if (questInfo) delete questInfo.dataset.questId;
     }
 
-    renderDialogue(this.root, snapshot.messages || []);
+    renderDialogue(this.root, snapshot.dialogue || {}, snapshot.messages || []);
+    renderShop(this.root, snapshot.activeShop || null);
     renderActions(this.root, snapshot.actions || []);
 
     const mapScreen = find(this.root, ['#mapScreen', '[data-screen="map"]']);
@@ -177,6 +247,8 @@ export class GameDomAdapter {
       mapScreen.dataset.plushboundLive = 'true';
       mapScreen.dataset.plushboundMapId = mapId;
       mapScreen.dataset.plushboundActionCount = String((snapshot.actions || []).length);
+      mapScreen.dataset.plushboundDialogueOpen = snapshot.dialogue?.current ? 'true' : 'false';
+      mapScreen.dataset.plushboundShopOpen = snapshot.activeShop ? 'true' : 'false';
     }
     return snapshot;
   }
@@ -188,6 +260,8 @@ export class GameDomAdapter {
     try {
       if (action === 'interact' && target.dataset.eventId) this.bridge.interact(target.dataset.eventId);
       else if (action === 'shop' && target.dataset.shopId) this.bridge.openShop(target.dataset.shopId);
+      else if (action === 'shop-close') this.bridge.closeShop();
+      else if (action === 'dialogue-next') this.bridge.advanceDialogue();
       else if (action === 'map' && target.dataset.mapId) this.bridge.enterMap(target.dataset.mapId, Number(target.dataset.x || 0), Number(target.dataset.y || 0), Number(target.dataset.direction || 2));
       else if (action === 'touch') this.bridge.triggerAt(Number(target.dataset.x || 0), Number(target.dataset.y || 0), target.dataset.trigger || 'touch');
     } catch (error) {

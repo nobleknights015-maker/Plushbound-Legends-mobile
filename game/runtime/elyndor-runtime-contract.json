@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "engineBaseline": "160d9fd95bc0d3db39224f8bb4c5e1e3a1f54425",
+  "switches": [
+    "quest:a-thread-begins:active",
+    "quest:a-thread-begins:ready",
+    "quest:a-thread-begins:complete",
+    "quest:threads-out-of-tune:active",
+    "quest:threads-out-of-tune:ready",
+    "quest:threads-out-of-tune:complete",
+    "waystitch:menders-rest:unlocked"
+  ],
+  "hooks": {
+    "quest.start": "Begin the referenced quest if it is not already active or complete.",
+    "quest.objective": "Increment a quest objective by the supplied amount and update quest readiness.",
+    "quest.complete": "Finalize quest rewards and completion state.",
+    "inventory.give": "Grant the referenced item/count once when the event page permits it.",
+    "waystitch.activate": "Unlock or open travel for the referenced Waystitch."
+  },
+  "selfSwitches": {
+    "tutorial-chest:A": "Chest already opened.",
+    "anchor-west:A": "West anchor repaired.",
+    "anchor-east:A": "East anchor repaired."
+  },
+  "directionCodes": {"down":2,"left":4,"right":6,"up":8},
+  "eventTriggers": ["action","touch"]
+}

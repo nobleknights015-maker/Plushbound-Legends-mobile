@@ -9,6 +9,13 @@ function waitForRuntime(scope = globalThis) {
   });
 }
 
+function wasBackHandled(result) {
+  if (result === false || result == null) return false;
+  if (result === true) return true;
+  if (typeof result === 'object' && (result.unhandled === true || result.handled === false)) return false;
+  return true;
+}
+
 export async function installNativeRuntimeHardening(scope = globalThis) {
   if (scope.__PLUSHBOUND_NATIVE_HARDENING__?.installed) return scope.__PLUSHBOUND_NATIVE_HARDENING__;
   const runtime = await waitForRuntime(scope);
@@ -19,8 +26,10 @@ export async function installNativeRuntimeHardening(scope = globalThis) {
     runtime.resize?.();
   };
   const back = async event => {
-    event?.preventDefault?.();
-    return runtime.handleAction?.({ type: 'back', source: 'android-host' });
+    const result = await runtime.handleAction?.({ type: 'back', source: 'android-host' });
+    const handled = wasBackHandled(result);
+    if (handled) event?.preventDefault?.();
+    return handled;
   };
 
   const visualViewport = scope.visualViewport || null;

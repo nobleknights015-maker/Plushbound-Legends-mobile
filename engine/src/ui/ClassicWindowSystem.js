@@ -32,6 +32,15 @@ export class ClassicWindowSystem {
     return this;
   }
 
+  fitRect(rect = {}) {
+    const margin = this.theme.margin;
+    const width = Math.min(Math.max(1, Number(rect.width) || 1), Math.max(1, this.viewportWidth - margin * 2));
+    const height = Math.min(Math.max(1, Number(rect.height) || 1), Math.max(1, this.viewportHeight - margin * 2));
+    const x = clamp(Number(rect.x) || 0, margin, Math.max(margin, this.viewportWidth - width - margin));
+    const y = clamp(Number(rect.y) || 0, margin, Math.max(margin, this.viewportHeight - height - margin));
+    return { x: Math.round(x), y: Math.round(y), width: Math.round(width), height: Math.round(height) };
+  }
+
   messageWindow({ lines = 4, faceWidth = 144, hasFace = false, name = null } = {}) {
     const h = this.theme.padding * 2 + this.theme.lineHeight * clamp(Math.floor(lines), 1, 6);
     const rect = { x: 0, y: this.viewportHeight - h, width: this.viewportWidth, height: h };
@@ -53,19 +62,29 @@ export class ClassicWindowSystem {
 
   commandWindow({ id = 'command', commands = [], width = 360, x = 32, y = 32, maxRows = 8, index = 0, columns = 1 } = {}) {
     const cols = clamp(Math.floor(columns), 1, 4);
-    const rows = Math.max(1, Math.min(maxRows, Math.ceil(commands.length / cols) || 1));
+    const safeRowsByViewport = Math.max(1, Math.floor((this.viewportHeight - this.theme.margin * 2 - this.theme.padding * 2) / this.theme.lineHeight));
+    const rowLimit = clamp(Math.floor(maxRows), 1, safeRowsByViewport);
+    const capacity = Math.max(1, rowLimit * cols);
+    const selectedIndex = clamp(Math.floor(Number(index) || 0), 0, Math.max(0, commands.length - 1));
+    const page = Math.floor(selectedIndex / capacity);
+    const pageCount = Math.max(1, Math.ceil(commands.length / capacity));
+    const pageStart = page * capacity;
+    const visibleCommands = commands.slice(pageStart, pageStart + capacity);
+    const rows = Math.max(1, Math.min(rowLimit, Math.ceil(visibleCommands.length / cols) || 1));
     const height = this.theme.padding * 2 + rows * this.theme.lineHeight;
-    const rect = { x, y, width: Math.max(180, width), height };
-    const items = commands.map((command, i) => {
-      const row = Math.floor(i / cols);
-      const col = i % cols;
+    const rect = this.fitRect({ x, y, width: Math.max(180, width), height });
+    const items = visibleCommands.map((command, localIndex) => {
+      const i = pageStart + localIndex;
+      const row = Math.floor(localIndex / cols);
+      const col = localIndex % cols;
       const innerWidth = rect.width - this.theme.padding * 2;
       const itemWidth = innerWidth / cols;
       return {
         id: String(command.id ?? i),
         text: String(command.text ?? command.label ?? command.id ?? ''),
         enabled: command.enabled !== false,
-        selected: i === index,
+        selected: i === selectedIndex,
+        index: i,
         rect: {
           x: rect.x + this.theme.padding + col * itemWidth,
           y: rect.y + this.theme.padding + row * this.theme.lineHeight,
@@ -74,7 +93,22 @@ export class ClassicWindowSystem {
         }
       };
     });
-    return this.windowModel({ id, rect, index, items, columns: cols });
+    return this.windowModel({
+      id,
+      rect,
+      index: selectedIndex,
+      items,
+      columns: cols,
+      pagination: {
+        page,
+        pageCount,
+        pageStart,
+        pageEnd: pageStart + items.length,
+        capacity,
+        hasPrevious: page > 0,
+        hasNext: page + 1 < pageCount
+      }
+    });
   }
 
   choiceWindow({ choices = [], messageRect = null, width = 420, index = 0 } = {}) {
@@ -104,12 +138,7 @@ export class ClassicWindowSystem {
   }
 
   windowModel({ id, rect, ...extra }) {
-    const r = {
-      x: Math.round(Number(rect?.x) || 0),
-      y: Math.round(Number(rect?.y) || 0),
-      width: Math.max(1, Math.round(Number(rect?.width) || 1)),
-      height: Math.max(1, Math.round(Number(rect?.height) || 1))
-    };
+    const r = this.fitRect(rect);
     return {
       id: String(id ?? 'window'),
       rect: r,

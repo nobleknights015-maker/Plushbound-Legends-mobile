@@ -46,20 +46,30 @@ test('shell bridge binds to live PlushboundGame and publishes snapshot updates',
   assert.doesNotThrow(() => JSON.stringify(scope.events.at(-1).detail.snapshot));
 }));
 
-test('shell bridge exposes map, interaction, shop and quest-facing actions', () => withCustomEvent(() => {
+test('shell bridge exposes map, interaction, dialogue, shop and quest-facing actions', () => withCustomEvent(() => {
   const scope = makeScope();
   scope.PlushboundGame = makeGame();
   const bridge = new GameShellBridge({ scope }).attach();
   bridge.interact('lio');
   assert.equal(bridge.quest('a-thread-begins')?.status, 'active');
+  assert.equal(bridge.snapshot().dialogue.length, 2);
+  bridge.advanceDialogue();
+  assert.equal(bridge.snapshot().dialogue.remaining, 0);
+
   bridge.recordBattle(['frayling', 'elyndor']);
   bridge.interact('lio');
   bridge.triggerAt(31, 10, 'touch');
   assert.equal(bridge.snapshot().currentMap, 'elyndor-sunthread-crossing');
   bridge.enterMap('elyndor-menders-rest', 3, 10, 6);
   assert.equal(bridge.openShop('menders-rest-provisions').id, 'menders-rest-provisions');
+  assert.equal(bridge.snapshot().activeShop.id, 'menders-rest-provisions');
+  bridge.closeShop();
+  assert.equal(bridge.snapshot().activeShop, null);
+
+  assert.equal(scope.events.some(event => event.detail?.reason === 'dialogue'), true);
   assert.equal(scope.events.some(event => event.detail?.reason === 'map'), true);
   assert.equal(scope.events.some(event => event.detail?.reason === 'shop'), true);
+  assert.equal(scope.events.some(event => event.detail?.reason === 'shop-close'), true);
 }));
 
 test('shell bridge attach is idempotent and detach removes runtime listeners', () => withCustomEvent(() => {

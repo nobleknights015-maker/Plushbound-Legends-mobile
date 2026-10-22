@@ -1,4 +1,8 @@
-function clone(value) { return value == null ? value : structuredClone(value); }
+function clone(value) {
+  if (value == null) return value;
+  if (typeof structuredClone === 'function') return structuredClone(value);
+  return JSON.parse(JSON.stringify(value));
+}
 
 export class GameContentRuntime {
   constructor({ state, contentPackages = [] } = {}) {

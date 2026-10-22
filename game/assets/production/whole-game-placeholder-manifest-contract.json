@@ -1,0 +1,187 @@
+{
+  "schemaVersion": 1,
+  "id": "plushbound-whole-game-placeholder-manifest-contract",
+  "project": "Plushbound Legends",
+  "world": "Plushtopia",
+  "phase": "asset-placeholder-finalization",
+  "gameDevelopmentStarted": false,
+  "purpose": "Lock stable placeholder asset identities, engine-facing dimensions, layout contracts and replacement metadata before gameplay implementation or final visual production.",
+  "workflow": {
+    "current": "assets-only-placeholder-library",
+    "next": "placeholder-library-validation-and-packaging",
+    "gameDevelopment": "explicitly deferred",
+    "finalArt": "deferred until complete game ZIP is returned for the dedicated visual replacement pass",
+    "replacementTarget": "original Plushbound visual identity with polished MV-cover/Trinity-inspired JRPG presentation",
+    "rule": "A placeholder may be replaced visually later without changing its logical ID, engine role, expected dimensions, frame contract or consuming references."
+  },
+  "engineContracts": {
+    "tileSizePx": 48,
+    "mapGrid": "48px logical tile grid",
+    "transparency": "PNG-compatible alpha wherever the asset category requires cutout transparency",
+    "mobileReadability": true,
+    "safeAreaAwareUI": true,
+    "smallScreenSilhouettePriority": true,
+    "noProprietaryRpgMakerArt": true,
+    "originalOrClearedSourcesOnly": true
+  },
+  "stableNamespaces": {
+    "global": {
+      "characterCreator": "global/creator/{category}/{id}",
+      "npc": "global/npc/{id}",
+      "guardian": "global/guardian/{id}",
+      "enemy": "global/enemy/{id}",
+      "item": "global/item/{id}",
+      "equipment": "global/equipment/{id}",
+      "environment": "global/environment/{id}",
+      "portrait": "global/portrait/{id}",
+      "vfx": "global/vfx/{id}",
+      "ui": "global/ui/{id}",
+      "audio": "global/audio/{id}"
+    },
+    "regional": "reg/{regionId}/{category}/{id}",
+    "story": "story/{arcId}/{category}/{id}",
+    "event": "event/{eventId}/{category}/{id}"
+  },
+  "regions": [
+    "elyndor",
+    "verdancia",
+    "cinderreach",
+    "tideglass-coast",
+    "silkspire",
+    "moonpatch-steppe",
+    "frostlace",
+    "gloamfen",
+    "sunspool-desert",
+    "crownweave"
+  ],
+  "assetClasses": {
+    "tiles": {
+      "requiredMetadata": ["logicalId", "regionOrGlobal", "tileSize", "sheetRole", "transparencyPolicy", "collisionIntent", "replacementClass"],
+      "replacementInvariant": "tile footprint and engine-facing sheet role must remain compatible"
+    },
+    "autotiles": {
+      "requiredMetadata": ["logicalId", "terrainFamily", "tileSize", "edgeContract", "animationFrames", "replacementClass"],
+      "replacementInvariant": "neighbor joining behavior must remain compatible"
+    },
+    "characters": {
+      "requiredMetadata": ["logicalId", "ageBand", "spriteRole", "directions", "walkFrames", "cellSize", "anchor", "replacementClass"],
+      "defaultDirections": 4,
+      "defaultWalkFrames": 3,
+      "replacementInvariant": "frame count, direction order, cell dimensions and anchor behavior must not silently change"
+    },
+    "portraits": {
+      "requiredMetadata": ["logicalId", "subjectId", "expression", "cropClass", "safeTextZone", "replacementClass"],
+      "replacementInvariant": "subject and expression binding remain stable"
+    },
+    "guardians": {
+      "requiredSubassets": ["overworld", "portrait", "silhouette", "battleIdle", "battleAction", "battleHurt", "bondExpression", "icon", "fieldInteraction", "restingPose"],
+      "replacementInvariant": "Guardian identity and gameplay-facing silhouette must remain recognizable across all subassets"
+    },
+    "enemies": {
+      "requiredMetadata": ["logicalId", "tier", "battleFootprint", "poseSet", "telegraphSet", "damageStates", "replacementClass"],
+      "replacementInvariant": "combat footprint and telegraph readability remain stable"
+    },
+    "bosses": {
+      "requiredMetadata": ["logicalId", "phaseCount", "arenaBinding", "telegraphSet", "phaseVisualStates", "replacementClass"],
+      "replacementInvariant": "phase count and telegraph meaning cannot be altered by visual replacement"
+    },
+    "items": {
+      "iconMasterPx": 96,
+      "runtimeIconPx": 48,
+      "requiredMetadata": ["logicalId", "itemClass", "iconId", "replacementClass"],
+      "replacementInvariant": "logical item binding remains unchanged"
+    },
+    "equipment": {
+      "requiredMetadata": ["logicalId", "equipmentSlot", "iconId", "appearanceId", "creatorCompatibility", "replacementClass"],
+      "replacementInvariant": "appearance may improve while equipment identity and slot remain unchanged"
+    },
+    "vfx": {
+      "requiredMetadata": ["logicalId", "effectClass", "frameContract", "anchor", "reducedFlashAlternative", "replacementClass"],
+      "replacementInvariant": "timing and gameplay readability remain compatible"
+    },
+    "ui": {
+      "requiredMetadata": ["logicalId", "uiRole", "safeAreaBehavior", "touchTargetClass", "textFreeOrLocalized", "replacementClass"],
+      "replacementInvariant": "interaction bounds and information hierarchy remain stable"
+    },
+    "audio": {
+      "requiredMetadata": ["logicalId", "audioRole", "looping", "loopMetadata", "mobileMixPriority", "replacementClass"],
+      "runtimeFormat": "ogg",
+      "replacementInvariant": "usage role and loop expectations remain stable"
+    }
+  },
+  "characterCreator": {
+    "spriteCellPx": [48, 48],
+    "directions": 4,
+    "walkFrames": 3,
+    "previewPx": [288, 384],
+    "layerOrder": ["back-hair", "body", "eyes", "brows", "mouth", "facial-detail", "bottom", "footwear", "top", "full-outfit", "outerwear", "front-hair", "headwear", "accessory"],
+    "ageBands": ["child", "teen", "adult", "elder"],
+    "replacementRule": "final artwork must preserve layer registration across compatible creator parts"
+  },
+  "placeholderRecordTemplate": {
+    "logicalId": "required",
+    "category": "required",
+    "region": "global-or-region-id",
+    "status": "placeholder",
+    "engineDimensions": "required-before-packaging",
+    "layoutContract": "required-where-animated-or-sheet-based",
+    "alphaPolicy": "required",
+    "sourceProvenance": "placeholder-generated-or-original-spec",
+    "finalArtTarget": "mv-cover-trinity-inspired-plushbound",
+    "replacementClass": "required",
+    "qaState": "pending|pass|blocked",
+    "notes": "optional"
+  },
+  "replacementClasses": [
+    "direct-swap",
+    "sheet-preserving-redraw",
+    "frame-preserving-animation-redraw",
+    "layer-preserving-creator-redraw",
+    "layout-preserving-ui-redraw",
+    "audio-role-replacement"
+  ],
+  "canonicalCharacters": {
+    "reserved": ["Chris Bourn", "Penney Nguyen", "Lily", "Ethan"],
+    "rules": [
+      "Canonical OCs receive unique logical IDs and are never generated from ambient NPC recipes.",
+      "Lily spelling uses one L after the initial capital L.",
+      "Child depictions and wardrobe remain age-appropriate.",
+      "Final visual pass must preserve established character identity rather than replacing canonical OCs with generic regional designs."
+    ]
+  },
+  "guardianEthics": {
+    "guardiansAreNotMonsters": true,
+    "hostileEncounterPoolsSeparate": true,
+    "craftingMaterials": "bonding, care, gifts, shedding and environmental discovery rather than killing Guardians"
+  },
+  "qualityGates": [
+    "Every placeholder has a stable logical ID before game development begins.",
+    "Every engine-facing visual has an explicit dimensions or layout contract.",
+    "Every animated sheet records frame and direction expectations.",
+    "Every regional asset resolves through the same namespace rules.",
+    "No placeholder is described as final artwork.",
+    "No proprietary RPG Maker artwork is bundled as project-owned art.",
+    "Children and age-banded creator assets remain age-appropriate.",
+    "Guardian and enemy silhouettes remain clearly distinguishable.",
+    "UI assets remain readable and usable on Android-sized displays.",
+    "Final visual replacement can occur without renaming stable IDs or rewriting gameplay references."
+  ],
+  "packagingReadiness": {
+    "regionalSpecsComplete": true,
+    "globalCoverageAuditComplete": true,
+    "stableNamespaceContractComplete": true,
+    "dimensionAndLayoutContractComplete": true,
+    "replacementMetadataContractComplete": true,
+    "actualPlaceholderBinaryPopulationComplete": false,
+    "assetManifestPopulationComplete": false,
+    "assetValidationComplete": false,
+    "assetsOnlyZipReady": false,
+    "gameDevelopmentStarted": false
+  },
+  "nextAssetOnlySteps": [
+    "Populate concrete manifest records from all regional and global production specifications.",
+    "Generate or stage engine-safe placeholder files for every required manifest record.",
+    "Run naming, dimensions, transparency, sheet-layout and missing-reference validation.",
+    "Package the validated assets-only library without beginning gameplay implementation."
+  ]
+}

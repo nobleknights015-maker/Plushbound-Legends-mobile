@@ -1,5 +1,5 @@
 export class AndroidHostBridge {
-  constructor({ lifecycle, performance, assets, renderer, input, stateProvider = () => null, logger = console } = {}) {
+  constructor({ lifecycle, performance, assets, renderer, input, backHandler = null, stateProvider = () => null, logger = console } = {}) {
     if (!lifecycle) throw new Error('AndroidHostBridge requires lifecycle');
     if (!performance) throw new Error('AndroidHostBridge requires performance budget');
     this.lifecycle = lifecycle;
@@ -7,6 +7,7 @@ export class AndroidHostBridge {
     this.assets = assets;
     this.renderer = renderer;
     this.input = input;
+    this.backHandler = typeof backHandler === 'function' ? backHandler : null;
     this.stateProvider = stateProvider;
     this.logger = logger;
     this.viewport = { width: 0, height: 0, density: 1 };
@@ -35,6 +36,12 @@ export class AndroidHostBridge {
     this.lifecycle.onDestroy();
     this.assets?.clear?.();
     return this.snapshot();
+  }
+
+  async onBackPressed() {
+    this.input?.clearAll?.();
+    if (!this.backHandler) return false;
+    return (await this.backHandler()) !== false;
   }
 
   onSurfaceChanged({ width = 0, height = 0, density = 1 } = {}) {

@@ -33,6 +33,12 @@ export class FrontDoorFlow {
     };
   }
 
+  returnToTitle({ discardRuntime = true } = {}) {
+    if (discardRuntime) this.state.reset();
+    this.phase = 'title';
+    return { phase: this.phase };
+  }
+
   beginNewGame() {
     this.state.reset();
     this.phase = 'creator';

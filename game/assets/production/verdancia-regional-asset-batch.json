@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "batchId": "verdancia-regional-assets-v1",
+  "regionId": "verdancia",
+  "purpose": "Asset-production inventory only; no runtime or gameplay implementation.",
+  "artDirection": {
+    "base": "Plushbound original fantasy JRPG",
+    "inspiration": "MV/Trinity-scale readability without copying proprietary artwork",
+    "identity": ["ancient-threadwood", "moss-and-velvet", "lantern-canopies", "giant-roots", "woven-sanctums", "bioluminescent-stitchwork"],
+    "tileSize": 48
+  },
+  "targets": {
+    "tilesetSheets": 20,
+    "buildingFamilies": 24,
+    "interiorKits": 14,
+    "dungeonKits": 10,
+    "environmentProps": 160,
+    "foliageAssets": 128,
+    "parallaxes": 28,
+    "battlebacks": 40,
+    "weatherAndLightingOverlays": 32,
+    "npcVisualIdentities": 80,
+    "childNpcVisualIdentities": 20,
+    "regionalWardrobePieces": 176,
+    "guardianVisualFamilies": 24,
+    "enemyVisualFamilies": 40,
+    "eliteAndBossVisualSets": 24,
+    "itemAndMaterialIcons": 224,
+    "regionalVfxSets": 80,
+    "regionalAudioCues": 112
+  },
+  "environmentKits": [
+    "threadwood-verge", "lanternbough-exterior", "lanternbough-interiors", "mossveil-hollow",
+    "elderstitch-grove", "rootbound-depths", "weavers-sanctum", "fungal-garden",
+    "canopy-walkways", "root-bridges", "guardian-nursery", "weaver-workshop", "moss-market",
+    "buried-shrine", "frayed-grove", "ancient-root-vault", "lantern-festival", "secret-order-cache"
+  ],
+  "npcGroups": [
+    "weavers", "herbalists", "lantern-tenders", "moss-farmers", "root-delvers", "merchants", "guards",
+    "children", "students", "elders", "guardian-naturalists", "pilgrims", "sanctum-keepers", "travelers"
+  ],
+  "wardrobeDirection": [
+    "leaf-layered-robes", "woven-high-collars", "moss-trim-coats", "lantern-sashes", "rootworker-aprons",
+    "velvet-ceremonialwear", "child-forestwear", "weaver-uniforms", "guardian-naturalist-gear", "sanctum-regalia"
+  ],
+  "guardianThemes": ["grove", "glow", "thread", "tide", "thorn", "gale"],
+  "enemyThemes": ["rotroot", "spore", "thorn", "fray", "hollow", "parasite", "mimic", "root-armored"],
+  "bossPresentation": ["phase-form-variants", "arena-state-overlays", "telegraph-effects", "environment-damage-states", "portrait-cutins"],
+  "reserveRule": "Reserve assets must add biological, cultural, environmental, age, profession, or story-state variety rather than simple palette duplication.",
+  "status": "planned"
+}

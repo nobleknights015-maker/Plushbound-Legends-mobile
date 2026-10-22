@@ -7,15 +7,16 @@ test('Android lifecycle autosaves and suspends safely on pause/stop', async () =
   const calls = [];
   const saves = { autosave: async (...x) => calls.push(['autosave', ...x]) };
   const audio = { suspend: () => calls.push(['suspend']), resume: () => calls.push(['resume']), stopAll: () => calls.push(['stopAll']) };
-  const input = { clear: () => calls.push(['clear']) };
+  const input = { clearAll: () => calls.push(['clearAll']) };
   const lifecycle = new AndroidLifecycle({ saves, audio, input, clock: () => 1234 });
   const state = { id: 'game-state' };
   await lifecycle.onPause(state);
   assert.equal(lifecycle.state, 'paused');
   assert.equal(lifecycle.lastBackgroundAt, 1234);
-  assert.deepEqual(calls[0], ['clear']);
+  assert.deepEqual(calls[0], ['clearAll']);
   assert.deepEqual(calls[1], ['suspend']);
   assert.equal(calls[2][0], 'autosave');
+  assert.equal(calls[2][1], state);
   assert.equal(calls[2][2].reason, 'android-pause');
   lifecycle.onResume();
   assert.equal(lifecycle.state, 'active');

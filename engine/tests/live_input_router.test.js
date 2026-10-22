@@ -48,7 +48,7 @@ test('live input router activates enabled scene items using logical coordinates'
   assert.equal(disabled.type, 'tap');
 });
 
-test('live router turns swipes into directional navigation and obeys input locks', () => {
+test('live router turns one swipe into one navigation action and obeys input locks', () => {
   const actions = [];
   const input = new InputManager({ touchDeadzone: 8 });
   const router = new LiveInputRouter({ input, onAction: action => actions.push(action) });
@@ -56,6 +56,9 @@ test('live router turns swipes into directional navigation and obeys input locks
   router.pointerDown({ pointerId: 2, clientX: 20, clientY: 20 });
   const move = router.pointerMove({ pointerId: 2, clientX: 80, clientY: 22 });
   assert.deepEqual(move, { type: 'navigate', direction: 'right' });
+  assert.equal(router.pointerMove({ pointerId: 2, clientX: 120, clientY: 22 }), null);
+  assert.equal(router.pointerUp({ pointerId: 2, clientX: 120, clientY: 22 }), null);
+  assert.equal(actions.length, 1);
 
   input.setLocked(true);
   assert.equal(router.pointerDown({ pointerId: 3, clientX: 10, clientY: 10 }), null);

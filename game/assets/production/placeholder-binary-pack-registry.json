@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "registryId": "placeholder-binary-pack-registry",
+  "phase": "asset-production-only",
+  "gameDevelopmentStarted": false,
+  "gameplayImplementation": false,
+  "status": "pack-registry-ready",
+  "packRoot": "game/assets/placeholders",
+  "packs": [
+    {"id":"global-core","root":"game/assets/placeholders/global","batch":1,"scope":"global","required":true},
+    {"id":"canon-core","root":"game/assets/placeholders/canon","batch":2,"scope":"global","required":true,"reservedIds":["chris-bourn","penney-nguyen","lily","ethan"]},
+    {"id":"creator","root":"game/assets/placeholders/creator","batch":3,"scope":"global","required":true},
+    {"id":"guardians","root":"game/assets/placeholders/guardians","batch":4,"scope":"global-and-regional","required":true},
+    {"id":"npcs","root":"game/assets/placeholders/npcs","batch":4,"scope":"global-and-regional","required":true},
+    {"id":"enemies-bosses","root":"game/assets/placeholders/enemies","batch":5,"scope":"global-and-regional","required":true},
+    {"id":"region-elyndor","root":"game/assets/placeholders/regions/elyndor","batch":6,"scope":"elyndor","required":true},
+    {"id":"region-verdancia","root":"game/assets/placeholders/regions/verdancia","batch":6,"scope":"verdancia","required":true},
+    {"id":"region-cinderreach","root":"game/assets/placeholders/regions/cinderreach","batch":6,"scope":"cinderreach","required":true},
+    {"id":"region-tideglass-coast","root":"game/assets/placeholders/regions/tideglass-coast","batch":6,"scope":"tideglass-coast","required":true},
+    {"id":"region-silkspire","root":"game/assets/placeholders/regions/silkspire","batch":6,"scope":"silkspire","required":true},
+    {"id":"region-moonpatch-steppe","root":"game/assets/placeholders/regions/moonpatch-steppe","batch":6,"scope":"moonpatch-steppe","required":true},
+    {"id":"region-frostlace","root":"game/assets/placeholders/regions/frostlace","batch":6,"scope":"frostlace","required":true},
+    {"id":"region-gloamfen","root":"game/assets/placeholders/regions/gloamfen","batch":6,"scope":"gloamfen","required":true},
+    {"id":"region-sunspool-desert","root":"game/assets/placeholders/regions/sunspool-desert","batch":6,"scope":"sunspool-desert","required":true},
+    {"id":"region-crownweave","root":"game/assets/placeholders/regions/crownweave","batch":6,"scope":"crownweave","required":true},
+    {"id":"items-equipment","root":"game/assets/placeholders/items","batch":7,"scope":"global-and-regional","required":true},
+    {"id":"ui-vfx","root":"game/assets/placeholders/presentation","batch":8,"scope":"global-and-regional","required":true},
+    {"id":"audio","root":"game/assets/placeholders/audio","batch":9,"scope":"global-and-regional","required":true}
+  ],
+  "requiredSubdirectories": {
+    "region": ["tilesets","autotiles","terrain","buildings","building-states","interiors","dungeons-ruins","props","flora","roads-bridges-fences","waystitch","water-special","parallaxes","battlebacks","weather-lighting","story-overlays","secret-pieces"],
+    "canon": ["sprites","portraits","faces","icons","metadata"],
+    "guardian": ["overworld","portraits","silhouettes","battle","bond","icons","field","resting","metadata"],
+    "npc": ["sprites","portraits","faces","ambient-recipes","metadata"],
+    "enemy": ["battle","telegraphs","phases","icons","silhouettes","metadata"],
+    "creator": ["body","skin","hair-front","hair-back","eyes","brows","mouths","facial-details","tops","bottoms","full-outfits","outerwear","footwear","headwear","accessories","palettes","metadata"],
+    "items": ["master-96","runtime-48","equipment","crafting","metadata"],
+    "presentation": ["vfx","vfx-reduced-flash","ui","ui-accessibility","loading","metadata"],
+    "audio": ["bgm","ambience","battle","boss","guardian","event","environment-sfx","combat-sfx","guardian-sfx","ui-sfx","metadata"]
+  },
+  "fileNaming": {
+    "normalization": "lowercase-kebab-case",
+    "numericSuffix": "zero-padded-4",
+    "regionPrefixRequiredForRegionalAssets": true,
+    "extensions": {"image":".png","audio":".ogg","metadata":".json"},
+    "examples": [
+      "creator/hair-front/hair-front-0001.png",
+      "canon/chris-bourn/sprites/chris-bourn-walk.png",
+      "guardians/cinder/battle/cinder-idle.png",
+      "regions/elyndor/tilesets/elyndor-tileset-0001.png",
+      "items/master-96/consumable-0001.png",
+      "items/runtime-48/consumable-0001.png"
+    ]
+  },
+  "indexRecord": ["logicalId","path","pack","category","scope","region","dimensions","layout","placeholder","replacementTarget","provenance","qaStatus","checksum"],
+  "qa": {
+    "requiredStatusBeforeFreeze": "pass",
+    "placeholderStatusValue": "placeholder",
+    "provenanceValue": "original-generated-placeholder",
+    "collisionPolicy": "zero-tolerance",
+    "missingRequiredAssetPolicy": "freeze-blocking",
+    "invalidBinaryPolicy": "freeze-blocking"
+  },
+  "replacementPass": {
+    "timing": "after-finished-game-zip",
+    "targetStyle": "original Plushbound polished MV-cover/Trinity-inspired JRPG art",
+    "mustPreserve": ["logicalId","path-or-explicit-migration","runtime-dimensions","frame-layout","bindings"],
+    "placeholderArtworkMayBeReplaced": true
+  }
+}

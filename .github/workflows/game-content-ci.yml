@@ -1,0 +1,29 @@
+name: Plushbound Game Content CI
+
+on:
+  push:
+    branches:
+      - plushbound-game-development
+    paths:
+      - 'game/**'
+      - '.github/workflows/game-content-ci.yml'
+  pull_request:
+    paths:
+      - 'game/**'
+      - '.github/workflows/game-content-ci.yml'
+
+jobs:
+  content-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out game development
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Validate JSON syntax
+        run: |
+          find game/content -name '*.json' -print0 | xargs -0 -n1 node -e "JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8'))"
+      - name: Run game content contract tests
+        run: node --test game/tests/*.test.js

@@ -55,6 +55,68 @@ jobs:
           base64 -d project-source.b64 > project-source-fixed.zip
           unzip -o project-source-fixed.zip -d .
 
+      - name: Apply native-feel fixed viewport shell policy
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          css_files = sorted(Path('app/src/main/assets').rglob('style.css'))
+          if not css_files:
+              raise SystemExit('No shell stylesheet found under app/src/main/assets')
+          native_css = r'''
+
+/* Plushbound Engine v1 native-surface policy: no document or panel scrolling. */
+html,body,#app{
+  position:fixed!important;inset:0!important;width:100%!important;height:100%!important;
+  overflow:hidden!important;overscroll-behavior:none!important;touch-action:none!important;
+}
+.screen,.overlay{overflow:hidden!important;min-width:0!important;min-height:0!important}
+.panel{
+  overflow:hidden!important;
+  max-height:calc(100dvh - 16px)!important;
+  max-width:calc(100dvw - 16px)!important;
+}
+#creatorScreen .panel,#starterScreen .panel,#mapScreen .panel,#menuScreen .panel,#creditsScreen .panel{
+  height:min(680px,calc(100dvh - 16px));
+  display:flex;flex-direction:column;min-height:0;
+}
+#creatorScreen .creator-grid{flex:1;min-height:0;overflow:hidden;grid-template-columns:minmax(180px,30%) 1fr}
+#creatorScreen .avatar-preview{min-height:0;height:100%}
+#creatorScreen .creator-form{min-height:0;align-content:center}
+#starterScreen .starter-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;min-height:0}
+#starterScreen .starter-card{min-height:0;padding:10px}
+#starterScreen .starter-icon{font-size:34px;margin-bottom:4px}
+#starterScreen .starter-stat{margin-top:6px}
+#starterScreen .starter-detail{margin-top:8px;padding:10px;line-height:1.25}
+#starterScreen .row-actions{margin-top:8px}
+#mapScreen .world-map{flex:1;min-height:220px;height:auto}
+#mapScreen .map-info{flex:0 0 auto}
+#menuScreen .menu-grid{flex:1;min-height:0;align-content:center}
+#menuScreen .info-card{min-height:0}
+#creditsScreen .credits-copy{
+  flex:1;min-height:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  column-gap:18px;row-gap:4px;align-content:center;font-size:13px;line-height:1.35;
+}
+#creditsScreen .credits-copy h3,#creditsScreen .credits-copy p{margin:0}
+@media (max-height:600px){
+  .screen,.overlay{padding:8px!important}.panel{padding:12px!important}
+  .section-heading{margin-bottom:8px!important}.section-heading h2{font-size:22px!important}
+  .eyebrow{margin-bottom:3px!important}
+  button{min-height:38px!important;padding:7px 12px!important}
+  #starterScreen .muted{margin:4px 0 6px!important;font-size:12px}
+  #starterScreen .starter-card small{font-size:11px}
+  #starterScreen .starter-pick{margin-top:5px}
+  #mapScreen .world-map{min-height:180px}
+}
+'''
+          for css in css_files:
+              text = css.read_text(encoding='utf-8')
+              marker = 'Plushbound Engine v1 native-surface policy'
+              if marker not in text:
+                  css.write_text(text + native_css, encoding='utf-8')
+          print(f'Applied native viewport policy to {len(css_files)} stylesheet(s).')
+          PY
+          grep -R -q 'Plushbound Engine v1 native-surface policy' app/src/main/assets --include='style.css'
+
       - name: Package Engine v1 modules into Android assets
         run: |
           rm -rf app/src/main/assets/engine-v1
@@ -120,6 +182,7 @@ jobs:
           grep -q 'freeze_readiness_gate.test.js' app/src/main/assets/engine-v1/release-gate.json
           grep -R -q 'engine-v1/runtime/BrowserRuntimeEntry.js' app/src/main/assets --include='*.html'
           grep -R -q 'engine-v1/content/asset-manifest.json' app/src/main/assets --include='*.html'
+          grep -R -q 'Plushbound Engine v1 native-surface policy' app/src/main/assets --include='style.css'
           find app/src/main/assets/engine-v1 -name '*.js' -print0 | xargs -0 -n1 node --check
           python -m json.tool app/src/main/assets/engine-v1/package-manifest.json >/dev/null
           python -m json.tool app/src/main/assets/engine-v1/content/asset-manifest.json >/dev/null
@@ -168,10 +231,14 @@ jobs:
           unzip -p "$APK" assets/engine-v1/release-gate.json | grep -q "${GITHUB_SHA}"
           unzip -p "$APK" assets/engine-v1/release-gate.json | grep -q 'freeze_readiness_gate.test.js'
           HTML=$(unzip -Z1 "$APK" | grep '^assets/.*\.html$' | head -n 1)
+          CSS=$(unzip -Z1 "$APK" | grep '^assets/.*style\.css$' | head -n 1)
           test -n "$HTML"
+          test -n "$CSS"
           unzip -p "$APK" "$HTML" | grep -q 'data-plushbound-engine-v1="runtime"'
           unzip -p "$APK" "$HTML" | grep -q 'engine-v1/runtime/BrowserRuntimeEntry.js'
           unzip -p "$APK" "$HTML" | grep -q 'data-asset-manifest='
+          unzip -p "$APK" "$CSS" | grep -q 'Plushbound Engine v1 native-surface policy'
+          unzip -p "$APK" "$CSS" | grep -q 'overflow:hidden!important'
 
       - name: Verify Android installability metadata
         run: |

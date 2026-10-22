@@ -16,6 +16,39 @@ function find(root, selectors = []) {
   return null;
 }
 
+function ensureLiveHud(root) {
+  const existing = find(root, ['[data-plushbound-live-hud]']);
+  if (existing) return existing;
+  const host = find(root, ['#mapScreen .map-info', '#mapScreen', '[data-screen="map"]']);
+  if (!host || !root?.createElement || !host.appendChild) return null;
+
+  const hud = root.createElement('div');
+  hud.dataset.plushboundLiveHud = 'true';
+  hud.setAttribute?.('aria-live', 'polite');
+  Object.assign(hud.style || {}, {
+    display: 'grid',
+    gridTemplateColumns: 'minmax(0,1fr) auto',
+    gap: '4px 12px',
+    alignItems: 'center',
+    width: '100%',
+    fontSize: '12px',
+    lineHeight: '1.25'
+  });
+
+  const map = root.createElement('strong');
+  map.dataset.plushboundMapInfo = 'true';
+  const gold = root.createElement('span');
+  gold.dataset.plushboundGold = 'true';
+  const quest = root.createElement('span');
+  quest.dataset.plushboundQuestInfo = 'true';
+  Object.assign(quest.style || {}, { gridColumn: '1 / -1', opacity: '0.9' });
+  hud.appendChild(map);
+  hud.appendChild(gold);
+  hud.appendChild(quest);
+  host.appendChild(hud);
+  return hud;
+}
+
 export class GameDomAdapter {
   constructor({ scope = globalThis, bridge = scope.PlushboundGameShell } = {}) {
     this.scope = scope;
@@ -31,6 +64,7 @@ export class GameDomAdapter {
     this.bound = true;
     this.scope.addEventListener?.('plushbound-shell-update', this.onUpdate);
     this.root.addEventListener?.('click', this.onClick);
+    ensureLiveHud(this.root);
     this.render(this.bridge?.snapshot?.());
     return this;
   }
@@ -45,16 +79,17 @@ export class GameDomAdapter {
 
   render(snapshot = {}) {
     if (!this.root || !snapshot) return snapshot;
+    ensureLiveHud(this.root);
     const mapId = snapshot.currentMap || snapshot.map?.id || '';
     const mapName = MAP_NAMES[mapId] || mapId || 'Plustopia';
-    const mapInfo = find(this.root, ['[data-plushbound-map-info]', '#mapInfo', '#mapName', '#locationName', '#mapScreen .map-info']);
+    const mapInfo = find(this.root, ['[data-plushbound-map-info]', '#mapInfo', '#mapName', '#locationName']);
     const worldMap = find(this.root, ['[data-plushbound-world-map]', '#worldMap', '#mapScreen .world-map']);
     const questInfo = find(this.root, ['[data-plushbound-quest-info]', '#questInfo', '#questStatus', '#mapScreen .quest-info']);
     const goldInfo = find(this.root, ['[data-plushbound-gold]', '#goldValue', '#gold']);
 
     text(mapInfo, mapName);
     if (worldMap) worldMap.dataset.plushboundMapId = mapId;
-    text(goldInfo, snapshot.gold ?? 0);
+    text(goldInfo, `${snapshot.gold ?? 0} G`);
 
     const activeQuest = Object.values(snapshot.quests || {}).find(q => q && q.status !== 'complete') || Object.values(snapshot.quests || {}).find(Boolean);
     if (activeQuest) {

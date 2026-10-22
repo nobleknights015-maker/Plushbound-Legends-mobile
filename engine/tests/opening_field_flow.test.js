@@ -54,6 +54,7 @@ test('Elyndor opening state survives save and reload exactly', async () => {
   field.interact('starter-chest');
   const expected = state.serialize();
   await saves.save(1, { label: 'Elyndor Opening' });
+  expected.system.saveCount += 1;
 
   const restored = new GameState();
   const restoredSaves = new SaveManager({ storage, gameState: restored, clock: () => 2000 });

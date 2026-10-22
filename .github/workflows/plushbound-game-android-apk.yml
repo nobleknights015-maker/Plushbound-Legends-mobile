@@ -24,6 +24,20 @@ jobs:
         run: |
           find game/content game/runtime game/assets -name '*.json' -print0 | xargs -0 -r -n1 node -e "JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8'))"
           node --test game/tests/*.test.js
+          node - <<'NODE'
+          const fs = require('fs');
+          const index = JSON.parse(fs.readFileSync('game/content/content-index.json','utf8'));
+          const required = ['verdancia-region','verdancia-population','verdancia-npcs','verdancia-quests-events','verdancia-asset-slots'];
+          for (const id of required) if (!index.packages.some(p => p.id === id && p.required)) throw new Error(`Missing required Verdancia package: ${id}`);
+          for (const id of ['verdancia-region-maps','verdancia-runtime-contract']) if (!index.runtimePackages.some(p => p.id === id && p.required)) throw new Error(`Missing required Verdancia runtime package: ${id}`);
+          const maps = JSON.parse(fs.readFileSync('game/runtime/verdancia-region.maps.json','utf8'));
+          const contract = JSON.parse(fs.readFileSync('game/runtime/verdancia-runtime-contract.json','utf8'));
+          if (!Array.isArray(maps.maps) || maps.maps.length !== 6) throw new Error('Verdancia runtime must contain exactly six maps');
+          const ids = new Set(maps.maps.map(m => m.id));
+          for (const id of ['verdancia-threadwood-verge','verdancia-lanternbough','verdancia-mossveil-hollow','verdancia-elderstitch-grove','verdancia-rootbound-depths','verdancia-weavers-sanctum']) if (!ids.has(id)) throw new Error(`Missing Verdancia map ${id}`);
+          if (contract.regionId !== 'verdancia' || contract.tier !== 2) throw new Error('Verdancia runtime contract identity/tier mismatch');
+          console.log('Verdancia runtime acceptance preflight passed');
+          NODE
 
       - name: Re-verify frozen Engine v1 baseline
         working-directory: engine
@@ -40,6 +54,7 @@ jobs:
             "branch": "plushbound-game-development",
             "gameCommit": "${GITHUB_SHA}",
             "engineBaseline": "160d9fd95bc0d3db39224f8bb4c5e1e3a1f54425",
+            "regions": ["elyndor", "verdancia"],
             "status": "passed"
           }
           JSON
@@ -90,7 +105,8 @@ jobs:
             "shellBridge": "runtime/GameShellBridge.js",
             "contentIndex": "content/content-index.json",
             "assetManifest": "assets/asset-manifest.json",
-            "runtimeMaps": "runtime/elyndor-route-one.maps.json",
+            "runtimeMaps": ["runtime/elyndor-route-one.maps.json", "runtime/verdancia-region.maps.json"],
+            "runtimeContracts": ["runtime/elyndor-runtime-contract.json", "runtime/verdancia-runtime-contract.json"],
             "releaseGate": "release-gate.json"
           }
           JSON
@@ -136,11 +152,21 @@ jobs:
           test -f app/src/main/assets/game/runtime/GameContentRuntime.js
           test -f app/src/main/assets/game/runtime/GameShellBridge.js
           test -f app/src/main/assets/game/runtime/elyndor-route-one.maps.json
+          test -f app/src/main/assets/game/runtime/elyndor-runtime-contract.json
+          test -f app/src/main/assets/game/runtime/verdancia-region.maps.json
+          test -f app/src/main/assets/game/runtime/verdancia-runtime-contract.json
+          test -f app/src/main/assets/game/content/verdancia-region.json
+          test -f app/src/main/assets/game/content/verdancia-population.json
+          test -f app/src/main/assets/game/content/verdancia-npcs.json
+          test -f app/src/main/assets/game/content/verdancia-quests-events.json
+          test -f app/src/main/assets/game/content/verdancia-asset-slots.json
           test -f app/src/main/assets/game/content/content-index.json
           test -f app/src/main/assets/game/assets/asset-manifest.json
           test -f app/src/main/assets/game/assets/README.md
           grep -q '160d9fd95bc0d3db39224f8bb4c5e1e3a1f54425' app/src/main/assets/game/content/content-index.json
           grep -q 'plushbound-game-assets' app/src/main/assets/game/content/content-index.json
+          grep -q 'verdancia-region-maps' app/src/main/assets/game/content/content-index.json
+          grep -q 'verdancia-runtime-contract' app/src/main/assets/game/content/content-index.json
           grep -q '../../engine-v1/core/GameState.js' app/src/main/assets/game/runtime/AndroidGameBootstrap.js
           grep -q '../../engine-v1/maps/MapRuntime.js' app/src/main/assets/game/runtime/PlushboundGameSession.js
           grep -R -q 'data-plushbound-game="runtime"' app/src/main/assets --include='*.html'
@@ -186,10 +212,18 @@ jobs:
           unzip -l "$APK" | grep -q 'assets/game/runtime/AndroidGameBootstrap.js'
           unzip -l "$APK" | grep -q 'assets/game/runtime/GameShellBridge.js'
           unzip -l "$APK" | grep -q 'assets/game/runtime/elyndor-route-one.maps.json'
+          unzip -l "$APK" | grep -q 'assets/game/runtime/verdancia-region.maps.json'
+          unzip -l "$APK" | grep -q 'assets/game/runtime/verdancia-runtime-contract.json'
+          unzip -l "$APK" | grep -q 'assets/game/content/verdancia-region.json'
+          unzip -l "$APK" | grep -q 'assets/game/content/verdancia-population.json'
+          unzip -l "$APK" | grep -q 'assets/game/content/verdancia-npcs.json'
+          unzip -l "$APK" | grep -q 'assets/game/content/verdancia-quests-events.json'
+          unzip -l "$APK" | grep -q 'assets/game/content/verdancia-asset-slots.json'
           unzip -l "$APK" | grep -q 'assets/game/content/content-index.json'
           unzip -l "$APK" | grep -q 'assets/game/assets/asset-manifest.json'
           unzip -l "$APK" | grep -q 'assets/game/assets/guardians/README.md'
           unzip -p "$APK" assets/game/release-gate.json | grep -q "${GITHUB_SHA}"
+          unzip -p "$APK" assets/game/release-gate.json | grep -q 'verdancia'
           HTML=$(unzip -Z1 "$APK" | grep '^assets/.*\.html$' | head -n 1)
           CSS=$(unzip -Z1 "$APK" | grep '^assets/.*style\.css$' | head -n 1)
           unzip -p "$APK" "$HTML" | grep -q 'data-plushbound-game="runtime"'

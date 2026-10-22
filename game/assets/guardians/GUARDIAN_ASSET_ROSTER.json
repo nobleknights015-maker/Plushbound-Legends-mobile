@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "category": "plush-guardians",
+  "assetSetPerGuardian": ["overworld-sprite", "silhouette", "portrait", "battle-idle", "battle-action", "battle-hit", "bond-expression", "icon"],
+  "established": ["cinder", "mallow", "ripple", "wisp", "mosskit", "lanternmoth", "thimblehare", "barkback", "dewfinch", "spoolmouse", "bramblecub", "silkwing", "rootram", "bellfrog", "stitchowl", "velvetstag"],
+  "productionFamilies": {
+    "beast": ["fox", "cat", "hound", "bear", "rabbit", "deer", "ram", "mouse", "otter", "squirrel", "badger", "panda"],
+    "avian": ["owl", "finch", "crane", "raven", "sparrow", "pheasant", "duck", "hawk", "swan", "heron", "quail", "robin"],
+    "smallCreature": ["frog", "moth", "butterfly", "beetle", "bee", "snail", "gecko", "turtle", "axolotl", "hedgehog", "bat", "firefly"],
+    "mythicPlush": ["kirin", "dragon", "phoenix", "moonhare", "cloudlion", "threadserpent", "starstag", "bellspirit", "dreamtapir", "lanternfox", "velvetgriffin", "silkwing-drake"]
+  },
+  "regionalVariantRule": "Every core family receives at least two material/palette/accessory treatments before a third family is introduced solely for visual variety.",
+  "silhouetteRule": "Every Guardian must be identifiable from silhouette alone; silhouettes are first-class character-creation/bond-selection assets.",
+  "animationRule": {"overworldDirections":4,"walkFrames":3,"battleMinimumStates":["idle","action","hit"],"optionalStates":["sleep","happy","bond-art","rare-idle"]},
+  "qa": ["no malformed limbs", "clear plush construction", "visible stitching/material language", "family remains recognizable at 48px", "silhouette matches final sprite proportions"]
+}

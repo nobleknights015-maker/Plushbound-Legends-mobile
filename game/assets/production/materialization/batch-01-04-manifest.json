@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "project": "Plushbound Legends",
+  "world": "Plushtopia",
+  "phase": "asset-preparation-only",
+  "gameDevelopmentStarted": false,
+  "status": "materialization-manifest-ready",
+  "purpose": "Deterministic placeholder materialization manifest for batches 01-04. This reserves engine-compatible asset outputs without implementing gameplay.",
+  "sourceContracts": [
+    "game/assets/production/whole-game-placeholder-coverage-audit.json",
+    "game/assets/production/whole-game-placeholder-manifest.json",
+    "game/assets/production/whole-game-placeholder-inventory.json",
+    "game/assets/production/placeholder-pack-index.json",
+    "game/assets/production/placeholder-binary-materialization-plan.json",
+    "game/assets/production/canonical-output-path-registry.json"
+  ],
+  "globalRules": {
+    "tileSize": 48,
+    "placeholderIsFinalArt": false,
+    "logicalIdsAreStable": true,
+    "finalReplacementMustPreserveLogicalId": true,
+    "caseInsensitivePathUniqueness": true,
+    "transparentRasterFormat": "png",
+    "audioRuntimeFormat": "ogg",
+    "metadataFormat": "json",
+    "finalArtDirection": "original Plushbound art with polished MV-cover/Trinity-inspired JRPG readability; no copied proprietary RPG Maker assets"
+  },
+  "batches": [
+    {
+      "batch": 1,
+      "id": "shared-foundation",
+      "scope": "global",
+      "outputs": [
+        {"namespace":"global/civilian","count":320,"classes":["shared-props"],"root":"game/assets/placeholders/global/civilian"},
+        {"namespace":"global/travel","count":128,"classes":["cross-region-travel"],"root":"game/assets/placeholders/global/travel"},
+        {"namespace":"global/accessibility","count":96,"classes":["state-and-accessibility-variants"],"root":"game/assets/placeholders/global/accessibility"},
+        {"namespace":"global/festival","count":128,"classes":["festival-seasonal-props"],"root":"game/assets/placeholders/global/festival"},
+        {"namespace":"global/child-activity","count":96,"classes":["school-child-activity-props"],"root":"game/assets/placeholders/global/child-activity"},
+        {"namespace":"global/guardian-care","count":96,"classes":["guardian-care-props"],"root":"game/assets/placeholders/global/guardian-care"},
+        {"namespace":"global/merchant-crafting","count":128,"classes":["merchant-crafting-display-props"],"root":"game/assets/placeholders/global/merchant-crafting"},
+        {"namespace":"global/story-state","count":96,"classes":["generic-story-state-overlays"],"root":"game/assets/placeholders/global/story-state"},
+        {"namespace":"global/signs-markers","count":96,"classes":["signs-markers"],"root":"game/assets/placeholders/global/signs-markers"},
+        {"namespace":"global/interior-utility","count":192,"classes":["shared-interior-utility"],"root":"game/assets/placeholders/global/interior-utility"}
+      ],
+      "acceptance": ["all IDs deterministic", "all paths unique ignoring case", "all raster dimensions declared", "all files carry provenance and replacement state"]
+    },
+    {
+      "batch": 2,
+      "id": "protected-canon-and-creator",
+      "scope": "global",
+      "protectedCanon": [
+        {"id":"chris-bourn","namespace":"canon/chris-bourn","ageBand":"adult","unique":true},
+        {"id":"penney-nguyen","namespace":"canon/penney-nguyen","ageBand":"adult","unique":true},
+        {"id":"lily","namespace":"canon/lily","ageBand":"child","unique":true},
+        {"id":"ethan","namespace":"canon/ethan","ageBand":"child","unique":true}
+      ],
+      "canonRequiredClasses": ["walk-sheet","portrait","expression-set","battle-or-story-pose-slot","icon","metadata"],
+      "creatorTargets": {"bodies":24,"skinTones":18,"frontHair":96,"backHair":96,"eyes":48,"brows":32,"mouths":32,"facialDetails":48,"tops":120,"bottoms":96,"fullOutfits":96,"outerwear":72,"footwear":64,"headwear":64,"accessories":96,"palettes":24},
+      "creatorLayout": {"cellWidth":48,"cellHeight":48,"directions":4,"framesPerDirection":3,"previewWidth":288,"previewHeight":384},
+      "layerOrder": ["back-hair","body","eyes","brows","mouth","facial-detail","bottom","footwear","top","full-outfit","outerwear","front-hair","headwear","accessory"],
+      "safeguards": ["canon assets may not be reused as ambient NPC identities", "Lily and Ethan remain unique child characters", "creator pieces must align to common base canvas"]
+    },
+    {
+      "batch": 3,
+      "id": "guardian-library",
+      "scope": "global-and-regional",
+      "establishedGuardians": ["cinder","mallow","ripple","wisp","mosskit","lanternmoth","thimblehare","barkback","dewfinch","spoolmouse","bramblecub","silkwing","rootram","bellfrog","stitchowl","velvetstag"],
+      "targetFamilies":96,
+      "regionalVariants":96,
+      "rareVariants":32,
+      "requiredPerGuardian": ["overworld-walk","silhouette","portrait","battle-idle","battle-action","battle-hit","bond-expression","icon","metadata"],
+      "namespace":"reg/{region}/guardian/{id}",
+      "safeguards": ["Guardian IDs never occupy enemy namespace", "rare Guardian appearances remain separate from hostile encounter assets", "final art preserves silhouette readability and footprint"]
+    },
+    {
+      "batch": 4,
+      "id": "npc-population",
+      "scope": "global-and-regional",
+      "targets": {"persistentIdentities":512,"children":96,"teens":80,"elders":32,"uniqueStorySets":48,"ambientRecipes":256},
+      "requiredClasses": ["walk-sheet","portrait-when-required","expression-set-when-required","profession-variant","regional-fashion-binding","metadata"],
+      "ageBands": ["child","teen","adult","elder"],
+      "namespace":"reg/{region}/npc/{id}",
+      "safeguards": ["ambient recipes cannot resolve to protected canon IDs", "child proportions use child base geometry", "regional fashion follows Plushtopia Chinese/Japanese/Victorian blend"]
+    }
+  ],
+  "materializationState": "not-yet-binary-materialized",
+  "nextManifest": "batch-05-09-manifest.json"
+}

@@ -1,0 +1,51 @@
+{
+  "schemaVersion":1,
+  "project":"Plushbound Legends",
+  "phase":"asset-preparation-only",
+  "gameDevelopmentStarted":false,
+  "validationId":"placeholder-materialization-validation",
+  "scope":"all-nine-materialization-batches",
+  "blockingChecks":[
+    {"id":"logical-id-unique","rule":"logicalId values must be globally unique within their declared namespace"},
+    {"id":"path-unique","rule":"canonical output paths must be unique after lowercase normalization"},
+    {"id":"path-contract","rule":"output path must match the registered namespace/category pattern"},
+    {"id":"dimensions-present","rule":"all raster outputs declare exact pixel dimensions or an approved sheet-layout contract"},
+    {"id":"tile-grid","rule":"tile and environment outputs use 48px grid-compatible footprints"},
+    {"id":"walk-layout","rule":"standard walk sheets use four directions and three frames per direction unless an explicitly named alternate contract applies"},
+    {"id":"creator-alignment","rule":"creator layers share the same base canvas, origin and anchor contract"},
+    {"id":"icon-runtime","rule":"item/equipment icons provide 96px master and 48px runtime contract"},
+    {"id":"alpha","rule":"transparent PNG classes require alpha-safe edges and no accidental opaque matte"},
+    {"id":"guardian-hostile-separation","rule":"Guardian logical IDs and paths cannot resolve under enemy/hostile namespaces"},
+    {"id":"canon-protection","rule":"Chris Bourn, Penney Nguyen, Lily and Ethan cannot resolve as ambient NPC recipes"},
+    {"id":"child-coverage","rule":"child NPC and child creator geometry remain explicitly represented"},
+    {"id":"audio-format","rule":"runtime audio is OGG with required loop metadata for looping assets"},
+    {"id":"accessibility","rule":"critical UI information is not encoded by color alone and intense VFX have reduced-flash variants where applicable"},
+    {"id":"provenance","rule":"every slot declares sourceType, rights/provenance state, replacementStatus and qaStatus"},
+    {"id":"replacement-stability","rule":"final visual/audio replacement cannot change logical IDs without an explicit migration"},
+    {"id":"no-gameplay-transition","rule":"asset validation must not create quests, encounters, maps, gameplay systems, economy logic or runtime progression"}
+  ],
+  "warningChecks":[
+    {"id":"reserve-utilization","rule":"warn when a category approaches 80 percent of reserved capacity"},
+    {"id":"regional-variety","rule":"warn when a region relies excessively on global/shared variants"},
+    {"id":"mobile-weight","rule":"warn when placeholder/final pack estimates exceed intended mobile packaging budget"},
+    {"id":"portrait-expression","rule":"warn when major story identities lack the required expression count"}
+  ],
+  "knownDeferredCorrection": {
+    "id":"verdancia-guardian-encounter-separation",
+    "status":"recorded-not-runtime-fixed",
+    "reason":"runtime/gameplay files are outside the current asset-only phase",
+    "futureRule":"rare Guardian appearances must be separated from hostile encounter-family tables before gameplay assembly validation"
+  },
+  "freezeGate": {
+    "assetLibraryMayFreezeWhen":[
+      "all nine batch manifests exist",
+      "all reserved slots have deterministic IDs and paths",
+      "binary placeholders are materialized or explicitly represented by validated deterministic generators/recipes",
+      "blocking checks pass",
+      "provenance state is complete enough for distribution",
+      "replacement targets are registered"
+    ],
+    "currentStatus":"not-ready-binaries-not-materialized",
+    "gameDevelopmentStarted":false
+  }
+}

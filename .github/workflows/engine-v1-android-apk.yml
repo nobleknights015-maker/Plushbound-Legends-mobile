@@ -79,6 +79,7 @@ jobs:
           echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> "$GITHUB_ENV"
           echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
           echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+          echo "$ANDROID_HOME/build-tools/35.0.0" >> "$GITHUB_PATH"
 
       - name: Build clean Engine v1 debug APK
         run: gradle --no-daemon assembleDebug
@@ -87,13 +88,38 @@ jobs:
         run: |
           APK=app/build/outputs/apk/debug/app-debug.apk
           test -f "$APK"
+          test "$(stat -c%s "$APK")" -gt 10000
+          unzip -t "$APK" >/dev/null
           unzip -l "$APK" | grep -q 'assets/engine-v1/core/EngineKernel.js'
           unzip -l "$APK" | grep -q 'assets/engine-v1/platform/AndroidHostBridge.js'
+          unzip -l "$APK" | grep -q 'assets/engine-v1/platform/PerformanceBudget.js'
           unzip -l "$APK" | grep -q 'assets/engine-v1/package-manifest.json'
+
+      - name: Verify Android installability metadata
+        run: |
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          aapt dump badging "$APK" | tee apk-badging.txt
+          grep -q "package: name='com.plushbound.legends'" apk-badging.txt
+          grep -q "targetSdkVersion:'35'" apk-badging.txt
+          aapt dump permissions "$APK" | tee apk-permissions.txt
+          if grep -q 'android.permission.INTERNET' apk-permissions.txt; then
+            echo 'Engine v1 APK must remain offline and must not request INTERNET permission.' >&2
+            exit 1
+          fi
+          apksigner verify --verbose --print-certs "$APK"
+          zipalign -c -v 4 "$APK"
+
+      - name: Record APK checksum
+        run: |
+          sha256sum app/build/outputs/apk/debug/app-debug.apk | tee engine-v1-apk.sha256
 
       - name: Upload Engine v1 Android APK
         uses: actions/upload-artifact@v4
         with:
           name: plushbound-engine-v1-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            engine-v1-apk.sha256
+            apk-badging.txt
+            apk-permissions.txt
           if-no-files-found: error

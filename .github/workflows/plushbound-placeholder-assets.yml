@@ -1,0 +1,68 @@
+name: Plushbound Placeholder Asset Library
+on:
+  workflow_dispatch:
+  push:
+    branches: [plushbound-game-development]
+    paths:
+      - 'game/tools/materialize_placeholder_assets.py'
+      - 'game/tools/validate_placeholder_assets.py'
+      - 'game/assets/production/**'
+      - '.github/workflows/plushbound-placeholder-assets.yml'
+jobs:
+  materialize-validate-package:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Materialize deterministic placeholder sources
+        run: python game/tools/materialize_placeholder_assets.py --clean
+      - name: Validate PNG and source-audio binaries
+        run: python game/tools/validate_placeholder_assets.py
+      - name: Convert audio sources to OGG
+        run: |
+          set -euo pipefail
+          find game/assets/placeholders/audio-src -type f -name '*.wav' -print0 | while IFS= read -r -d '' f; do
+            rel="${f#game/assets/placeholders/audio-src/}"
+            out="game/assets/placeholders/audio/${rel%.wav}.ogg"
+            mkdir -p "$(dirname "$out")"
+            ffmpeg -loglevel error -y -i "$f" -c:a libvorbis -q:a 3 "$out"
+          done
+          rm -rf game/assets/placeholders/audio-src
+      - name: Verify packaged OGG files decode
+        run: |
+          set -euo pipefail
+          count=0
+          while IFS= read -r -d '' f; do
+            ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of default=nw=1:nk=1 "$f" | grep -q '^vorbis$'
+            count=$((count+1))
+          done < <(find game/assets/placeholders/audio -type f -name '*.ogg' -print0)
+          test "$count" -gt 0
+          echo "Validated $count OGG placeholders"
+      - name: Generate packaged checksums and freeze record
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib,json
+          root=Path('game/assets/placeholders')
+          files=sorted(p for p in root.rglob('*') if p.is_file())
+          checks={str(p.relative_to(root)):hashlib.sha256(p.read_bytes()).hexdigest() for p in files}
+          (root/'SHA256SUMS.json').write_text(json.dumps(checks,indent=2)+'\n')
+          freeze={'schemaVersion':1,'phase':'asset-production-only','gameDevelopmentStarted':False,'gameplayImplementation':False,'placeholderLibraryFrozen':True,'fileCount':len(files)+1,'replacementPolicy':'stable logical IDs and dimensions; final art replaces placeholders one-for-one','qa':['materialized','png-decoded','dimensions-checked','48px-grid-checked','source-audio-validated','ogg-decoded','checksummed']}
+          (root/'ASSET_LIBRARY_FREEZE.json').write_text(json.dumps(freeze,indent=2)+'\n')
+          PY
+      - name: Package asset-only ZIP
+        run: |
+          mkdir -p dist
+          zip -qr dist/plushbound-placeholder-asset-library.zip game/assets/placeholders game/assets/production game/assets/PRODUCTION_CATALOG.json game/assets/character-creator game/assets/guardians
+          sha256sum dist/plushbound-placeholder-asset-library.zip > dist/plushbound-placeholder-asset-library.zip.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: plushbound-placeholder-asset-library
+          path: |
+            dist/plushbound-placeholder-asset-library.zip
+            dist/plushbound-placeholder-asset-library.zip.sha256
+          retention-days: 90

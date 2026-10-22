@@ -87,7 +87,7 @@ jobs:
             "engineBaseline": "160d9fd95bc0d3db39224f8bb4c5e1e3a1f54425",
             "bootstrap": "runtime/AndroidGameBootstrap.js",
             "contentIndex": "content/content-index.json",
-            "runtimeMaps": "runtime/elyndor-runtime-maps.json",
+            "runtimeMaps": "runtime/elyndor-route-one.maps.json",
             "releaseGate": "release-gate.json"
           }
           JSON
@@ -127,7 +127,7 @@ jobs:
           test -f app/src/main/assets/game/runtime/AndroidGameBootstrap.js
           test -f app/src/main/assets/game/runtime/PlushboundGameSession.js
           test -f app/src/main/assets/game/runtime/GameContentRuntime.js
-          test -f app/src/main/assets/game/runtime/elyndor-runtime-maps.json
+          test -f app/src/main/assets/game/runtime/elyndor-route-one.maps.json
           test -f app/src/main/assets/game/content/content-index.json
           grep -q '160d9fd95bc0d3db39224f8bb4c5e1e3a1f54425' app/src/main/assets/game/content/content-index.json
           grep -q '../../engine-v1/core/GameState.js' app/src/main/assets/game/runtime/AndroidGameBootstrap.js
@@ -172,7 +172,7 @@ jobs:
           unzip -t "$APK" >/dev/null
           unzip -l "$APK" | grep -q 'assets/engine-v1/core/GameState.js'
           unzip -l "$APK" | grep -q 'assets/game/runtime/AndroidGameBootstrap.js'
-          unzip -l "$APK" | grep -q 'assets/game/runtime/elyndor-runtime-maps.json'
+          unzip -l "$APK" | grep -q 'assets/game/runtime/elyndor-route-one.maps.json'
           unzip -l "$APK" | grep -q 'assets/game/content/content-index.json'
           unzip -p "$APK" assets/game/release-gate.json | grep -q "${GITHUB_SHA}"
           HTML=$(unzip -Z1 "$APK" | grep '^assets/.*\.html$' | head -n 1)

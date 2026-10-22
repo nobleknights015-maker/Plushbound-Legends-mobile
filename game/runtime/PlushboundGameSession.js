@@ -75,6 +75,7 @@ export class PlushboundGameSession {
     this.maps = new MapRuntime({ state, logger });
     for (const map of mapPackage.maps) this.maps.register(map);
 
+    this.externalUi = ui;
     this.ui = {
       ...ui,
       message: (text, meta = {}) => {
@@ -84,10 +85,7 @@ export class PlushboundGameSession {
         return ui.message?.(text, meta);
       },
       shop: shopId => {
-        const shop = this.game.shop(shopId);
-        if (!shop) throw new Error(`Unknown shop ${shopId}`);
-        this.shopHistory.push(String(shopId));
-        this.activeShop = clone(shop);
+        const shop = this.openShop(shopId);
         return ui.shop?.(shop, this) ?? { opened: true, shop };
       }
     };
@@ -148,6 +146,14 @@ export class PlushboundGameSession {
   advanceDialogue() {
     if (this.dialogueQueue.length) this.dialogueQueue.shift();
     return clone(this.dialogueQueue[0] || null);
+  }
+
+  openShop(shopId) {
+    const shop = this.game.shop(shopId);
+    if (!shop) throw new Error(`Unknown shop ${shopId}`);
+    if (this.activeShop?.id !== shop.id) this.shopHistory.push(String(shopId));
+    this.activeShop = clone(shop);
+    return clone(shop);
   }
 
   closeShop() {

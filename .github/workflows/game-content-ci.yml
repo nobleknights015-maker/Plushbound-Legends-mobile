@@ -22,8 +22,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Validate JSON syntax
+      - name: Validate game JSON syntax
         run: |
-          find game/content -name '*.json' -print0 | xargs -0 -n1 node -e "JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8'))"
-      - name: Run game content contract tests
+          find game/content game/runtime -name '*.json' -print0 | xargs -0 -n1 node -e "JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8'))"
+      - name: Run game content and runtime contract tests
         run: node --test game/tests/*.test.js

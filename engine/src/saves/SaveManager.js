@@ -35,6 +35,9 @@ export class SaveManager {
   async save(slot, { label = null, extra = null } = {}) {
     const key = this.slotKey(slot);
     const now = this.clock();
+    const previousSaveCount = Number(this.gameState.system.saveCount || 0);
+    this.gameState.system.saveCount = previousSaveCount + 1;
+
     const payload = {
       schemaVersion: this.schemaVersion,
       savedAt: now,
@@ -43,9 +46,15 @@ export class SaveManager {
       extra,
       state: this.gameState.serialize()
     };
-    const encoded = JSON.stringify(payload);
-    await this.storage.set(key, encoded);
-    this.gameState.system.saveCount = (this.gameState.system.saveCount || 0) + 1;
+
+    try {
+      const encoded = JSON.stringify(payload);
+      await this.storage.set(key, encoded);
+    } catch (error) {
+      this.gameState.system.saveCount = previousSaveCount;
+      throw error;
+    }
+
     return { ...payload, state: undefined };
   }
 

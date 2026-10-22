@@ -1,10 +1,10 @@
 # Plushbound Engine v1 — Freeze Readiness
 
-Status: **CI freeze-ready; physical-device regression still required before declaring production-ready for Plushbound Legends.**
+Status: **Freeze-ready foundation with physical gameplay/native-feel validation completed; latest native Back/visual-viewport hardening requires only a targeted device spot-check before final Engine v1 freeze.**
 
 ## Frozen contract candidates
 
-The following engine contracts are now covered by automated tests and should be treated as stable once the final device pass succeeds:
+The following engine contracts are automated and should be treated as stable after the final targeted device spot-check:
 
 - GameState serialization/restoration and save migrations
 - title / New Game / Continue / return-to-title flow
@@ -18,6 +18,9 @@ The following engine contracts are now covered by automated tests and should be 
 - 1604×720 logical coordinate space with safe-area-aware multi-screen fitting
 - touch coordinate round-tripping and one-swipe/one-navigation behavior
 - responsive UI anchoring and screen profile helpers
+- fixed native-feel viewport policy: normal gameplay does not rely on browser/page scrolling
+- visualViewport safe-area refresh and cleanup
+- Android Back consumption only when the game handles Back; unhandled root Back falls through to the host
 - asset manifest / binding validation and strict production asset mode
 - module bootstrap inside Android WebView without document.currentScript dependency
 - interaction failure containment and runtime diagnostics
@@ -34,41 +37,49 @@ Android packaging must pass all of the following before an APK artifact is uploa
 5. Asset-manifest JSON validation
 6. Release-gate commit verification inside the APK
 7. Runtime/manifest injection verification in the WebView HTML
-8. APK integrity, signing and zip-alignment checks
-9. Android package name and target SDK checks
-10. Verification that the APK does not request `android.permission.INTERNET`
+8. Native-feel fixed-viewport shell application
+9. APK integrity, signing and zip-alignment checks
+10. Android package name and target SDK checks
+11. Verification that the APK does not request `android.permission.INTERNET`
 
 The packaged `engine-v1/release-gate.json` records the exact commit and both acceptance gates that passed for that APK.
 
-## Final physical-device regression before freeze
+## Physical-device evidence completed
 
-Run the freeze-gated APK on the reference Moto G and verify:
+The reference Moto G has already physically validated the main gameplay chain on freeze-gated builds:
 
-- cold boot reaches the title screen without a runtime boot error
-- New Game → creator → Guardian selection → opening → field works
-- touch taps line up with visible UI controls
-- one swipe moves one selection only
-- Android Back closes overlays before leaving the root scene/app
-- menu opens/closes correctly
-- map movement, collision, NPC/event interaction and transfer work
-- battle starts, accepts commands, resolves and returns to field
-- shop and quest UI/actions work
-- manual save works
-- close/reopen → Continue restores the same state
-- return to title clears live scene state while preserving Continue
-- pause/resume does not leave stuck input or broken audio state
-- orientation/surface resize does not distort gameplay or break touch mapping
-- no content/asset diagnostic errors appear for required packaged assets
-- no crash or severe slowdown during the complete reference flow
+- cold boot/title flow
+- New Game → creator → Guardian selection → opening → field
+- touch-driven UI/gameplay
+- map movement and interaction
+- menu, quest, shop and battle flows
+- manual save
+- close/reopen → Continue restoration
+- return-to-title followed by Continue restoration
+- pause/resume behavior
+- native-feel viewport pass eliminating browser-style panel/page scrolling across the tested Guardian picker/map/menu flow
 
-## Freeze rule after the device pass
+The user explicitly does not require rotation behavior as a release blocker. Landscape/multi-screen adaptation remains covered by automated safe-area, aspect-ratio and coordinate-mapping tests.
 
-After the physical regression succeeds, treat Engine v1 as frozen for Plushbound Legends development:
+## Final targeted physical spot-check before freeze
+
+Use the latest freeze-gated APK and verify only the native hardening added after the broader physical pass:
+
+- Android Back closes a handled overlay/scene first
+- Android Back at an unhandled root scene is not swallowed and can fall through to host/app behavior
+- visual viewport / safe-area changes do not shift touch targets away from visible controls
+- no new runtime boot, asset, or interaction diagnostic appears
+- no crash or severe slowdown during the short spot-check
+
+## Freeze rule after the targeted spot-check
+
+After that targeted physical spot-check succeeds, treat Engine v1 as frozen for Plushbound Legends development:
 
 - game content should use public engine/data/module contracts rather than modify core internals
 - engine changes require a demonstrated bug, performance problem, compatibility problem, or genuinely missing capability
 - every core change must keep the acceptance and freeze gates green
 - save/schema changes require migration coverage
 - new content should prefer data, modules, manifests and assets over engine-core edits
+- native-feel viewport behavior is part of the frozen UX contract: game screens fit the viewport and oversized content uses game-native pagination/compaction rather than browser scrolling
 
-At that point the project should shift from **building the engine** to **building Plushbound Legends on the engine**.
+At that point the project shifts from **building the engine** to **building Plushbound Legends on the engine**.

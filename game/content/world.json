@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "world": {
+    "id": "plustopia",
+    "name": "Plustopia",
+    "theme": "Bonds hold the world together.",
+    "centralMystery": "Why is the world beginning to fray?",
+    "startRegion": "elyndor",
+    "startMap": "elyndor-sunny-plains"
+  },
+  "regions": [
+    {
+      "id": "elyndor",
+      "name": "Elyndor",
+      "type": "region",
+      "tone": "sunlit pastoral frontier with visible traces of ancient Waystitch craft",
+      "maps": ["elyndor-sunny-plains"]
+    }
+  ],
+  "maps": [
+    {
+      "id": "elyndor-sunny-plains",
+      "name": "Sunny Plains of Elyndor",
+      "regionId": "elyndor",
+      "tileSize": 48,
+      "spawn": { "x": 12, "y": 10, "direction": "down" },
+      "waystitchId": "elyndor-first-waystitch",
+      "encounterTable": "elyndor-sunny-plains-early",
+      "music": "bgm/elyndor/sunny-plains",
+      "ambience": "bgs/elyndor/plains-breeze",
+      "assetBindings": {
+        "tileset": "tileset/elyndor/sunny-plains",
+        "parallax": "parallax/elyndor/sunny-plains",
+        "weather": "weather/elyndor/clear"
+      }
+    }
+  ]
+}

@@ -15,6 +15,12 @@ function setup() {
   return { state, game };
 }
 
+function completeFirstQuest(game) {
+  game.startQuest('a-thread-begins');
+  game.recordBattle(['frayling', 'elyndor']);
+  game.completeQuest('a-thread-begins');
+}
+
 test('A Thread Begins progresses from first meeting through battle to turn-in rewards', () => {
   const { state, game } = setup();
   const started = game.startQuest('a-thread-begins');
@@ -36,8 +42,16 @@ test('A Thread Begins progresses from first meeting through battle to turn-in re
   assert.equal(state.sw('quest:a-thread-begins:complete'), true);
 });
 
+test('Threads Out of Tune cannot start before A Thread Begins is complete', () => {
+  const { game } = setup();
+  assert.throws(() => game.startQuest('threads-out-of-tune'), /prerequisite not met/);
+  completeFirstQuest(game);
+  assert.equal(game.startQuest('threads-out-of-tune').status, 'active');
+});
+
 test('Threads Out of Tune requires both anchors and three crossing battles', () => {
   const { state, game } = setup();
+  completeFirstQuest(game);
   game.startQuest('threads-out-of-tune');
   game.progressObjective('threads-out-of-tune', 'inspect-west-anchor', 1);
   game.progressObjective('threads-out-of-tune', 'inspect-east-anchor', 1);
@@ -51,8 +65,8 @@ test('Threads Out of Tune requires both anchors and three crossing battles', () 
   assert.equal(ready.status, 'ready');
 
   game.completeQuest('threads-out-of-tune');
-  assert.equal(state.variable('gold'), 180);
-  assert.equal(state.count('items', 'threadmend-tonic'), 2);
+  assert.equal(state.variable('gold'), 280);
+  assert.equal(state.count('items', 'threadmend-tonic'), 3);
   assert.equal(state.count('items', 'woven-charm'), 1);
   assert.equal(state.sw('waystitch:menders-rest:unlocked'), true);
 });

@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "batchId": "elyndor-regional-assets-v1",
+  "regionId": "elyndor",
+  "purpose": "Asset-production inventory only; does not implement gameplay or maps.",
+  "artDirection": {
+    "base": "Plushbound original fantasy JRPG",
+    "inspiration": "MV/Trinity-scale readability without copying proprietary artwork",
+    "identity": ["sunlit-grasslands", "gold-thread-roads", "soft-stone-hamlets", "wind-ribbons", "stitched-waymarkers", "warm-pastoral-colors"],
+    "tileSize": 48
+  },
+  "targets": {
+    "tilesetSheets": 16,
+    "buildingFamilies": 28,
+    "interiorKits": 12,
+    "environmentProps": 128,
+    "foliageAssets": 96,
+    "parallaxes": 24,
+    "battlebacks": 32,
+    "weatherAndLightingOverlays": 24,
+    "npcVisualIdentities": 72,
+    "childNpcVisualIdentities": 16,
+    "regionalWardrobePieces": 160,
+    "guardianVisualFamilies": 16,
+    "enemyVisualFamilies": 32,
+    "eliteAndBossVisualSets": 16,
+    "itemAndMaterialIcons": 192,
+    "regionalVfxSets": 64,
+    "regionalAudioCues": 96
+  },
+  "environmentKits": [
+    "sunny-plains", "sunthread-road", "wildflower-meadow", "windmill-farmland",
+    "menders-rest-exterior", "menders-rest-interiors", "river-crossing", "thread-anchor-site",
+    "low-hills", "orchard", "pasture", "wayside-shrine", "traveler-camp", "ruined-stitchwork",
+    "hidden-grove", "festival-dressing"
+  ],
+  "npcGroups": [
+    "farmers", "menders", "tailors", "merchants", "caravaners", "guards", "innkeepers", "craftspeople",
+    "children", "students", "elders", "travelers", "guardian-keepers", "order-clue-bearers"
+  ],
+  "wardrobeDirection": [
+    "practical-wrap-tunics", "short-coats", "layered-skirts", "high-collar-vests", "work-aprons",
+    "travel-cloaks", "festival-robes", "embroidered-jackets", "children-playwear", "guardian-keeper-attire"
+  ],
+  "guardianThemes": ["gale", "grove", "sun", "meadow", "thread", "harvest"],
+  "enemyThemes": ["frayed-grass", "ragged-thread", "field-pest", "ruined-stitchwork", "road-ambusher", "corrupted-pastoral"],
+  "reserveRule": "Each reusable family receives meaningful silhouette, material, season, age, profession, or state variants rather than duplicate recolors.",
+  "status": "planned"
+}

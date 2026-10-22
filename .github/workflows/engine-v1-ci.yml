@@ -1,0 +1,43 @@
+name: Plushbound Engine v1 CI
+
+on:
+  push:
+    branches: [ engine-v1-rebuild ]
+  workflow_dispatch:
+
+jobs:
+  engine-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out engine rebuild
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Validate engine source syntax
+        run: |
+          find engine/src -name '*.js' -print0 | xargs -0 -n1 node --check
+
+      - name: Verify required engine modules
+        run: |
+          test -f engine/src/core/EngineKernel.js
+          test -f engine/src/core/GameState.js
+          test -f engine/src/events/EventInterpreter.js
+          test -f docs/ENGINE_V1_SPEC.md
+          test -f docs/MV_FUNCTIONAL_COMPATIBILITY_MATRIX.md
+
+      - name: Verify compatibility foundations are declared
+        run: |
+          grep -qi "map" docs/MV_FUNCTIONAL_COMPATIBILITY_MATRIX.md
+          grep -qi "event" docs/MV_FUNCTIONAL_COMPATIBILITY_MATRIX.md
+          grep -qi "battle" docs/MV_FUNCTIONAL_COMPATIBILITY_MATRIX.md
+          grep -qi "save" docs/MV_FUNCTIONAL_COMPATIBILITY_MATRIX.md
+          grep -qi "audio" docs/MV_FUNCTIONAL_COMPATIBILITY_MATRIX.md
+          grep -qi "touch" docs/MV_FUNCTIONAL_COMPATIBILITY_MATRIX.md
+          grep -qi "vertical" docs/MV_FUNCTIONAL_COMPATIBILITY_MATRIX.md
+
+      - name: Engine v1 foundation checkpoint
+        run: echo "Engine v1 foundation validation passed"

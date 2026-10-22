@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "game": "Plushbound Legends",
+  "purpose": "Whole-game asset-first production catalog. These targets are intentionally oversized so world assembly begins only after a deep reusable library exists.",
+  "style": {
+    "direction": "Plushbound-original JRPG art with RPG Maker MV/Trinity-inspired functional readability",
+    "tileSize": 48,
+    "fashionInfluences": ["Chinese", "Japanese", "Victorian"],
+    "rules": ["original designs only", "normal readable anatomy", "clean silhouettes", "mobile-readable sprites", "transparent PNG for composable pixel assets where appropriate"]
+  },
+  "productionOrder": ["character-creator", "npcs", "plush-guardians", "enemies-bosses", "world-tilesets", "buildings-interiors", "props-foliage", "equipment-items", "portraits-faces", "effects-ui", "audio"],
+  "targets": {
+    "characterCreator": {"baseBodies": 24, "skinTones": 18, "hairFront": 96, "hairBack": 96, "eyes": 48, "brows": 32, "mouths": 32, "facialDetails": 48, "tops": 120, "bottoms": 96, "fullOutfits": 96, "outerwear": 72, "footwear": 64, "headwear": 64, "accessories": 96, "paletteFamilies": 24},
+    "npcs": {"adultIdentities": 240, "teenIdentities": 80, "childIdentities": 96, "elderIdentities": 64, "merchantSpecialists": 48, "guardsOfficials": 48, "travelers": 64, "secretSociety": 32, "storyNpcExpressionSets": 80, "ambientSpriteVariants": 320},
+    "plushGuardians": {"families": 96, "regionalVariants": 96, "rareVariants": 32, "spriteSets": 224, "silhouettes": 224, "portraits": 224, "battleSets": 224, "bondExpressionSets": 128},
+    "enemies": {"commonFamilies": 160, "veteranVariants": 96, "eliteVariants": 64, "minibosses": 48, "regionalBosses": 24, "majorBosses": 16, "secretPostgameBosses": 16, "battleSpriteSets": 424},
+    "world": {"regionalTilesetFamilies": 24, "settlementTilesets": 24, "dungeonTilesets": 32, "interiorTilesets": 32, "parallaxes": 64, "battlebacks": 96, "weatherSets": 24, "environmentOverlays": 96},
+    "architecture": {"exteriorBuildings": 160, "interiorRoomKits": 96, "shops": 48, "homes": 64, "civicBuildings": 32, "guardianFacilities": 32, "secretLocations": 32},
+    "environmentProps": {"foliage": 192, "rocksTerrain": 128, "furniture": 192, "marketProps": 96, "farmProps": 64, "roadTravelProps": 96, "dungeonProps": 128, "waystitchObjects": 48, "treasureContainers": 48, "interactiveObjects": 96},
+    "equipmentItems": {"weaponsFocuses": 160, "outfits": 192, "accessories": 160, "guardianCharms": 96, "consumables": 96, "ingredients": 128, "materials": 128, "keyItems": 80, "treasures": 64, "cosmetics": 128, "icons": 1232},
+    "effectsUi": {"battleEffects": 128, "guardianBondEffects": 64, "fieldEffects": 64, "statusIcons": 48, "menuIcons": 96, "mapIcons": 64, "framesWindowskins": 24, "cursorSelectorSets": 12},
+    "audio": {"bgm": 96, "ambientLoops": 96, "battleStingers": 32, "uiSounds": 48, "worldSounds": 128, "combatSounds": 128, "guardianSounds": 96}
+  },
+  "namedCanonAssets": {
+    "characters": ["Chris Bourn", "Penney Nguyen", "Lily", "Ethan"],
+    "rule": "Named canon characters receive unique sprites, portraits, expression sets and outfit variants and are never counted as generic NPC templates."
+  },
+  "definitionOfAssetComplete": ["stable logical ID", "engine-compatible dimensions", "transparent/background policy satisfied", "source/provenance recorded", "visual QA passed", "manifest entry ready", "no gameplay implementation required"]
+}

@@ -14,7 +14,11 @@
       "name": "Elyndor",
       "type": "region",
       "tone": "sunlit pastoral frontier with visible traces of ancient Waystitch craft",
-      "maps": ["elyndor-sunny-plains"]
+      "maps": [
+        "elyndor-sunny-plains",
+        "elyndor-sunthread-crossing",
+        "elyndor-menders-rest"
+      ]
     }
   ],
   "maps": [
@@ -23,6 +27,7 @@
       "name": "Sunny Plains of Elyndor",
       "regionId": "elyndor",
       "tileSize": 48,
+      "dimensions": { "width": 32, "height": 20 },
       "spawn": { "x": 12, "y": 10, "direction": "down" },
       "waystitchId": "elyndor-first-waystitch",
       "encounterTable": "elyndor-sunny-plains-early",
@@ -32,6 +37,40 @@
         "tileset": "tileset/elyndor/sunny-plains",
         "parallax": "parallax/elyndor/sunny-plains",
         "weather": "weather/elyndor/clear"
+      }
+    },
+    {
+      "id": "elyndor-sunthread-crossing",
+      "name": "Sunthread Crossing",
+      "regionId": "elyndor",
+      "tileSize": 48,
+      "dimensions": { "width": 36, "height": 20 },
+      "spawn": { "x": 2, "y": 12, "direction": "right" },
+      "encounterTable": "elyndor-sunthread-crossing",
+      "music": "bgm/elyndor/sunthread-crossing",
+      "ambience": "bgs/elyndor/river-and-thread-hum",
+      "assetBindings": {
+        "tileset": "tileset/elyndor/sunthread-crossing",
+        "parallax": "parallax/elyndor/high-clouds",
+        "weather": "weather/elyndor/clear",
+        "bridgeOverlay": "environment/elyndor/sunthread-bridge"
+      }
+    },
+    {
+      "id": "elyndor-menders-rest",
+      "name": "Mender's Rest",
+      "regionId": "elyndor",
+      "tileSize": 48,
+      "dimensions": { "width": 28, "height": 18 },
+      "spawn": { "x": 3, "y": 10, "direction": "right" },
+      "waystitchId": "waystitch-menders-rest",
+      "music": "bgm/elyndor/menders-rest",
+      "ambience": "bgs/elyndor/hamlet-day",
+      "assetBindings": {
+        "tileset": "tileset/elyndor/menders-rest",
+        "parallax": "parallax/elyndor/high-clouds",
+        "weather": "weather/elyndor/clear",
+        "settlementOverlay": "environment/elyndor/menders-rest-overlays"
       }
     }
   ]

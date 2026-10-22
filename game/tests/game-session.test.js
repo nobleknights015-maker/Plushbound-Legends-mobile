@@ -46,3 +46,26 @@ test('session snapshot is serializable game state rather than engine-internal ob
   assert.equal(snapshot.inventory.items['threadmend-tonic'], 1);
   assert.doesNotThrow(() => JSON.stringify(snapshot));
 });
+
+test('session snapshots expose resolved live actions and update with event-page state', () => {
+  const game = session();
+  game.enter('elyndor-sunny-plains', 12, 10, 2);
+  const initial = game.snapshot();
+  assert.equal(initial.mapName, 'Sunny Plains of Elyndor');
+  assert.ok(initial.actions.some(action => action.eventId === 'lio' && action.label === 'Talk to Lio'));
+  assert.ok(initial.actions.some(action => action.eventId === 'tutorial-chest' && action.kind === 'chest'));
+  assert.ok(initial.actions.some(action => action.eventId === 'sunny-plains-to-crossing' && action.trigger === 'touch'));
+
+  game.interact('tutorial-chest');
+  const afterChest = game.snapshot();
+  const chest = afterChest.actions.find(action => action.eventId === 'tutorial-chest');
+  assert.equal(chest.kind, 'chest');
+  assert.equal(chest.trigger, 'action');
+
+  game.interact('lio');
+  game.recordBattle(['frayling']);
+  game.interact('lio');
+  const unlocked = game.snapshot().actions.find(action => action.eventId === 'sunny-plains-to-crossing');
+  assert.equal(unlocked.destinationMapId, 'elyndor-sunthread-crossing');
+  assert.match(unlocked.label, /Sunthread Crossing/);
+});

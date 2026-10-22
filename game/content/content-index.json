@@ -13,6 +13,9 @@
     { "id": "elyndor-route-one-maps", "path": "../runtime/elyndor-route-one.maps.json", "required": true },
     { "id": "elyndor-runtime-contract", "path": "../runtime/elyndor-runtime-contract.json", "required": true }
   ],
+  "assetLibraries": [
+    { "id": "plushbound-game-assets", "root": "../assets", "manifest": "../assets/asset-manifest.json", "required": true }
+  ],
   "start": {
     "worldId": "plustopia",
     "regionId": "elyndor",
@@ -27,6 +30,7 @@
     "firstShopId": "menders-rest-provisions",
     "layoutPackageId": "elyndor-map-layouts",
     "assetSlotPackageId": "elyndor-asset-slots",
+    "assetLibraryId": "plushbound-game-assets",
     "runtimeMapPackageId": "elyndor-route-one-maps",
     "runtimeContractPackageId": "elyndor-runtime-contract"
   }

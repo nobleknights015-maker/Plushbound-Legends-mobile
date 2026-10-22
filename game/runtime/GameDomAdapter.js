@@ -42,6 +42,17 @@ function ensureLiveHud(root) {
   const quest = root.createElement('span');
   quest.dataset.plushboundQuestInfo = 'true';
   Object.assign(quest.style || {}, { gridColumn: '1 / -1', opacity: '0.9' });
+  const dialogue = root.createElement('div');
+  dialogue.dataset.plushboundDialogue = 'true';
+  Object.assign(dialogue.style || {}, {
+    gridColumn: '1 / -1',
+    minHeight: '34px',
+    maxHeight: '48px',
+    overflow: 'hidden',
+    padding: '6px 8px',
+    borderRadius: '6px',
+    background: 'rgba(0,0,0,0.28)'
+  });
   const actions = root.createElement('div');
   actions.dataset.plushboundActions = 'true';
   Object.assign(actions.style || {}, {
@@ -55,6 +66,7 @@ function ensureLiveHud(root) {
   hud.appendChild(map);
   hud.appendChild(gold);
   hud.appendChild(quest);
+  hud.appendChild(dialogue);
   hud.appendChild(actions);
   host.appendChild(hud);
   return hud;
@@ -86,6 +98,23 @@ function renderActions(root, actions = []) {
   }
   host.replaceChildren(...buttons);
   host.dataset.actionCount = String(actions.length);
+}
+
+function renderDialogue(root, messages = []) {
+  const host = find(root, ['[data-plushbound-dialogue]', '#dialogueText', '#messageText']);
+  if (!host) return;
+  const latest = messages.at?.(-1) || messages[messages.length - 1];
+  if (!latest) {
+    text(host, 'Explore the area and interact with nearby people or landmarks.');
+    delete host.dataset.speaker;
+    return;
+  }
+  const speaker = latest.speaker ? `${latest.speaker}: ` : '';
+  text(host, `${speaker}${latest.text || ''}`);
+  if (latest.speaker) host.dataset.speaker = latest.speaker;
+  else delete host.dataset.speaker;
+  if (latest.portrait) host.dataset.portrait = latest.portrait;
+  else delete host.dataset.portrait;
 }
 
 export class GameDomAdapter {
@@ -140,6 +169,7 @@ export class GameDomAdapter {
       if (questInfo) delete questInfo.dataset.questId;
     }
 
+    renderDialogue(this.root, snapshot.messages || []);
     renderActions(this.root, snapshot.actions || []);
 
     const mapScreen = find(this.root, ['#mapScreen', '[data-screen="map"]']);

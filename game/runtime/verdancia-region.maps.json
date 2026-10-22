@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "packageId": "verdancia-region-maps",
+  "regionId": "verdancia",
+  "tileSize": 48,
+  "progressionTier": 2,
+  "maps": [
+    {"id":"verdancia-threadwood-verge","name":"Threadwood Verge","type":"wilderness","connections":["elyndor-menders-rest","verdancia-lanternbough"],"encounterTable":"verdancia-threadwood-verge","guardianHabitat":true,"waystitch":true},
+    {"id":"verdancia-lanternbough","name":"Lanternbough","type":"settlement","connections":["verdancia-threadwood-verge","verdancia-mossveil-hollow","verdancia-elderstitch-grove"],"encounterTable":null,"guardianHabitat":true,"waystitch":true,"services":["inn","provisions","tailor","guardian-care","crafting"]},
+    {"id":"verdancia-mossveil-hollow","name":"Mossveil Hollow","type":"wilderness","connections":["verdancia-lanternbough","verdancia-rootbound-depths"],"encounterTable":"verdancia-mossveil-hollow","guardianHabitat":true,"waystitch":false},
+    {"id":"verdancia-elderstitch-grove","name":"Elderstitch Grove","type":"wilderness","connections":["verdancia-lanternbough","verdancia-rootbound-depths"],"encounterTable":"verdancia-elderstitch-grove","guardianHabitat":true,"waystitch":true},
+    {"id":"verdancia-rootbound-depths","name":"Rootbound Depths","type":"dungeon","connections":["verdancia-mossveil-hollow","verdancia-elderstitch-grove","verdancia-weavers-sanctum"],"encounterTable":"verdancia-rootbound-depths","guardianHabitat":true,"waystitch":false,"bossGate":true},
+    {"id":"verdancia-weavers-sanctum","name":"Weaver's Sanctum","type":"regional-dungeon","connections":["verdancia-rootbound-depths"],"encounterTable":"verdancia-weavers-sanctum","guardianHabitat":true,"waystitch":false,"regionalBoss":true}
+  ],
+  "transitionRules": {
+    "entryFromElyndor": {"from":"elyndor-menders-rest","to":"verdancia-threadwood-verge","requires":["elyndor-route-one-complete"]},
+    "sanctumGate": {"from":"verdancia-rootbound-depths","to":"verdancia-weavers-sanctum","requires":["verdancia-root-heart-restored"]}
+  },
+  "fallbackPolicy": {"missingVisual":"development-placeholder","missingAudio":"silent-fallback","missingEncounter":"no-encounter","crashOnMissingOptionalAsset":false}
+}

@@ -1,0 +1,175 @@
+{
+  "schemaVersion": 1,
+  "engineBaseline": "160d9fd95bc0d3db39224f8bb4c5e1e3a1f54425",
+  "tileSize": 48,
+  "maps": [
+    {
+      "id": "elyndor-sunny-plains",
+      "name": "Sunny Plains of Elyndor",
+      "width": 32,
+      "height": 20,
+      "tileset": "tileset/elyndor/sunny-plains",
+      "parallax": "parallax/elyndor/sunny-plains",
+      "music": "bgm/elyndor/sunny-plains",
+      "ambience": "bgs/elyndor/plains-breeze",
+      "encounterTable": "elyndor-sunny-plains-early",
+      "blocked": ["19,7","24,12","24,13","24,14","26,12","26,13","26,14","30,6","30,7","30,8"],
+      "events": [
+        {
+          "id": "lio",
+          "x": 18,
+          "y": 9,
+          "assetId": "npc/lio/sprite",
+          "pages": [
+            {
+              "trigger": "action",
+              "commands": [
+                {"code":"MESSAGE","parameters":["You felt that pull too, didn't you? The Waystitch has been restless since dawn.",{"speaker":"Lio","portrait":"npc/lio/portrait"}]},
+                {"code":"MESSAGE","parameters":["These plains are usually gentle. Lately, the threads beneath them have started to snag.",{"speaker":"Lio","portrait":"npc/lio/portrait"}]},
+                {"code":"SCRIPT_HOOK","parameters":["quest.start",{"questId":"a-thread-begins"}]},
+                {"code":"SWITCH","parameters":["quest:a-thread-begins:active",true]}
+              ]
+            },
+            {
+              "conditions":{"switchId":"quest:a-thread-begins:active","switchValue":true},
+              "trigger":"action",
+              "commands":[
+                {"code":"MESSAGE","parameters":["Stay close to your Guardian. Frayed creatures are drawn to loose threads and lonely travelers.",{"speaker":"Lio","portrait":"npc/lio/portrait"}]}
+              ]
+            },
+            {
+              "conditions":{"switchId":"quest:a-thread-begins:ready","switchValue":true},
+              "trigger":"action",
+              "commands":[
+                {"code":"MESSAGE","parameters":["Good. You didn't just drive it off—you steadied the thread around it. Remember that feeling.",{"speaker":"Lio","portrait":"npc/lio/portrait"}]},
+                {"code":"SCRIPT_HOOK","parameters":["quest.complete",{"questId":"a-thread-begins"}]},
+                {"code":"SWITCH","parameters":["quest:a-thread-begins:complete",true]},
+                {"code":"SWITCH","parameters":["quest:a-thread-begins:active",false]}
+              ]
+            }
+          ]
+        },
+        {
+          "id":"elyndor-first-waystitch",
+          "x":19,"y":7,"through":false,"assetId":"environment/waystitch/elyndor-first",
+          "pages":[{"trigger":"action","commands":[
+            {"code":"MESSAGE","parameters":["Warm golden thread hums beneath the stone. The Waystitch recognizes your new bond.",{"speaker":"Waystitch"}]},
+            {"code":"SCRIPT_HOOK","parameters":["waystitch.activate",{"waystitchId":"elyndor-first-waystitch"}]}
+          ]}]
+        },
+        {
+          "id":"tutorial-chest",
+          "x":25,"y":13,"assetId":"environment/chest/elyndor-small",
+          "pages":[
+            {"trigger":"action","commands":[
+              {"code":"SE","parameters":["se/chest/open"]},
+              {"code":"SCRIPT_HOOK","parameters":["inventory.give",{"itemId":"threadmend-tonic","count":1}]},
+              {"code":"MESSAGE","parameters":["Found a Threadmend Tonic."]},
+              {"code":"SELF_SWITCH","parameters":["A",true]}
+            ]},
+            {"conditions":{"selfSwitch":"A","selfSwitchValue":true},"trigger":"action","commands":[
+              {"code":"MESSAGE","parameters":["The little travel chest is empty."]}
+            ]}
+          ]
+        },
+        {
+          "id":"sunny-plains-to-crossing",
+          "x":31,"y":10,"through":true,
+          "pages":[
+            {"trigger":"touch","commands":[{"code":"MESSAGE","parameters":["Lio asked you to settle the disturbance before taking the eastern road."]}]},
+            {"conditions":{"switchId":"quest:a-thread-begins:complete","switchValue":true},"trigger":"touch","commands":[
+              {"code":"TRANSFER","parameters":["elyndor-sunthread-crossing",2,12,6]}
+            ]}
+          ]
+        }
+      ]
+    },
+    {
+      "id":"elyndor-sunthread-crossing",
+      "name":"Sunthread Crossing",
+      "width":36,"height":20,
+      "tileset":"tileset/elyndor/sunthread-crossing",
+      "parallax":"parallax/elyndor/sunthread-crossing",
+      "music":"bgm/elyndor/sunthread-crossing",
+      "ambience":"bgs/elyndor/river-thread-hum",
+      "encounterTable":"elyndor-sunthread-crossing",
+      "blocked":["11,4","12,4","13,4","14,4","15,4","16,4","17,4","18,4","19,4","20,4","21,4","22,4","23,4","24,4","25,4","27,5","27,6","27,7","12,15","13,15","14,15","15,15","16,15","17,15","18,15","19,15","20,15","21,15","22,15","23,15","24,15","25,15"],
+      "events":[
+        {"id":"crossing-to-sunny-plains","x":0,"y":12,"through":true,"pages":[{"trigger":"touch","commands":[{"code":"TRANSFER","parameters":["elyndor-sunny-plains",29,10,4]}]}]},
+        {"id":"crossing-to-menders-rest","x":35,"y":8,"through":true,"pages":[{"trigger":"touch","commands":[{"code":"TRANSFER","parameters":["elyndor-menders-rest",3,10,6]}]}]},
+        {
+          "id":"anchor-west","x":13,"y":14,"assetId":"environment/elyndor/thread-anchor-damaged",
+          "pages":[
+            {"trigger":"action","commands":[{"code":"MESSAGE","parameters":["The anchor's thread is tangled and vibrating. Bram may know what happened here."]}]},
+            {"conditions":{"switchId":"quest:threads-out-of-tune:active","switchValue":true},"trigger":"action","commands":[
+              {"code":"MESSAGE","parameters":["You and your Guardian ease the snag loose. The western anchor settles into a steady hum."]},
+              {"code":"SCRIPT_HOOK","parameters":["quest.objective",{"questId":"threads-out-of-tune","objectiveId":"inspect-west-anchor","amount":1}]},
+              {"code":"SELF_SWITCH","parameters":["A",true]}
+            ]},
+            {"conditions":{"selfSwitch":"A","selfSwitchValue":true},"trigger":"action","assetId":"environment/elyndor/thread-anchor-stable","commands":[{"code":"MESSAGE","parameters":["The western anchor is stable."]}]}
+          ]
+        },
+        {
+          "id":"anchor-east","x":26,"y":6,"assetId":"environment/elyndor/thread-anchor-damaged",
+          "pages":[
+            {"trigger":"action","commands":[{"code":"MESSAGE","parameters":["This anchor is wound so tightly the thread almost sings."]}]},
+            {"conditions":{"switchId":"quest:threads-out-of-tune:active","switchValue":true},"trigger":"action","commands":[
+              {"code":"MESSAGE","parameters":["Your Guardian braces the thread while you loosen the knot. The eastern anchor steadies."]},
+              {"code":"SCRIPT_HOOK","parameters":["quest.objective",{"questId":"threads-out-of-tune","objectiveId":"inspect-east-anchor","amount":1}]},
+              {"code":"SELF_SWITCH","parameters":["A",true]}
+            ]},
+            {"conditions":{"selfSwitch":"A","selfSwitchValue":true},"trigger":"action","assetId":"environment/elyndor/thread-anchor-stable","commands":[{"code":"MESSAGE","parameters":["The eastern anchor is stable."]}]}
+          ]
+        }
+      ]
+    },
+    {
+      "id":"elyndor-menders-rest",
+      "name":"Mender's Rest",
+      "width":28,"height":18,
+      "tileset":"tileset/elyndor/menders-rest",
+      "parallax":"parallax/elyndor/menders-rest",
+      "music":"bgm/elyndor/menders-rest",
+      "ambience":"bgs/elyndor/village-day",
+      "blocked":["10,6","12,6","19,11","20,11","21,11","19,12","21,12","19,13","20,13","21,13","22,4","21,5","23,5"],
+      "events":[
+        {"id":"menders-rest-to-crossing","x":0,"y":10,"through":true,"pages":[{"trigger":"touch","commands":[{"code":"TRANSFER","parameters":["elyndor-sunthread-crossing",33,8,4]}]}]},
+        {
+          "id":"nessa","x":11,"y":7,"assetId":"npc/nessa/sprite",
+          "pages":[{"trigger":"action","commands":[
+            {"code":"MESSAGE","parameters":["New bond, fresh road, and not enough supplies. I know the look.",{"speaker":"Nessa","portrait":"npc/nessa/portrait"}]},
+            {"code":"SHOP","parameters":["menders-rest-provisions"]}
+          ]}]
+        },
+        {
+          "id":"bram","x":18,"y":11,"assetId":"npc/bram/sprite",
+          "pages":[
+            {"trigger":"action","commands":[{"code":"MESSAGE","parameters":["Hear that hum under the bridge? That's not wind.",{"speaker":"Bram","portrait":"npc/bram/portrait"}]}]},
+            {"conditions":{"switchId":"quest:a-thread-begins:complete","switchValue":true},"trigger":"action","commands":[
+              {"code":"MESSAGE","parameters":["The crossing's anchor threads have gone sour. If they snap, this whole little road folds in on itself.",{"speaker":"Bram","portrait":"npc/bram/portrait"}]},
+              {"code":"SCRIPT_HOOK","parameters":["quest.start",{"questId":"threads-out-of-tune"}]},
+              {"code":"SWITCH","parameters":["quest:threads-out-of-tune:active",true]}
+            ]},
+            {"conditions":{"switchId":"quest:threads-out-of-tune:ready","switchValue":true},"trigger":"action","commands":[
+              {"code":"MESSAGE","parameters":["That's the old sound again. Clean and quiet. You and your Guardian make a good stitch.",{"speaker":"Bram","portrait":"npc/bram/portrait"}]},
+              {"code":"SCRIPT_HOOK","parameters":["quest.complete",{"questId":"threads-out-of-tune"}]},
+              {"code":"SWITCH","parameters":["quest:threads-out-of-tune:complete",true]},
+              {"code":"SWITCH","parameters":["quest:threads-out-of-tune:active",false]},
+              {"code":"SWITCH","parameters":["waystitch:menders-rest:unlocked",true]}
+            ]}
+          ]
+        },
+        {
+          "id":"waystitch-menders-rest","x":22,"y":5,"assetId":"environment/waystitch/elyndor-small",
+          "pages":[
+            {"trigger":"action","commands":[{"code":"MESSAGE","parameters":["The Waystitch is quiet. Its threads haven't accepted your route yet."]}]},
+            {"conditions":{"switchId":"waystitch:menders-rest:unlocked","switchValue":true},"trigger":"action","commands":[
+              {"code":"MESSAGE","parameters":["The restored route resonates through the Waystitch."]},
+              {"code":"SCRIPT_HOOK","parameters":["waystitch.activate",{"waystitchId":"waystitch-menders-rest"}]}
+            ]}
+          ]
+        }
+      ]
+    }
+  ]
+}

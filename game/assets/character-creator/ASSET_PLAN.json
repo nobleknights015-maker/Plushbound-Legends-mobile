@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "category": "character-creator",
+  "tileSize": 48,
+  "composition": {"previewCanvas": [288, 384], "spriteCell": [48, 48], "directions": 4, "walkFramesPerDirection": 3},
+  "layerOrder": ["back-hair", "body", "eyes", "brows", "mouth", "facial-detail", "bottom", "footwear", "top", "full-outfit", "outerwear", "front-hair", "headwear", "accessory"],
+  "bodyFamilies": ["compact-a", "compact-b", "average-a", "average-b", "tall-a", "tall-b", "broad-a", "broad-b", "soft-a", "soft-b", "youth-a", "youth-b"],
+  "ageBands": ["child", "teen", "adult", "elder"],
+  "fashionCollections": [
+    {"id":"sunthread-court","influence":"Chinese/Victorian","pieces":32},
+    {"id":"waystitch-traveler","influence":"Japanese/Victorian","pieces":32},
+    {"id":"guardian-mender","influence":"Chinese/Japanese","pieces":32},
+    {"id":"plains-commonwear","influence":"Plushtopia rural","pieces":32},
+    {"id":"lanternbough-formal","influence":"Chinese/Japanese/Victorian","pieces":32},
+    {"id":"adventurer-fieldwear","influence":"Plushtopia practical","pieces":32},
+    {"id":"winter-thread","influence":"layered regional","pieces":24},
+    {"id":"festival-stitch","influence":"ceremonial","pieces":24}
+  ],
+  "hairFamilies": ["straight-short", "straight-long", "wavy-short", "wavy-long", "curly-short", "curly-long", "braided", "tied", "bun", "ponytail", "bob", "layered", "shag", "undercut", "coiled", "locs"],
+  "accessoryFamilies": ["glasses", "earrings", "ribbons", "hairpins", "scarves", "neckwear", "brooches", "guardian-charms", "belts", "pouches", "gloves", "wristwear"],
+  "palettePolicy": {"basePalettes":24,"recolorable":true,"avoidLockedSkinHairColors":true},
+  "qa": ["all layers align across every compatible body", "child assets remain age-appropriate", "no clipping at idle/walk cardinal frames", "silhouette remains readable at mobile scale", "outfits remain separable from combat stats"]
+}

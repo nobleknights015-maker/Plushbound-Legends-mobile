@@ -8,6 +8,11 @@
     { "id": "elyndor-route-one", "path": "elyndor-route-one.json", "required": true },
     { "id": "elyndor-map-layouts", "path": "elyndor-map-layouts.json", "required": true },
     { "id": "elyndor-asset-slots", "path": "elyndor-asset-slots.json", "required": true },
+    { "id": "verdancia-region", "path": "verdancia-region.json", "required": true },
+    { "id": "verdancia-population", "path": "verdancia-population.json", "required": true },
+    { "id": "verdancia-npcs", "path": "verdancia-npcs.json", "required": true },
+    { "id": "verdancia-quests-events", "path": "verdancia-quests-events.json", "required": true },
+    { "id": "verdancia-asset-slots", "path": "verdancia-asset-slots.json", "required": true },
     { "id": "legal", "path": "legal.json", "required": true }
   ],
   "runtimePackages": [
@@ -41,5 +46,9 @@
     "assetLibraryId": "plushbound-game-assets",
     "runtimeMapPackageId": "elyndor-route-one-maps",
     "runtimeContractPackageId": "elyndor-runtime-contract"
-  }
+  },
+  "regionalProgression": [
+    { "regionId": "elyndor", "tier": 1 },
+    { "regionId": "verdancia", "tier": 2, "regionPackageId": "verdancia-region", "populationPackageId": "verdancia-population", "npcPackageId": "verdancia-npcs", "questEventPackageId": "verdancia-quests-events", "assetSlotPackageId": "verdancia-asset-slots" }
+  ]
 }

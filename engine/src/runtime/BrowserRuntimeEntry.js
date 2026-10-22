@@ -18,6 +18,34 @@ function imageLoader(descriptor, scope = globalThis) {
   });
 }
 
+export function lockNativeGameSurface(scope = globalThis) {
+  const document = scope.document;
+  const html = document?.documentElement;
+  const body = document?.body;
+  if (!html?.style || !body?.style) return () => {};
+  const props = ['overflow', 'overscrollBehavior', 'position', 'inset', 'width', 'height', 'margin', 'padding', 'touchAction', 'background'];
+  const prior = new Map();
+  for (const element of [html, body]) {
+    prior.set(element, Object.fromEntries(props.map(prop => [prop, element.style[prop] || ''])));
+    Object.assign(element.style, {
+      overflow: 'hidden',
+      overscrollBehavior: 'none',
+      position: 'fixed',
+      inset: '0',
+      width: '100%',
+      height: '100%',
+      margin: '0',
+      padding: '0',
+      touchAction: 'none',
+      background: '#000'
+    });
+  }
+  scope.scrollTo?.(0, 0);
+  return () => {
+    for (const [element, values] of prior) Object.assign(element.style, values);
+  };
+}
+
 function ensureCanvas(scope, canvas = null) {
   if (canvas) return canvas;
   const document = scope.document;
@@ -29,7 +57,7 @@ function ensureCanvas(scope, canvas = null) {
   created.setAttribute?.('data-plushbound-engine-canvas', '');
   if (created.style) Object.assign(created.style, {
     position: 'fixed', inset: '0', width: '100vw', height: '100vh', background: '#000',
-    zIndex: '2147483000', touchAction: 'none'
+    zIndex: '2147483000', touchAction: 'none', display: 'block'
   });
   document.body?.appendChild?.(created);
   return created;
@@ -87,6 +115,7 @@ export async function bootPlushboundEngineV1({
 } = {}) {
   if (scope.__PLUSHBOUND_ENGINE_V1__?.booted) return scope.__PLUSHBOUND_ENGINE_V1__;
 
+  const unlockSurface = lockNativeGameSurface(scope);
   const bindings = new AssetBindingRegistry({ fallback: !strictBindings });
   const assetManager = new AssetManager({ loader: descriptor => imageLoader(descriptor, scope), maxEntries: 128 });
   const catalog = new ContentAssetCatalog({ assetManager, bindings });
@@ -102,6 +131,7 @@ export async function bootPlushboundEngineV1({
   const preloadIds = resolvedManifest ? catalog.preloadIds() : [];
   const diagnostics = assetDiagnostics({ validation, manifestUrl, manifest: resolvedManifest, preloadIds });
   if (strictAssets && !diagnostics.valid) {
+    unlockSurface();
     throw new Error(`Plushbound asset validation failed: ${diagnostics.messages.join('; ') || 'unknown asset error'}`);
   }
   if (resolvedManifest) await assetManager.preload(preloadIds);
@@ -213,6 +243,7 @@ export async function bootPlushboundEngineV1({
       scope.removeEventListener?.('resize', resize);
       scope.removeEventListener?.('orientationchange', resize);
       actionListeners.clear();
+      unlockSurface();
     }
   };
 

@@ -23,7 +23,7 @@ export async function bootPlushboundGame({ scope = globalThis, baseUrl } = {}) {
     loadJson(new URL('content-index.json', contentBase)),
     loadJson(new URL('opening-elyndor.json', contentBase)),
     loadJson(new URL('elyndor-route-one.json', contentBase)),
-    loadJson(new URL('elyndor-runtime-maps.json', runtimeDataBase))
+    loadJson(new URL('elyndor-route-one.maps.json', runtimeDataBase))
   ]);
 
   const expectedBaseline = '160d9fd95bc0d3db39224f8bb4c5e1e3a1f54425';

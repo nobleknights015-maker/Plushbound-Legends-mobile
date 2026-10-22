@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "project": "Plushbound Legends",
+  "screens": [
+    {
+      "id": "credits",
+      "title": "Credits",
+      "sections": [
+        { "heading": "Project Leadership", "entries": ["Project creator / rights holder — To be confirmed before public release"] },
+        { "heading": "Development", "entries": ["Game design — credits maintained in CREDITS.md", "Engineering / programming — credits maintained in CREDITS.md", "Narrative and worldbuilding — credits maintained in CREDITS.md", "Art, animation, audio and QA — credits maintained in CREDITS.md"] },
+        { "heading": "Technology", "entries": ["Powered by the custom Plushbound Engine v1 foundation.", "Third-party software and licensed materials are credited separately where required."] }
+      ]
+    },
+    {
+      "id": "legal",
+      "title": "Legal",
+      "sections": [
+        { "heading": "Copyright", "entries": ["Plushbound Legends original project materials are proprietary unless a specific component states otherwise.", "Third-party materials remain the property of their respective owners and are governed by their own licenses."] },
+        { "heading": "Notices", "entries": ["Full project license: LICENSE.md", "Third-party notices: THIRD_PARTY_NOTICES.md", "Asset provenance policy: game/assets/ASSET_PROVENANCE.md"] },
+        { "heading": "No Affiliation", "entries": ["Plushbound Legends should not be represented as sponsored by, endorsed by, or affiliated with unrelated publishers, studios, franchises, or tool vendors unless expressly authorized."] }
+      ]
+    }
+  ]
+}

@@ -17,7 +17,10 @@ function setup() {
     { id: '2', name: 'Ally', skills: [] }
   ]);
   data.load('skills', [{ id: '10', name: 'Thread Spark', mpCost: 3 }]);
-  data.load('weapons', [{ id: '20', name: 'Needleblade', params: { atk: 4 } }]);
+  data.load('weapons', [
+    { id: '20', name: 'Needleblade', params: { atk: 4 } },
+    { id: '21', name: 'Thread Pike', params: { atk: 6 } }
+  ]);
   data.load('armor', [{ id: '30', name: 'Stitch Coat', params: { def: 3 } }]);
   return { state, service: new PartyMenuService({ state, data }) };
 }
@@ -43,11 +46,10 @@ test('equipment moves between inventory and actor slots without duplication', ()
   assert.equal(service.actor('1').equipment.weapon, undefined);
 });
 
-test('equipment refuses items the party does not own', () => {
+test('equipment refuses valid database items the party does not own', () => {
   const { service } = setup();
-  const result = service.equip('1', 'weapon', '999');
-  assert.throws(() => service.equip('1', 'weapon', '999'), /Missing weapons record/);
-  assert.equal(result, undefined);
+  const result = service.equip('1', 'weapon', '21');
+  assert.deepEqual(result, { ok: false, reason: 'not-owned' });
 });
 
 test('formation changes preserve party membership while reordering slots', () => {

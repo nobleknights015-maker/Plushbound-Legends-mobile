@@ -45,6 +45,25 @@ function resolveUrl(value, base, scope = globalThis) {
   }
 }
 
+function assetDiagnostics({ validation, manifestUrl, manifest, preloadIds = [] } = {}) {
+  const missingRequired = [...(validation?.missingRequired || [])];
+  const missingBindings = [...(validation?.missingBindings || [])];
+  const messages = [];
+  if (!manifest) messages.push('No asset manifest was loaded.');
+  for (const id of missingRequired) messages.push(`Missing required asset: ${id}`);
+  for (const item of missingBindings) messages.push(`Missing asset binding target: ${item.logicalId} -> ${item.assetId}`);
+  return {
+    manifestLoaded: !!manifest,
+    manifestUrl: manifestUrl || null,
+    valid: validation?.valid !== false,
+    registered: Number(validation?.registered) || 0,
+    preloadCount: preloadIds.length,
+    missingRequired,
+    missingBindings,
+    messages
+  };
+}
+
 export function resolveRuntimeScriptConfig(scope = globalThis) {
   const document = scope.document;
   if (!document) return { script: null, manifestUrl: null };
@@ -63,7 +82,8 @@ export async function bootPlushboundEngineV1({
   input = null,
   onAction = null,
   safeInsets = null,
-  strictBindings = false
+  strictBindings = false,
+  strictAssets = false
 } = {}) {
   if (scope.__PLUSHBOUND_ENGINE_V1__?.booted) return scope.__PLUSHBOUND_ENGINE_V1__;
 
@@ -79,7 +99,12 @@ export async function bootPlushboundEngineV1({
   }
 
   const validation = resolvedManifest ? catalog.registerManifest(resolvedManifest) : catalog.validation();
-  if (resolvedManifest) await assetManager.preload(catalog.preloadIds());
+  const preloadIds = resolvedManifest ? catalog.preloadIds() : [];
+  const diagnostics = assetDiagnostics({ validation, manifestUrl, manifest: resolvedManifest, preloadIds });
+  if (strictAssets && !diagnostics.valid) {
+    throw new Error(`Plushbound asset validation failed: ${diagnostics.messages.join('; ') || 'unknown asset error'}`);
+  }
+  if (resolvedManifest) await assetManager.preload(preloadIds);
 
   const renderCanvas = backend ? canvas : ensureCanvas(scope, canvas);
   const liveBackend = backend || (renderCanvas ? new Canvas2DRenderBackend({ canvas: renderCanvas, assetManager, scope }) : null);
@@ -129,6 +154,7 @@ export async function bootPlushboundEngineV1({
     inputRouter,
     interaction,
     validation,
+    diagnostics,
     resize,
     viewportInfo: () => liveBackend?.viewport?.snapshot?.() || null,
     screenProfile: () => {
@@ -175,7 +201,8 @@ export async function bootPlushboundEngineV1({
       liveRenderer: !!liveBackend,
       liveInput: !!renderCanvas,
       liveInteractions: true,
-      screenProfile: runtime.screenProfile().profile
+      screenProfile: runtime.screenProfile().profile,
+      diagnostics
     }
   }));
   return runtime;

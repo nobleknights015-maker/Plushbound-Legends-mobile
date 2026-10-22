@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "opening": {
+    "id": "opening-first-bond",
+    "sequence": [
+      "traveler-create",
+      "guardian-select",
+      "first-bond",
+      "elyndor-arrival",
+      "lio-introduction",
+      "frayling-encounter",
+      "quest-a-thread-begins"
+    ]
+  },
+  "npcs": [
+    {
+      "id": "lio",
+      "name": "Lio",
+      "role": "Waystitch Keeper",
+      "mapId": "elyndor-sunny-plains",
+      "position": { "x": 18, "y": 9, "direction": "left" },
+      "assetBindings": {
+        "sprite": "npc/lio/sprite",
+        "portrait": "npc/lio/portrait"
+      },
+      "dialogue": {
+        "intro": [
+          "You felt that pull too, didn't you? The Waystitch has been restless since dawn.",
+          "These plains are usually gentle. Lately, the threads beneath them have started to snag."
+        ],
+        "questActive": [
+          "Stay close to your Guardian. Frayed creatures are drawn to loose threads and lonely travelers."
+        ],
+        "questComplete": [
+          "Good. You didn't just drive it off—you steadied the thread around it. Remember that feeling."
+        ]
+      }
+    }
+  ],
+  "quests": [
+    {
+      "id": "a-thread-begins",
+      "name": "A Thread Begins",
+      "stage": 1,
+      "giver": "lio",
+      "summary": "Help Lio investigate the first signs of fraying in the Sunny Plains of Elyndor.",
+      "objectives": [
+        { "id": "speak-to-lio", "type": "talk", "target": "lio", "count": 1 },
+        { "id": "defeat-first-frayling", "type": "battle", "targetTag": "frayling", "count": 1 },
+        { "id": "return-to-lio", "type": "talk", "target": "lio", "count": 1 }
+      ],
+      "rewards": {
+        "gold": 100,
+        "items": [{ "id": "threadmend-tonic", "count": 1 }]
+      }
+    }
+  ],
+  "encounterTables": [
+    {
+      "id": "elyndor-sunny-plains-early",
+      "regionTags": ["grass", "trail-edge"],
+      "entries": [
+        { "enemyId": "frayling-tuft", "weight": 65 },
+        { "enemyId": "frayling-scritch", "weight": 35 }
+      ]
+    }
+  ],
+  "enemies": [
+    {
+      "id": "frayling-tuft",
+      "name": "Tuft Frayling",
+      "tags": ["frayling", "elyndor", "early"],
+      "role": "basic",
+      "assetBindings": { "sprite": "enemy/frayling/tuft" }
+    },
+    {
+      "id": "frayling-scritch",
+      "name": "Scritch Frayling",
+      "tags": ["frayling", "elyndor", "early"],
+      "role": "quick",
+      "assetBindings": { "sprite": "enemy/frayling/scritch" }
+    }
+  ],
+  "items": [
+    {
+      "id": "threadmend-tonic",
+      "name": "Threadmend Tonic",
+      "type": "consumable",
+      "description": "A mild restorative brewed for travelers working near unstable threads.",
+      "assetBindings": { "icon": "item/threadmend-tonic/icon" }
+    }
+  ]
+}

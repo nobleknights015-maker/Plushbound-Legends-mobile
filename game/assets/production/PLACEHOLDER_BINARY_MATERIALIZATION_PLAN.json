@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "phase": "asset-placeholder-materialization",
+  "gameDevelopmentStarted": false,
+  "scope": "whole-game-engine-compatible-placeholder-binaries",
+  "purpose": "Define the actual placeholder files that must be materialized from the completed Plushbound asset specifications before gameplay development begins.",
+  "world": "Plushtopia",
+  "tileSize": 48,
+  "regions": ["elyndor","verdancia","cinderreach","tideglass-coast","silkspire","moonpatch-steppe","frostlace","gloamfen","sunspool-desert","crownweave"],
+  "materializationPolicy": {
+    "placeholderOnly": true,
+    "finalArtDeferred": true,
+    "finalArtTarget": "original Plushbound MV-cover/Trinity-inspired polished JRPG visual pass",
+    "oneForOneReplacementRequired": true,
+    "stableLogicalIds": true,
+    "noGameplayLogic": true,
+    "noCopiedProprietaryRpgMakerArt": true,
+    "mobileFirst": true
+  },
+  "binaryClasses": {
+    "characterSprites": {"format":"png","transparent":true,"cell":{"width":48,"height":48},"directions":4,"walkFrames":3,"requirements":["stable frame order","neutral readable silhouette","age-band-safe proportions","no decorative details required in placeholder"]},
+    "characterCreatorLayers": {"format":"png","transparent":true,"cell":{"width":48,"height":48},"directions":4,"walkFrames":3,"alignment":"shared-origin","requirements":["pixel-identical canvas geometry across layers","no layer clipping","adult/teen/child/elder body-family compatibility"]},
+    "portraits": {"format":"png","transparent":true,"master":{"width":288,"height":384},"requirements":["expression slot preserved","character ID embedded in manifest not image pixels"]},
+    "guardianSprites": {"format":"png","transparent":true,"cell":{"width":48,"height":48},"directions":4,"walkFrames":3,"requirements":["distinct from hostile silhouettes","family ID preserved"]},
+    "guardianSilhouettes": {"format":"png","transparent":true,"target":{"width":192,"height":192},"requirements":["solid readable shape","unique family recognition"]},
+    "battleSprites": {"format":"png","transparent":true,"canvasClass":"size-tiered","tiers":{"small":"192x192","medium":"288x288","large":"384x384","boss":"576x576"},"requirements":["idle/action/hurt slots","anchor metadata","boss phase footprint stability"]},
+    "tilesets": {"format":"png","tileSize":48,"requirements":["48px grid exact","autotile geometry preserved","collision semantics represented in metadata","regional/state variants share layout where replacement-safe"]},
+    "propsAndArchitecture": {"format":"png","transparent":true,"grid":48,"requirements":["footprint metadata","walk-behind/foreground class","interaction anchor where applicable"]},
+    "itemIcons": {"format":"png","master":{"width":96,"height":96},"runtime":{"width":48,"height":48},"requirements":["legible at runtime size","alpha safe","category-readable placeholder glyph"]},
+    "ui": {"format":"png","transparentWhenApplicable":true,"requirements":["mobile-safe touch targets","high contrast","no color-only meaning","nine-slice metadata where applicable"]},
+    "vfx": {"format":"png","transparent":true,"sheetClass":"frame-strip-or-grid","requirements":["frame timing manifest","anchor","reduced-flash alternative where required","telegraph readability"]},
+    "parallaxesAndBattlebacks": {"format":"png","requirements":["aspect metadata","seam/loop metadata where applicable","regional ID","story/weather state binding"]},
+    "audio": {"format":"ogg","requirements":["loop metadata for looping tracks","role/category ID","mobile bitrate target","placeholder audio must be original/generated-safe or silence-tone functional stand-in"]}
+  },
+  "placeholderVisualLanguage": {
+    "goal": "functional differentiation, not final beauty",
+    "characters": "simple neutral figures with category/age/role readability",
+    "guardians": "distinct mascot silhouettes",
+    "enemies": "distinct hostile silhouettes with tier readability",
+    "environment": "simple geometric material/terrain coding while retaining exact footprints",
+    "items": "category glyph plus unique ID mapping",
+    "ui": "high-contrast functional panels and icons",
+    "vfx": "simple readable timing shapes",
+    "rule": "placeholder appearance must never constrain the later final-art design beyond engine geometry"
+  },
+  "materializationBatches": [
+    {"id":"ph-01-core-shared","contents":["shared creator bodies","shared creator face parts","shared UI primitives","shared item icon primitives","shared interaction markers"],"priority":1},
+    {"id":"ph-02-canon-ocs","contents":["Chris Bourn sprite/portrait slots","Penney Nguyen sprite/portrait slots","Lily sprite/portrait slots","Ethan sprite/portrait slots"],"priority":2},
+    {"id":"ph-03-guardians","contents":["all established Guardian families","production Guardian families","regional variants","silhouettes","battle slot sheets","bond-expression slots"],"priority":3},
+    {"id":"ph-04-population","contents":["persistent NPC sprite slots","child/teen/adult/elder sets","occupation sets","ambient recipes","major/secondary portrait slots"],"priority":4},
+    {"id":"ph-05-hostiles","contents":["common enemies","veterans","elites","minibosses","regional bosses","major bosses","secret/endgame bosses","telegraph placeholders"],"priority":5},
+    {"id":"ph-06-environments","contents":["regional tilesets","autotiles","terrain","architecture","interiors","dungeons","props","foliage","roads","bridges","water","Waystitch","secret-area pieces","story-state overlays"],"priority":6},
+    {"id":"ph-07-equipment-items","contents":["weapons","outfits","accessories","Guardian charms","consumables","ingredients","materials","key items","treasures","tools","foods","cosmetics"],"priority":7},
+    {"id":"ph-08-presentation","contents":["VFX","regional UI","global UI","parallaxes","battlebacks","loading assets","weather/lighting overlays"],"priority":8},
+    {"id":"ph-09-audio","contents":["BGM stand-ins","ambience","combat SFX","Guardian SFX","environment SFX","UI SFX","event stingers"],"priority":9}
+  ],
+  "regionMaterializationContract": {
+    "requiredForEachRegion": ["tilesets","autotiles","terrain","buildings","building-states","interiors","dungeon-kits","props","natural-assets","travel-infrastructure","Waystitch-assets","parallaxes","battlebacks","weather-lighting","story-overlays","secret-area-assets","persistent-NPC-slots","child-NPC-slots","creator-fashion","Guardian-families","Guardian-variants","enemy-families","elite-and-boss-slots","regional-items","regional-VFX","regional-UI","regional-audio"],
+    "mustReferenceProductionSpec": true,
+    "mustUseStableRegionNamespace": true
+  },
+  "validation": {
+    "beforeAssetFreeze": [
+      "every reserved logical ID resolves to exactly one placeholder record",
+      "every binary placeholder record resolves to a canonical output path",
+      "all PNG dimensions conform to class contract",
+      "all sprite sheets conform to frame layout",
+      "all creator layers align to shared origin",
+      "all tilesets conform to 48px grid",
+      "all item masters have 48px runtime derivative rule",
+      "all Guardian namespaces remain outside hostile enemy namespaces",
+      "all child assets use child-appropriate body and wardrobe classes",
+      "canon OCs remain unique and are never ambient recipes",
+      "all ten regions pass required-class coverage",
+      "no final-art claim exists on placeholder binaries",
+      "no gameplay implementation is introduced by this phase"
+    ],
+    "assetLibraryFreezeRequires": ["materialization-complete","binary-validation-pass","manifest-resolution-pass","collision-pass","coverage-pass"]
+  },
+  "nextAssetOnlySteps": [
+    "generate canonical placeholder output-path registry",
+    "materialize shared/core placeholder binary templates",
+    "materialize regional placeholder packs in deterministic batches",
+    "validate binary dimensions/layouts and manifest resolution",
+    "freeze placeholder asset library before gameplay development"
+  ]
+}

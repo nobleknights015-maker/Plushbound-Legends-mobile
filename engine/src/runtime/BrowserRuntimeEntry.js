@@ -6,7 +6,7 @@ import { Canvas2DRenderBackend } from '../render/Canvas2DRenderBackend.js';
 import { InputManager } from '../input/InputManager.js';
 import { LiveInputRouter } from '../input/LiveInputRouter.js';
 import { SceneInteractionController } from '../scenes/SceneInteractionController.js';
-import { readCssSafeArea, normalizeSafeInsets } from '../platform/ScreenAdaptation.js';
+import { readCssSafeArea, normalizeSafeInsets, classifyScreen, responsiveAnchor } from '../platform/ScreenAdaptation.js';
 
 function imageLoader(descriptor, scope = globalThis) {
   if (descriptor.type !== 'image' || typeof scope.Image !== 'function') return Promise.resolve({ id: descriptor.id, descriptor });
@@ -33,6 +33,25 @@ function ensureCanvas(scope, canvas = null) {
   });
   document.body?.appendChild?.(created);
   return created;
+}
+
+function resolveUrl(value, base, scope = globalThis) {
+  if (!value) return null;
+  try {
+    const Url = scope.URL || globalThis.URL;
+    return Url && base ? new Url(String(value), String(base)).href : String(value);
+  } catch {
+    return String(value);
+  }
+}
+
+export function resolveRuntimeScriptConfig(scope = globalThis) {
+  const document = scope.document;
+  if (!document) return { script: null, manifestUrl: null };
+  const script = document.currentScript || document.querySelector?.('script[data-plushbound-engine-v1="runtime"]') || null;
+  const manifest = script?.dataset?.assetManifest || script?.getAttribute?.('data-asset-manifest') || null;
+  const base = script?.src || document.baseURI || scope.location?.href || null;
+  return { script, manifestUrl: resolveUrl(manifest, base, scope) };
 }
 
 export async function bootPlushboundEngineV1({
@@ -112,6 +131,15 @@ export async function bootPlushboundEngineV1({
     validation,
     resize,
     viewportInfo: () => liveBackend?.viewport?.snapshot?.() || null,
+    screenProfile: () => {
+      const info = liveBackend?.viewport?.snapshot?.();
+      return classifyScreen({ width: info?.cssWidth || scope.innerWidth || 1604, height: info?.cssHeight || scope.innerHeight || 720 });
+    },
+    anchorUi: spec => {
+      const info = liveBackend?.viewport?.snapshot?.();
+      const safeArea = info?.safeArea || { x: 0, y: 0, width: 1604, height: 720 };
+      return responsiveAnchor({ ...spec, safeArea });
+    },
     setSafeAreaInsets: insets => {
       runtimeSafeInsets = normalizeSafeInsets(insets);
       return liveBackend?.setSafeAreaInsets?.(runtimeSafeInsets) || null;
@@ -147,15 +175,14 @@ export async function bootPlushboundEngineV1({
       liveRenderer: !!liveBackend,
       liveInput: !!renderCanvas,
       liveInteractions: true,
-      screenProfile: runtime.viewportInfo()?.screen?.profile || null
+      screenProfile: runtime.screenProfile().profile
     }
   }));
   return runtime;
 }
 
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-  const script = document.currentScript;
-  const manifestUrl = script?.dataset?.assetManifest || null;
+  const { manifestUrl } = resolveRuntimeScriptConfig(window);
   bootPlushboundEngineV1({ scope: window, manifestUrl }).catch(error => {
     window.__PLUSHBOUND_ENGINE_V1_BOOT_ERROR__ = String(error?.stack || error);
     console.error('[Plushbound Engine v1] bootstrap failed', error);

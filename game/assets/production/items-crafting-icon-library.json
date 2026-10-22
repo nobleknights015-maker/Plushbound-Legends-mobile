@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "libraryId": "plushtopia-items-crafting-icons",
+  "productionMode": "asset-first-2x-reserve",
+  "style": "Plushbound MV/Trinity-inspired readable iconography",
+  "iconSpec": {"masterSize": 96, "runtimeTarget": 48, "transparentBackground": true, "readableAtSmallScale": true},
+  "targets": {
+    "consumables": 192,
+    "ingredients": 256,
+    "craftingMaterials": 256,
+    "keyItems": 96,
+    "treasures": 128,
+    "weapons": 192,
+    "armorAndOutfits": 192,
+    "accessories": 160,
+    "guardianItems": 128,
+    "tools": 80,
+    "booksMapsLetters": 96,
+    "currencyTradeGoods": 64,
+    "totalMinimum": 1840
+  },
+  "visualFamilies": ["thread-and-spool","plush-fabric","herbal-and-floral","mineral-and-crystal","culinary","alchemy","smithing","tailoring","guardian-care","exploration","secret-society","regional-trade"],
+  "rules": ["silhouette-readable without label","rarity changes framing/details rather than relying only on color","Guardian materials come from bonding, gifts, shedding, discoveries or ethical collection rather than killing Guardians","regional resources receive distinct motifs","quest items cannot be visually confused with generic loot","reserve variants must be meaningful alternates rather than blind recolors"]
+}

@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 1,
+  "scope": "whole-game-placeholder-asset-integration",
+  "productionStatus": "placeholder-specified",
+  "gameplayImplementation": false,
+  "tileSize": 48,
+  "purpose": "Unify all regional and global placeholder asset specifications into one stable production contract before gameplay development and before the final MV-cover/Trinity-inspired visual replacement pass.",
+  "workflow": [
+    "complete placeholder asset library",
+    "validate coverage and stable IDs",
+    "begin explicit game-development phase only after asset signoff",
+    "assemble and validate complete playable build",
+    "export finished ZIP",
+    "replace placeholder visuals in a dedicated final-art pass",
+    "regression-test asset references and mobile presentation"
+  ],
+  "regions": [
+    "elyndor",
+    "verdancia",
+    "cinderreach",
+    "tideglass-coast",
+    "silkspire",
+    "moonpatch-steppe",
+    "frostlace",
+    "gloamfen",
+    "sunspool-desert",
+    "crownweave"
+  ],
+  "globalLibraries": {
+    "characterCreator": {
+      "required": true,
+      "stablePrefix": "global/creator/",
+      "categories": ["body", "skin", "eyes", "brows", "mouth", "facial-detail", "back-hair", "front-hair", "top", "bottom", "full-outfit", "outerwear", "footwear", "headwear", "accessory"],
+      "ageBands": ["child", "teen", "adult", "elder"],
+      "rules": ["layer-compatible", "age-appropriate", "mobile-readable", "normal-anatomy", "regional-fashion-compatible"]
+    },
+    "npcs": {
+      "required": true,
+      "stablePrefix": "global/npc/",
+      "coverage": ["persistent identities", "ambient recipes", "major portraits", "secondary portraits", "children", "teens", "adults", "elders", "merchants", "officials", "travelers", "Order contacts"],
+      "canonReservations": ["Chris Bourn", "Penney Nguyen", "Lily", "Ethan"],
+      "canonRule": "Named canon OCs remain unique assets and are never substituted with ambient NPC recipes."
+    },
+    "guardians": {
+      "required": true,
+      "stablePrefix": "global/guardian/",
+      "perFamily": ["overworld", "portrait", "silhouette", "battle-idle", "battle-action", "battle-hurt", "bond-expression", "icon", "field-interaction", "resting-pose"],
+      "rules": ["distinct from hostile monsters", "clear plush construction", "48px-readable silhouette", "ethical material sourcing through bonding, gifts, shed materials or discoveries"]
+    },
+    "enemiesBosses": {
+      "required": true,
+      "stablePrefix": "global/enemy/",
+      "tiers": ["common", "veteran", "elite", "miniboss", "regional-boss", "major-boss", "secret-boss", "endgame"],
+      "requiredStates": ["idle", "action", "hurt", "telegraph", "phase", "damage-state"]
+    },
+    "worldEnvironment": {
+      "required": true,
+      "stablePrefix": "global/world/",
+      "categories": ["tiles", "autotiles", "buildings", "interiors", "dungeons", "props", "foliage", "roads", "bridges", "water", "parallaxes", "battlebacks", "weather", "lighting", "story-state-overlays", "secret-area-pieces", "Waystitch-objects"],
+      "rules": ["48px-compatible where applicable", "state variants use stable IDs", "region ownership explicit"]
+    },
+    "itemsEquipmentCrafting": {
+      "required": true,
+      "stablePrefix": "global/item/",
+      "categories": ["consumable", "ingredient", "material", "key", "treasure", "weapon", "outfit", "accessory", "guardian-charm", "crafting-tool", "food", "cosmetic", "trade-good"],
+      "appearanceSeparatedFromStats": true
+    },
+    "portraitsFaces": {
+      "required": true,
+      "stablePrefix": "global/portrait/",
+      "majorExpressionTarget": 8,
+      "rules": ["normal anatomy", "consistent identity", "age-consistent", "regional wardrobe continuity"]
+    },
+    "vfx": {
+      "required": true,
+      "stablePrefix": "global/vfx/",
+      "categories": ["combat", "Guardian Arts", "Bond Arts", "Limit Arts", "boss telegraphs", "field interactions", "weather", "Waystitch", "crafting", "UI", "cutscene"],
+      "reducedFlashAlternates": true
+    },
+    "ui": {
+      "required": true,
+      "stablePrefix": "global/ui/",
+      "categories": ["system icons", "status icons", "ability icons", "bond icons", "map markers", "quest badges", "service signs", "frames", "windowskins", "touch prompts", "gauges", "cursors", "battle UI", "shop UI", "map UI", "title UI"],
+      "mobileRules": ["large touch targets", "safe-area aware", "high contrast", "no color-only information", "phone-readable typography"]
+    },
+    "audio": {
+      "required": true,
+      "stablePrefix": "global/audio/",
+      "categories": ["regional BGM", "settlement BGM", "wilderness BGM", "dungeon BGM", "battle BGM", "boss BGM", "Guardian BGM", "event BGM", "ambience", "environment SFX", "combat SFX", "Guardian SFX", "UI SFX", "interaction SFX", "cinematic stingers"],
+      "runtimeFormat": "ogg",
+      "loopMetadataRequired": true
+    }
+  },
+  "crossRegionReserve": {
+    "principle": "Maintain meaningful 2x production reserve through modular alternatives, state changes, regional variants and event versions rather than blind recolors or duplicates.",
+    "priority": ["NPC variation", "clothing", "Guardian animation", "enemy variation", "props", "interiors", "foliage", "dungeon pieces", "cosmetics", "story-state environments"]
+  },
+  "stableIdContract": {
+    "regionalPattern": "reg/{region}/{category}/{id}",
+    "globalPattern": "global/{category}/{id}",
+    "replacementRule": "Final artwork replaces placeholder payloads without changing logical IDs or gameplay-facing references.",
+    "requiredMetadata": ["logicalId", "category", "regionOrGlobalOwner", "dimensions", "transparencyPolicy", "placeholderStatus", "finalArtTarget", "provenance"]
+  },
+  "placeholderPolicy": {
+    "explicit": true,
+    "finalArtDeferred": true,
+    "mayBeUsedForAssembly": true,
+    "mayBeClaimedAsFinalArt": false,
+    "finalTarget": "Cohesive original Plushbound artwork using polished MV-cover/Trinity-inspired JRPG presentation without copying proprietary RPG Maker artwork."
+  },
+  "coverageGates": [
+    "all ten regions represented",
+    "all global asset categories represented",
+    "children and age-diverse NPC assets represented",
+    "Guardians visually and semantically separate from enemies",
+    "boss phase and telegraph slots represented",
+    "regional weather and story-state variants represented",
+    "mobile UI assets represented",
+    "audio categories represented",
+    "stable replacement IDs defined",
+    "no proprietary or unlicensed RPG Maker artwork required",
+    "placeholder status remains explicit"
+  ],
+  "phaseBoundary": {
+    "currentPhase": "asset-production-and-placeholder-integration",
+    "gameDevelopmentStarted": false,
+    "transitionRequirement": "Asset coverage audit and explicit user-approved transition to game development.",
+    "note": "This file organizes and validates asset requirements only. It does not implement maps, quests, combat, progression, economy, NPC schedules or other gameplay systems."
+  }
+}

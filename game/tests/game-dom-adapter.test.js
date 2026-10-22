@@ -16,7 +16,7 @@ function makeDocument() {
   const gold = element();
   const mapScreen = element();
   const selectors = new Map([
-    ['#mapScreen .map-info', mapInfo], ['#mapScreen .world-map', worldMap],
+    ['#mapName', mapInfo], ['#mapScreen .world-map', worldMap],
     ['#questStatus', questInfo], ['#goldValue', gold], ['#mapScreen', mapScreen]
   ]);
   let clickListener = null;
@@ -49,7 +49,7 @@ test('DOM adapter renders live map, quest and gold state into reconstructed shel
   assert.equal(document.nodes.mapInfo.textContent, 'Sunny Plains of Elyndor');
   assert.equal(document.nodes.worldMap.dataset.plushboundMapId, 'elyndor-sunny-plains');
   assert.equal(document.nodes.questInfo.textContent, 'A Thread Begins — active');
-  assert.equal(document.nodes.gold.textContent, '100');
+  assert.equal(document.nodes.gold.textContent, '100 G');
   assert.equal(document.nodes.mapScreen.dataset.plushboundLive, 'true');
   adapter.detach();
   assert.equal(document.listener(), null);

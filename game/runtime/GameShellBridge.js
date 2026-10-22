@@ -58,6 +58,12 @@ export class GameShellBridge {
     return result;
   }
 
+  advanceDialogue() {
+    const current = this.#requireSession().advanceDialogue();
+    this.publish('dialogue', { current });
+    return current;
+  }
+
   recordBattle(enemyTags = []) {
     const result = this.#requireSession().recordBattle(enemyTags);
     this.publish('battle', { enemyTags: clone(enemyTags) });
@@ -71,10 +77,15 @@ export class GameShellBridge {
   }
 
   openShop(shopId) {
-    const shop = this.game?.session?.game?.shop?.(shopId);
-    if (!shop) throw new Error(`Unknown shop ${shopId}`);
+    const shop = this.#requireSession().openShop(shopId);
     this.publish('shop', { shop });
     return clone(shop);
+  }
+
+  closeShop() {
+    const result = this.#requireSession().closeShop();
+    this.publish('shop-close');
+    return result;
   }
 
   quest(questId) {

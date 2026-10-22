@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "catalogId": "plushtopia-regional-reserve-v1",
+  "purpose": "Pre-production asset batches for the wider Plushtopia world. Names are production identities and may be refined with later lore without discarding completed visual families.",
+  "regions": [
+    {
+      "id": "cinderreach",
+      "identity": ["volcanic-highlands", "forge-cities", "ash-silk", "ember-lanterns"],
+      "paletteConcept": "charcoal, ember, brass, warm textile accents",
+      "assetTargets": {"tilesetSheets":16,"npcIdentities":64,"childNpcIdentities":12,"wardrobePieces":144,"guardianFamilies":16,"enemyFamilies":32,"bossSets":12,"props":128,"icons":176,"vfxSets":72}
+    },
+    {
+      "id": "tideglass-coast",
+      "identity": ["coastal-cliffs", "canal-towns", "glasswork", "tide-shrines"],
+      "paletteConcept": "sea glass, weathered wood, pearl, indigo textiles",
+      "assetTargets": {"tilesetSheets":18,"npcIdentities":72,"childNpcIdentities":16,"wardrobePieces":152,"guardianFamilies":18,"enemyFamilies":34,"bossSets":14,"props":144,"icons":192,"vfxSets":72}
+    },
+    {
+      "id": "silkspire",
+      "identity": ["mountain-capital", "terraced-districts", "scholar-halls", "clockwork-textiles"],
+      "paletteConcept": "ivory stone, lacquer, silk, brass mechanisms",
+      "assetTargets": {"tilesetSheets":20,"npcIdentities":88,"childNpcIdentities":20,"wardrobePieces":208,"guardianFamilies":18,"enemyFamilies":30,"bossSets":14,"props":176,"icons":208,"vfxSets":80}
+    },
+    {
+      "id": "moonpatch-steppe",
+      "identity": ["open-steppe", "nomadic-camps", "moonlit-grass", "wind-caravans"],
+      "paletteConcept": "night blue, silver thread, leather, bright woven banners",
+      "assetTargets": {"tilesetSheets":14,"npcIdentities":64,"childNpcIdentities":16,"wardrobePieces":152,"guardianFamilies":20,"enemyFamilies":34,"bossSets":12,"props":112,"icons":160,"vfxSets":64}
+    },
+    {
+      "id": "frostlace",
+      "identity": ["snow-forests", "ice-lakes", "fur-and-lace-settlements", "aurora-thread"],
+      "paletteConcept": "snow, slate, pale textile tones, aurora accents",
+      "assetTargets": {"tilesetSheets":16,"npcIdentities":64,"childNpcIdentities":16,"wardrobePieces":176,"guardianFamilies":18,"enemyFamilies":36,"bossSets":14,"props":128,"icons":176,"vfxSets":80}
+    },
+    {
+      "id": "gloamfen",
+      "identity": ["mist-wetlands", "stilt-villages", "willow-thread", "memory-lanterns"],
+      "paletteConcept": "peat, mist, muted green, ghostly lantern accents",
+      "assetTargets": {"tilesetSheets":16,"npcIdentities":64,"childNpcIdentities":12,"wardrobePieces":144,"guardianFamilies":18,"enemyFamilies":38,"bossSets":16,"props":144,"icons":176,"vfxSets":80}
+    },
+    {
+      "id": "sunspool-desert",
+      "identity": ["dune-seas", "oasis-markets", "woven-sunshades", "buried-threadworks"],
+      "paletteConcept": "sandstone, indigo, copper, saturated market textiles",
+      "assetTargets": {"tilesetSheets":18,"npcIdentities":72,"childNpcIdentities":16,"wardrobePieces":184,"guardianFamilies":18,"enemyFamilies":36,"bossSets":14,"props":144,"icons":192,"vfxSets":72}
+    },
+    {
+      "id": "crownweave",
+      "identity": ["late-game-metropolis", "central-bank-district", "grand-stations", "order-architecture"],
+      "paletteConcept": "formal stone, dark wood, gold thread, civic textiles",
+      "assetTargets": {"tilesetSheets":24,"npcIdentities":112,"childNpcIdentities":20,"wardrobePieces":240,"guardianFamilies":20,"enemyFamilies":32,"bossSets":20,"props":208,"icons":240,"vfxSets":96}
+    }
+  ],
+  "sharedRules": {
+    "tileSize": 48,
+    "mvTrinityInspiredScale": true,
+    "originalArtworkRequired": true,
+    "childAssetsAgeAppropriate": true,
+    "guardianSilhouetteRequired": true,
+    "twoTimesReserve": true,
+    "noBlindDuplicateRecolors": true,
+    "uniqueStoryAssetsGetExpressionAndStateReserve": true
+  },
+  "status": "planned"
+}

@@ -2,5 +2,22 @@
   "schemaVersion": 1,
   "project": "Plushbound Legends",
   "policy": "ASSET_PROVENANCE.md",
-  "records": []
+  "records": [
+    {
+      "assetId": "legal/distribution-notices",
+      "path": "legal/LEGAL_NOTICES.md",
+      "status": "ready",
+      "sourceType": "original-human",
+      "creator": "Plushbound Legends project",
+      "sourceReference": "Internal project legal/credits policy set",
+      "licenseBasis": "Project-owned internal documentation; third-party rights excluded",
+      "commercialUsePermitted": true,
+      "redistributionWithGamePermitted": true,
+      "attributionRequired": false,
+      "modified": false,
+      "toolNotes": "Drafted as internal project compliance text with AI assistance and subject to legal review before commercial release.",
+      "humanApprover": "To be confirmed before public release",
+      "approvalDate": null
+    }
+  ]
 }

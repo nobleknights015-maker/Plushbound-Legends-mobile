@@ -7,6 +7,7 @@ const world = read('world.json');
 const guardians = read('guardians.json');
 const opening = read('opening-elyndor.json');
 const route = read('elyndor-route-one.json');
+const layouts = read('elyndor-map-layouts.json');
 const index = read('content-index.json');
 
 function uniqueIds(items, label) {
@@ -27,6 +28,7 @@ test('game content targets the frozen Engine v1 baseline', () => {
   assert.equal(index.engineBaseline, '160d9fd95bc0d3db39224f8bb4c5e1e3a1f54425');
   assert.equal(index.start.worldId, world.world.id);
   assert.ok(index.packages.some(pkg => pkg.id === 'elyndor-route-one' && pkg.required));
+  assert.ok(index.packages.some(pkg => pkg.id === 'elyndor-map-layouts' && pkg.required));
 });
 
 test('starter Guardian roster is complete and uniquely addressable', () => {
@@ -143,5 +145,23 @@ test('world maps define stable MV-inspired tile dimensions and asset bindings', 
     assert.ok(map.assetBindings?.parallax);
     assert.ok(map.music);
     assert.ok(map.ambience);
+  }
+});
+
+test('every early Elyndor map has a matching construction layout with in-bounds anchors', () => {
+  const mapById = new Map(world.maps.map(map => [map.id, map]));
+  const layoutIds = uniqueIds(layouts.layouts.map(layout => ({ id: layout.mapId })), 'Layout map');
+  for (const mapId of route.route.maps) assert.ok(layoutIds.has(mapId), `Missing map layout ${mapId}`);
+
+  for (const layout of layouts.layouts) {
+    const map = mapById.get(layout.mapId);
+    assert.ok(map, `Unknown layout map ${layout.mapId}`);
+    assert.deepEqual(layout.size, { width: map.dimensions.width, height: map.dimensions.height, tileSize: map.tileSize });
+    assert.ok(layout.zones.length > 0);
+    assert.ok(layout.eventAnchors.length > 0);
+    for (const anchor of layout.eventAnchors) {
+      assert.ok(anchor.position.x >= 0 && anchor.position.x < map.dimensions.width, `Anchor ${anchor.id} x is out of bounds`);
+      assert.ok(anchor.position.y >= 0 && anchor.position.y < map.dimensions.height, `Anchor ${anchor.id} y is out of bounds`);
+    }
   }
 });

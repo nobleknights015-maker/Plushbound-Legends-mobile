@@ -6,11 +6,10 @@ import { Canvas2DRenderBackend } from '../render/Canvas2DRenderBackend.js';
 import { InputManager } from '../input/InputManager.js';
 import { LiveInputRouter } from '../input/LiveInputRouter.js';
 import { SceneInteractionController } from '../scenes/SceneInteractionController.js';
+import { readCssSafeArea, normalizeSafeInsets } from '../platform/ScreenAdaptation.js';
 
 function imageLoader(descriptor, scope = globalThis) {
-  if (descriptor.type !== 'image' || typeof scope.Image !== 'function') {
-    return Promise.resolve({ id: descriptor.id, descriptor });
-  }
+  if (descriptor.type !== 'image' || typeof scope.Image !== 'function') return Promise.resolve({ id: descriptor.id, descriptor });
   return new Promise((resolve, reject) => {
     const image = new scope.Image();
     image.onload = () => resolve(image);
@@ -28,15 +27,10 @@ function ensureCanvas(scope, canvas = null) {
   const created = document.createElement('canvas');
   created.dataset.plushboundEngineCanvas = 'true';
   created.setAttribute?.('data-plushbound-engine-canvas', '');
-  if (created.style) {
-    created.style.position = 'fixed';
-    created.style.inset = '0';
-    created.style.width = '100vw';
-    created.style.height = '100vh';
-    created.style.background = '#000';
-    created.style.zIndex = '2147483000';
-    created.style.touchAction = 'none';
-  }
+  if (created.style) Object.assign(created.style, {
+    position: 'fixed', inset: '0', width: '100vw', height: '100vh', background: '#000',
+    zIndex: '2147483000', touchAction: 'none'
+  });
   document.body?.appendChild?.(created);
   return created;
 }
@@ -49,6 +43,7 @@ export async function bootPlushboundEngineV1({
   canvas = null,
   input = null,
   onAction = null,
+  safeInsets = null,
   strictBindings = false
 } = {}) {
   if (scope.__PLUSHBOUND_ENGINE_V1__?.booted) return scope.__PLUSHBOUND_ENGINE_V1__;
@@ -91,11 +86,14 @@ export async function bootPlushboundEngineV1({
   });
   actionListeners.add(action => interaction.handle(action));
 
+  let runtimeSafeInsets = safeInsets ? normalizeSafeInsets(safeInsets) : readCssSafeArea(scope);
   const resize = () => liveBackend?.resize?.(
     renderCanvas?.clientWidth || scope.innerWidth || 1604,
     renderCanvas?.clientHeight || scope.innerHeight || 720,
-    scope.devicePixelRatio || 1
+    scope.devicePixelRatio || 1,
+    runtimeSafeInsets
   );
+  resize();
   scope.addEventListener?.('resize', resize, { passive: true });
   scope.addEventListener?.('orientationchange', resize, { passive: true });
 
@@ -113,6 +111,15 @@ export async function bootPlushboundEngineV1({
     interaction,
     validation,
     resize,
+    viewportInfo: () => liveBackend?.viewport?.snapshot?.() || null,
+    setSafeAreaInsets: insets => {
+      runtimeSafeInsets = normalizeSafeInsets(insets);
+      return liveBackend?.setSafeAreaInsets?.(runtimeSafeInsets) || null;
+    },
+    refreshSafeAreaInsets: () => {
+      runtimeSafeInsets = readCssSafeArea(scope);
+      return liveBackend?.setSafeAreaInsets?.(runtimeSafeInsets) || null;
+    },
     mapClientPoint: (x, y) => liveBackend?.pointFromClient?.(x, y) || { x: Number(x) || 0, y: Number(y) || 0 },
     onAction: listener => { if (typeof listener === 'function') actionListeners.add(listener); return () => actionListeners.delete(listener); },
     registerInteraction: (sceneType, id, handler) => { interaction.register(sceneType, id, handler); return runtime; },
@@ -134,7 +141,14 @@ export async function bootPlushboundEngineV1({
 
   scope.__PLUSHBOUND_ENGINE_V1__ = runtime;
   scope.dispatchEvent?.(new (scope.CustomEvent || class { constructor(type, init) { this.type = type; this.detail = init?.detail; } })('plushbound-engine-v1-ready', {
-    detail: { version: runtime.version, validAssets: validation.valid, liveRenderer: !!liveBackend, liveInput: !!renderCanvas, liveInteractions: true }
+    detail: {
+      version: runtime.version,
+      validAssets: validation.valid,
+      liveRenderer: !!liveBackend,
+      liveInput: !!renderCanvas,
+      liveInteractions: true,
+      screenProfile: runtime.viewportInfo()?.screen?.profile || null
+    }
   }));
   return runtime;
 }

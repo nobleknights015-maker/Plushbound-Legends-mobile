@@ -1,0 +1,223 @@
+{
+  "schemaVersion": 1,
+  "registryId": "plushbound-canonical-output-path-registry",
+  "phase": "asset-production-and-placeholder-integration",
+  "gameDevelopmentStarted": false,
+  "purpose": "Define deterministic repository output paths for every placeholder asset class before binary materialization. Paths and logical IDs remain stable through the later final-art replacement pass.",
+  "root": "game/assets/materialized",
+  "rules": {
+    "lowercaseKebabCase": true,
+    "tileSize": 48,
+    "overwriteLogicalIdsDuringFinalArtPass": false,
+    "replacePayloadNotReference": true,
+    "regionalLogicalId": "reg/{region}/{category}/{id}",
+    "globalLogicalId": "global/{category}/{id}",
+    "regionalOutput": "game/assets/materialized/regions/{region}/{category}/{id}.{ext}",
+    "globalOutput": "game/assets/materialized/global/{category}/{id}.{ext}",
+    "metadataSidecar": "{assetPath}.meta.json",
+    "manifestEntryRequired": true,
+    "placeholderMarkerRequired": true
+  },
+  "regions": [
+    "elyndor",
+    "verdancia",
+    "cinderreach",
+    "tideglass-coast",
+    "silkspire",
+    "moonpatch-steppe",
+    "frostlace",
+    "gloamfen",
+    "sunspool-desert",
+    "crownweave"
+  ],
+  "globalPaths": {
+    "characterCreator": {
+      "body": "global/character-creator/body",
+      "eyes": "global/character-creator/eyes",
+      "brows": "global/character-creator/brows",
+      "mouth": "global/character-creator/mouth",
+      "facialDetail": "global/character-creator/facial-detail",
+      "frontHair": "global/character-creator/front-hair",
+      "backHair": "global/character-creator/back-hair",
+      "top": "global/character-creator/top",
+      "bottom": "global/character-creator/bottom",
+      "fullOutfit": "global/character-creator/full-outfit",
+      "outerwear": "global/character-creator/outerwear",
+      "footwear": "global/character-creator/footwear",
+      "headwear": "global/character-creator/headwear",
+      "accessory": "global/character-creator/accessory",
+      "palette": "global/character-creator/palette"
+    },
+    "canonCharacters": {
+      "chris": "global/canon-characters/chris-bourn",
+      "penney": "global/canon-characters/penney-nguyen",
+      "lily": "global/canon-characters/lily",
+      "ethan": "global/canon-characters/ethan"
+    },
+    "npcShared": "global/npcs/shared",
+    "guardianShared": "global/guardians/shared",
+    "enemyShared": "global/enemies/shared",
+    "items": "global/items",
+    "equipment": "global/equipment",
+    "portraits": "global/portraits",
+    "vfx": "global/vfx",
+    "ui": "global/ui",
+    "audio": "global/audio",
+    "environmentShared": "global/environment/shared",
+    "architectureShared": "global/architecture/shared",
+    "propsShared": "global/props/shared"
+  },
+  "regionalCategoryPaths": [
+    "tilesets",
+    "autotiles",
+    "terrain",
+    "architecture/exteriors",
+    "architecture/interiors",
+    "architecture/state-variants",
+    "dungeons",
+    "props",
+    "foliage",
+    "roads-bridges-fences",
+    "water",
+    "weather-lighting",
+    "parallaxes",
+    "battlebacks",
+    "story-overlays",
+    "secrets",
+    "waystitches",
+    "npcs/adults",
+    "npcs/teens",
+    "npcs/children",
+    "npcs/elders",
+    "npcs/story",
+    "npcs/ambient",
+    "portraits",
+    "creator",
+    "guardians",
+    "guardians/rare",
+    "enemies/common",
+    "enemies/veteran",
+    "enemies/elite",
+    "enemies/miniboss",
+    "bosses/regional",
+    "bosses/secret",
+    "bosses/telegraphs",
+    "bosses/phase-variants",
+    "items",
+    "equipment",
+    "crafting",
+    "vfx",
+    "ui",
+    "audio/bgm",
+    "audio/ambience",
+    "audio/sfx"
+  ],
+  "formatContracts": {
+    "raster": {
+      "extension": "png",
+      "alpha": "required-when-applicable",
+      "colorMode": "rgba",
+      "interpolation": "nearest-for-pixel-assets"
+    },
+    "audio": {
+      "extension": "ogg",
+      "loopMetadataRequired": "for-looping-tracks",
+      "mobileFriendly": true
+    },
+    "metadata": {
+      "extension": "json",
+      "utf8": true
+    }
+  },
+  "spriteContracts": {
+    "standardCharacter": {
+      "cell": [48, 48],
+      "directions": 4,
+      "framesPerDirection": 3,
+      "directionOrder": ["down", "left", "right", "up"]
+    },
+    "creatorLayer": {
+      "mustAlignTo": "standardCharacter",
+      "transparentBackground": true
+    },
+    "guardianOverworld": {
+      "cellGridBase": 48,
+      "footprintMayExceedOneCell": true,
+      "manifestFootprintRequired": true
+    }
+  },
+  "iconContracts": {
+    "master": [96, 96],
+    "runtime": [48, 48],
+    "masterAndRuntimeShareLogicalId": true
+  },
+  "requiredSidecarFields": [
+    "logicalId",
+    "category",
+    "regionOrGlobalOwner",
+    "outputPath",
+    "dimensions",
+    "frameLayout",
+    "transparencyPolicy",
+    "placeholderStatus",
+    "finalArtTarget",
+    "provenance",
+    "qaStatus"
+  ],
+  "reservedNamespaces": {
+    "canonCharacters": ["chris-bourn", "penney-nguyen", "lily", "ethan"],
+    "guardianPrefix": "guardian-",
+    "enemyPrefix": "enemy-",
+    "bossPrefix": "boss-",
+    "npcPrefix": "npc-",
+    "creatorPrefix": "creator-",
+    "uiPrefix": "ui-",
+    "vfxPrefix": "vfx-",
+    "audioPrefix": "audio-"
+  },
+  "collisionPolicy": {
+    "logicalIdMustBeUnique": true,
+    "outputPathMustBeUnique": true,
+    "guardianEnemyCrossNamespaceCollisionForbidden": true,
+    "canonCharacterReuseForbidden": true,
+    "caseInsensitiveFilenameCollisionForbidden": true,
+    "regionalAssetMayReferenceGlobalSharedAsset": true,
+    "globalAssetMustNotMasqueradeAsRegional": true
+  },
+  "materializationBatches": [
+    {"batch": 1, "name": "shared-foundation-and-canon", "paths": ["global/character-creator", "global/canon-characters", "global/ui/shared"]},
+    {"batch": 2, "name": "guardians", "paths": ["global/guardians", "regions/*/guardians"]},
+    {"batch": 3, "name": "population", "paths": ["global/npcs", "regions/*/npcs", "regions/*/portraits"]},
+    {"batch": 4, "name": "enemies-and-bosses", "paths": ["global/enemies", "regions/*/enemies", "regions/*/bosses"]},
+    {"batch": 5, "name": "world-environment", "paths": ["global/environment", "global/architecture", "global/props", "regions/*/tilesets", "regions/*/architecture", "regions/*/props", "regions/*/foliage"]},
+    {"batch": 6, "name": "items-equipment-crafting", "paths": ["global/items", "global/equipment", "regions/*/items", "regions/*/equipment", "regions/*/crafting"]},
+    {"batch": 7, "name": "presentation", "paths": ["global/vfx", "global/ui", "regions/*/vfx", "regions/*/ui", "regions/*/battlebacks", "regions/*/parallaxes"]},
+    {"batch": 8, "name": "audio", "paths": ["global/audio", "regions/*/audio"]},
+    {"batch": 9, "name": "reserve-and-story-state", "paths": ["regions/*/story-overlays", "regions/*/secrets", "regions/*/weather-lighting", "regions/*/architecture/state-variants"]}
+  ],
+  "validationBeforeMaterialization": [
+    "expand every wildcard path against all ten regions",
+    "reject duplicate logical IDs",
+    "reject duplicate normalized output paths",
+    "verify every asset maps to one manifest entry",
+    "verify every raster class has dimensions/frame contract",
+    "verify every audio class has usage and loop policy",
+    "verify every placeholder is explicitly marked non-final",
+    "verify provenance field exists",
+    "verify final-art replacement target exists"
+  ],
+  "finalArtReplacement": {
+    "target": "cohesive original Plushbound artwork with polished MV-cover/Trinity-inspired JRPG presentation",
+    "copyProprietaryRpgMakerArtwork": false,
+    "preserveLogicalIds": true,
+    "preservePathsWherePractical": true,
+    "preserveDimensionsAndFrameLayouts": true,
+    "regressionValidationRequired": true
+  },
+  "status": {
+    "registryDefined": true,
+    "binaryMaterializationStarted": false,
+    "gameDevelopmentStarted": false,
+    "next": "generate deterministic per-batch materialization manifests and validate every intended output path before creating placeholder binaries"
+  }
+}

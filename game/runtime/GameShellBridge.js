@@ -36,9 +36,7 @@ export class GameShellBridge {
     return this.snapshot();
   }
 
-  snapshot() {
-    return this.game?.session?.snapshot?.() ?? null;
-  }
+  snapshot() { return this.game?.session?.snapshot?.() ?? null; }
 
   interact(eventId) {
     const result = this.#requireSession().interact(eventId);
@@ -82,15 +80,19 @@ export class GameShellBridge {
     return clone(shop);
   }
 
+  buyItem(itemId, count = 1) {
+    const purchase = this.#requireSession().buyItem(itemId, count);
+    this.publish('purchase', { purchase });
+    return clone(purchase);
+  }
+
   closeShop() {
     const result = this.#requireSession().closeShop();
     this.publish('shop-close');
     return result;
   }
 
-  quest(questId) {
-    return this.game?.session?.game?.questState?.(questId) ?? null;
-  }
+  quest(questId) { return this.game?.session?.game?.questState?.(questId) ?? null; }
 
   publish(reason, detail = {}) {
     const snapshot = this.snapshot();
@@ -112,6 +114,4 @@ export function installGameShellBridge({ scope = globalThis } = {}) {
   return bridge;
 }
 
-if (typeof window !== 'undefined' && window.document) {
-  installGameShellBridge({ scope: window });
-}
+if (typeof window !== 'undefined' && window.document) installGameShellBridge({ scope: window });

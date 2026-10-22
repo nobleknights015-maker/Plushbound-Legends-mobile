@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "layouts": [
+    {
+      "mapId": "elyndor-sunny-plains",
+      "size": { "width": 32, "height": 20, "tileSize": 48 },
+      "camera": { "mode": "follow-player", "edgeClamp": true },
+      "zones": [
+        { "id": "arrival-meadow", "rect": { "x": 7, "y": 6, "width": 11, "height": 8 }, "tags": ["safe", "tutorial"] },
+        { "id": "lio-waystitch-clearing", "rect": { "x": 16, "y": 5, "width": 7, "height": 8 }, "tags": ["safe", "npc", "waystitch"] },
+        { "id": "east-grass-route", "rect": { "x": 21, "y": 5, "width": 10, "height": 11 }, "tags": ["encounter", "grass"] }
+      ],
+      "landmarks": [
+        { "id": "elyndor-first-waystitch", "position": { "x": 19, "y": 7 }, "assetId": "environment/waystitch/elyndor-first" },
+        { "id": "tutorial-chest", "position": { "x": 25, "y": 13 }, "assetId": "environment/chest/elyndor-small" },
+        { "id": "east-road-marker", "position": { "x": 29, "y": 9 }, "assetId": "environment/elyndor/road-marker" }
+      ],
+      "eventAnchors": [
+        { "id": "lio", "position": { "x": 18, "y": 9 } },
+        { "id": "tutorial-chest", "position": { "x": 25, "y": 13 } },
+        { "id": "sunny-plains-to-crossing", "position": { "x": 31, "y": 10 } }
+      ],
+      "collisionIntent": [
+        "outer cliffs and deep flower banks are blocked",
+        "main road and arrival meadow remain fully walkable",
+        "east grass route supports random encounters",
+        "Waystitch pedestal blocks movement but remains interactable"
+      ]
+    },
+    {
+      "mapId": "elyndor-sunthread-crossing",
+      "size": { "width": 36, "height": 20, "tileSize": 48 },
+      "camera": { "mode": "follow-player", "edgeClamp": true },
+      "zones": [
+        { "id": "west-approach", "rect": { "x": 0, "y": 8, "width": 11, "height": 9 }, "tags": ["trail", "encounter"] },
+        { "id": "bridge-span", "rect": { "x": 10, "y": 5, "width": 17, "height": 10 }, "tags": ["bridge", "quest"] },
+        { "id": "east-approach", "rect": { "x": 27, "y": 4, "width": 9, "height": 11 }, "tags": ["trail", "encounter"] }
+      ],
+      "landmarks": [
+        { "id": "sunthread-bridge", "position": { "x": 18, "y": 10 }, "assetId": "environment/elyndor/sunthread-bridge" },
+        { "id": "anchor-west", "position": { "x": 13, "y": 14 }, "assetId": "environment/elyndor/thread-anchor-damaged" },
+        { "id": "anchor-east", "position": { "x": 26, "y": 6 }, "assetId": "environment/elyndor/thread-anchor-damaged" }
+      ],
+      "eventAnchors": [
+        { "id": "crossing-to-sunny-plains", "position": { "x": 0, "y": 12 } },
+        { "id": "crossing-to-menders-rest", "position": { "x": 35, "y": 8 } },
+        { "id": "anchor-west", "position": { "x": 13, "y": 14 } },
+        { "id": "anchor-east", "position": { "x": 26, "y": 6 } }
+      ],
+      "collisionIntent": [
+        "river and ravine tiles are impassable",
+        "bridge railings block lateral movement",
+        "bridge deck remains walkable from west to east",
+        "damaged anchors are interactable obstacles during quest stage two"
+      ]
+    },
+    {
+      "mapId": "elyndor-menders-rest",
+      "size": { "width": 28, "height": 18, "tileSize": 48 },
+      "camera": { "mode": "follow-player", "edgeClamp": true },
+      "zones": [
+        { "id": "west-gate", "rect": { "x": 0, "y": 7, "width": 6, "height": 6 }, "tags": ["safe", "transfer"] },
+        { "id": "market-green", "rect": { "x": 7, "y": 5, "width": 10, "height": 8 }, "tags": ["safe", "shop", "npc"] },
+        { "id": "threadfarmer-yard", "rect": { "x": 16, "y": 8, "width": 8, "height": 7 }, "tags": ["safe", "quest"] },
+        { "id": "waystitch-garden", "rect": { "x": 19, "y": 2, "width": 7, "height": 6 }, "tags": ["safe", "waystitch"] }
+      ],
+      "landmarks": [
+        { "id": "nessa-cart", "position": { "x": 11, "y": 6 }, "assetId": "environment/elyndor/nessa-cart" },
+        { "id": "bram-farmhouse", "position": { "x": 20, "y": 12 }, "assetId": "environment/elyndor/bram-farmhouse" },
+        { "id": "waystitch-menders-rest", "position": { "x": 22, "y": 5 }, "assetId": "environment/waystitch/elyndor-small" }
+      ],
+      "eventAnchors": [
+        { "id": "menders-rest-to-crossing", "position": { "x": 0, "y": 10 } },
+        { "id": "nessa", "position": { "x": 11, "y": 7 } },
+        { "id": "bram", "position": { "x": 18, "y": 11 } },
+        { "id": "waystitch-menders-rest", "position": { "x": 22, "y": 5 } }
+      ],
+      "collisionIntent": [
+        "buildings, fences and dense garden beds are blocked",
+        "market green remains open for touch navigation",
+        "shopkeeper and quest NPC retain one-tile interaction clearance",
+        "Waystitch garden has a clear two-tile approach from the south"
+      ]
+    }
+  ]
+}

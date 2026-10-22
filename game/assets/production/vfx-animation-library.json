@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "libraryId": "plushtopia-vfx-animation",
+  "productionMode": "asset-first-2x-reserve",
+  "targets": {
+    "physicalHitEffects": 64,
+    "elementalEffects": 192,
+    "healingSupportEffects": 80,
+    "statusEffects": 96,
+    "guardianArts": 192,
+    "bondArts": 128,
+    "limitArts": 64,
+    "enemyAbilityEffects": 192,
+    "bossTelegraphs": 96,
+    "bossPhaseTransitions": 48,
+    "fieldInteractionEffects": 96,
+    "weatherEffects": 64,
+    "waystitchEffects": 32,
+    "lootCraftingEffects": 48,
+    "uiFeedbackEffects": 64,
+    "cutsceneEffects": 96
+  },
+  "bondMotifs": ["ember","grove","tide","gale","glow","thread","thorn","stone","frost","storm","dusk","dawn"],
+  "technicalRules": ["transparent sprite-sheet or atlas friendly output where appropriate","48px tile grid alignment for field effects","clear anticipation-active-recovery phases for combat readability","boss telegraphs remain readable beneath mobile HUD","effects cannot obscure critical touch controls","provide reduced-flash accessibility alternates for intense effects"],
+  "visualRules": ["thread stitch cloth fiber button and stuffing motifs may appear subtly","Guardian Arts feel warm and bonded rather than monstrous","Fraying/corruption effects use broken-thread visual language","reserve assets include alternate intensities and directional versions instead of duplicate recolors"]
+}

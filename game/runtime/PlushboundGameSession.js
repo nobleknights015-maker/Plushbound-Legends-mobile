@@ -40,12 +40,9 @@ function actionDescriptor(raw, resolved) {
   else if (kind === 'anchor') label = `Inspect ${titleCase(raw.id)}`;
 
   return {
-    eventId: String(raw.id),
-    label,
-    kind,
+    eventId: String(raw.id), label, kind,
     trigger: resolved?.trigger || 'action',
-    x: Number(raw.x) || 0,
-    y: Number(raw.y) || 0,
+    x: Number(raw.x) || 0, y: Number(raw.y) || 0,
     assetId: resolved?.assetId || raw.assetId || null,
     shopId: shop?.parameters?.[0] || null,
     destinationMapId: transfer?.parameters?.[0] || null
@@ -53,18 +50,7 @@ function actionDescriptor(raw, resolved) {
 }
 
 export class PlushboundGameSession {
-  constructor({
-    state = new GameState(),
-    mapPackage,
-    contentPackages = [],
-    ui = {},
-    audio = {},
-    battle = {},
-    screen = {},
-    movement = {},
-    player = {},
-    logger = console
-  } = {}) {
+  constructor({ state = new GameState(), mapPackage, contentPackages = [], ui = {}, audio = {}, battle = {}, screen = {}, movement = {}, player = {}, logger = console } = {}) {
     if (!mapPackage?.maps?.length) throw new Error('PlushboundGameSession requires a runtime map package');
     this.state = state;
     this.messages = [];
@@ -75,7 +61,6 @@ export class PlushboundGameSession {
     this.maps = new MapRuntime({ state, logger });
     for (const map of mapPackage.maps) this.maps.register(map);
 
-    this.externalUi = ui;
     this.ui = {
       ...ui,
       message: (text, meta = {}) => {
@@ -91,12 +76,7 @@ export class PlushboundGameSession {
     };
 
     this.registry = registerCoreEventCommands(new EventCommandRegistry(), {
-      ui: this.ui,
-      audio,
-      battle,
-      screen,
-      movement,
-      player,
+      ui: this.ui, audio, battle, screen, movement, player,
       map: { transfer: (...args) => this.maps.transfer(...args) }
     });
     this.interpreter = new EventInterpreter({ commands: this.registry, state, logger });
@@ -120,8 +100,7 @@ export class PlushboundGameSession {
     const result = [];
     for (const raw of this.maps.current.events || []) {
       const resolved = this.maps.resolveEvent(raw);
-      if (!resolved) continue;
-      result.push(actionDescriptor(raw, resolved));
+      if (resolved) result.push(actionDescriptor(raw, resolved));
     }
     return clone(result);
   }
@@ -132,8 +111,7 @@ export class PlushboundGameSession {
     if ((event.trigger || 'action') !== 'action') return false;
     this.dialogueQueue = [];
     this.#runEvent(event);
-    if (event.assetId) return { handled: true, eventId: event.id, assetId: event.assetId };
-    return { handled: true, eventId: event.id };
+    return event.assetId ? { handled: true, eventId: event.id, assetId: event.assetId } : { handled: true, eventId: event.id };
   }
 
   triggerAt(x, y, trigger = 'touch') {
@@ -149,27 +127,34 @@ export class PlushboundGameSession {
   }
 
   openShop(shopId) {
-    const shop = this.game.shop(shopId);
-    if (!shop) throw new Error(`Unknown shop ${shopId}`);
+    const raw = this.game.shop(shopId);
+    if (!raw) throw new Error(`Unknown shop ${shopId}`);
+    const shop = clone(raw);
+    shop.inventory = (shop.inventory || []).map(entry => ({
+      ...entry,
+      item: this.game.itemDefinition(entry.itemId)
+    }));
     if (this.activeShop?.id !== shop.id) this.shopHistory.push(String(shopId));
-    this.activeShop = clone(shop);
+    this.activeShop = shop;
     return clone(shop);
   }
 
-  closeShop() {
-    this.activeShop = null;
-    return this.snapshot();
+  buyItem(itemId, count = 1) {
+    if (!this.activeShop) throw new Error('No shop is open');
+    const entry = (this.activeShop.inventory || []).find(item => String(item.itemId) === String(itemId));
+    if (!entry) throw new Error(`Item ${itemId} is not sold here`);
+    const quantity = Math.max(1, Number(count) || 1);
+    const total = (Number(entry.price) || 0) * quantity;
+    const gold = Number(this.state.variable('gold')) || 0;
+    if (gold < total) throw new Error('Not enough gold');
+    this.state.setVariable('gold', gold - total);
+    this.state.gain('items', itemId, quantity);
+    return { itemId: String(itemId), count: quantity, spent: total, gold: gold - total };
   }
 
-  recordBattle(enemyTags = []) {
-    this.game.recordBattle(enemyTags);
-    return this.snapshot();
-  }
-
-  recordTalk(npcId) {
-    this.game.recordTalk(npcId);
-    return this.snapshot();
-  }
+  closeShop() { this.activeShop = null; return this.snapshot(); }
+  recordBattle(enemyTags = []) { this.game.recordBattle(enemyTags); return this.snapshot(); }
+  recordTalk(npcId) { this.game.recordTalk(npcId); return this.snapshot(); }
 
   snapshot() {
     return {
@@ -196,11 +181,7 @@ export class PlushboundGameSession {
   }
 
   #runEvent(event) {
-    this.interpreter.start(event.commands || [], {
-      mapId: this.maps.current?.id,
-      eventId: event.id,
-      hooks: this.game.hooks
-    });
+    this.interpreter.start(event.commands || [], { mapId: this.maps.current?.id, eventId: event.id, hooks: this.game.hooks });
     let safety = 100;
     while (this.interpreter.running && safety-- > 0) this.interpreter.update(0);
     if (safety <= 0) throw new Error(`Game event did not settle: ${event.id}`);

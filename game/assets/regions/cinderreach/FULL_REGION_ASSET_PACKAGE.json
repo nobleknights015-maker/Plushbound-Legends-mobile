@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 1,
+  "regionId": "cinderreach",
+  "name": "Cinderreach",
+  "status": "full-region-asset-specification",
+  "canonPolicy": "Production identity established for asset creation; preserve future lore renameability through stable logical IDs.",
+  "tileSize": 48,
+  "visualIdentity": {
+    "theme": "warm volcanic highlands, kiln towns, ember-lit valleys, soot-dark stone and resilient stitched life",
+    "materials": ["basalt", "red clay", "dark timber", "hammered brass", "woven heatcloth", "ceramic tile", "emberglass"],
+    "motifs": ["kiln arches", "stitched flame", "sunburst quilting", "braided rope", "bellows geometry", "protective patchwork"],
+    "fashion": ["short layered jackets", "heat-wrap trousers", "high collars", "sashes", "work aprons", "brass fasteners", "Victorian waistcoats adapted for heat", "Japanese workwear silhouettes", "Chinese knot closures"],
+    "paletteDirection": ["charcoal", "terracotta", "ember orange", "brass", "cream", "smoke gray", "deep red"],
+    "readabilityRule": "MV/Trinity-inspired functional readability with wholly original Plushbound artwork and clean 48px silhouettes."
+  },
+  "subregions": [
+    {"id":"cinderreach-ashstep","type":"highland-road","identity":"windswept basalt terraces and embergrass"},
+    {"id":"cinderreach-kilnward","type":"settlement","identity":"craft town built around communal kilns and mending forges"},
+    {"id":"cinderreach-copperstitch","type":"settlement","identity":"market terraces, brasswork and caravan exchange"},
+    {"id":"cinderreach-emberfold","type":"wilderness","identity":"warm ravines, mineral springs and fire-resistant flora"},
+    {"id":"cinderreach-sootveil","type":"wilderness","identity":"smoke-shadowed badlands and abandoned workshops"},
+    {"id":"cinderreach-bellows-deep","type":"dungeon","identity":"ancient geothermal machinery and buried kiln halls"},
+    {"id":"cinderreach-glassscar","type":"dungeon","identity":"obsidian shelves and unstable emberglass caverns"},
+    {"id":"cinderreach-heartkiln","type":"major-dungeon","identity":"old regional heartworks threaded through a volcanic caldera"}
+  ],
+  "environment": {
+    "tilesetSheets": 28,
+    "buildingFamilies": 44,
+    "interiorKits": 20,
+    "dungeonKits": 18,
+    "environmentProps": 224,
+    "foliageAndNaturalObjects": 160,
+    "parallaxes": 32,
+    "battlebacks": 48,
+    "weatherSets": 16,
+    "storyStateOverlays": 40,
+    "waystitchObjects": 12,
+    "interactiveObjects": 56,
+    "specialSets": ["kiln-workshop", "brass-market", "mineral-spring", "caravan-yard", "emberglass-cave", "ancient-heartkiln", "ash-storm", "festival-lanterns"]
+  },
+  "population": {
+    "persistentNpcIdentities": 104,
+    "adult": 64,
+    "teen": 16,
+    "child": 20,
+    "elder": 12,
+    "storyNpcExpressionSets": 24,
+    "ambientSpriteVariants": 144,
+    "occupations": ["kilnworker", "potter", "metalworker", "tailor", "caravaner", "cook", "miner", "springkeeper", "teacher", "guard", "bank-clerk", "merchant", "mender", "Guardian caretaker", "Waystitch tender", "innkeeper"],
+    "childAssetPolicy": "Children use age-appropriate proportions, clothing, activities and expressions; they are never scaled-down adult sprites.",
+    "dailyLifeProps": ["school satchels", "toy plushes", "chalk games", "delivery baskets", "workshop stools", "festival pinwheels", "snack skewers", "Guardian grooming brushes"]
+  },
+  "characterCreator": {
+    "regionalPieces": 256,
+    "tops": 48,
+    "bottoms": 36,
+    "fullOutfits": 36,
+    "outerwear": 32,
+    "footwear": 24,
+    "headwear": 24,
+    "accessories": 40,
+    "hairAndAdornmentVariants": 16,
+    "childWardrobePieces": 48,
+    "paletteFamilies": 12,
+    "collections": ["kilnward-workwear", "copperstitch-market", "ashstep-traveler", "emberfold-fieldwear", "heartkiln-ceremonial", "cinderreach-formal", "youth-festival", "guardian-mender-heatwear"]
+  },
+  "plushGuardians": {
+    "coreFamilies": 24,
+    "rareRegionalVariants": 16,
+    "assetSetPerFamily": ["overworld-sprite", "portrait", "silhouette", "battle-idle", "battle-action", "battle-hit", "bond-expression", "icon"],
+    "productionConcepts": ["Coalfox", "Kilnram", "Cindersnout", "Brassbeetle", "Emberjay", "Sootbun", "Clayturtle", "Bellowsbat", "Sparkmoth", "Ashpup", "Coppercat", "Glowgecko", "Patchyak", "Flarefinch", "Kettlefrog", "Smoldermouse", "Forgeowl", "Warmstone Bear", "Suncoil Serpent", "Emberhare", "Charstag", "Furnace Newt", "Brasswing", "Hearthlion"],
+    "habitatRule": "Guardians appear as living inhabitants and bond encounters, not hostile monster drops.",
+    "materialRule": "Guardian-associated crafting materials come from gifts, shed fibers, caretaking, environmental finds or bond activities rather than killing Guardians."
+  },
+  "enemies": {
+    "commonFamilies": 48,
+    "veteranVariants": 24,
+    "eliteVariants": 16,
+    "minibosses": 10,
+    "regionalBosses": 3,
+    "secretBosses": 2,
+    "families": ["ashling", "cindermaw", "slag-slime", "charback", "smokewing", "clinker-crab", "sootcrawler", "glassfang", "embermite", "kiln-husk", "scorchroot", "brassjaw", "coalhorn", "flarebat", "moltenspore", "patchwork-jackal", "ashshell", "furnace-wasp", "cracklecap", "smolderboar"],
+    "bossConcepts": [
+      {"id":"the-broken-bellows","phases":3,"arena":"bellows-deep"},
+      {"id":"glassscar-colossus","phases":3,"arena":"glassscar"},
+      {"id":"heartkiln-fraycore","phases":4,"arena":"heartkiln"}
+    ],
+    "presentationRule": "Enemy silhouettes remain distinct from Plush Guardians even when sharing regional materials or elemental motifs."
+  },
+  "itemsAndEquipment": {
+    "regionalIcons": 384,
+    "consumables": 40,
+    "ingredients": 56,
+    "materials": 64,
+    "keyItems": 24,
+    "treasures": 24,
+    "weaponsAndFocuses": 48,
+    "outfits": 48,
+    "accessories": 40,
+    "guardianCharms": 24,
+    "cosmetics": 40,
+    "tradeGoods": 32,
+    "signatureGoods": ["emberglass", "heatcloth", "kiln-glaze", "brass threadspools", "mineral-spring salts", "charcoal ink", "terracotta charms", "copperstitch fittings"]
+  },
+  "effectsAndUi": {
+    "battleEffects": 48,
+    "guardianBondEffects": 24,
+    "fieldEffects": 28,
+    "bossTelegraphSets": 12,
+    "weatherEffects": 12,
+    "uiAccentSets": 8,
+    "signatureEffects": ["ember-thread", "heat-shimmer", "kiln-spark", "ash-drift", "brass-flare", "emberglass-fracture", "heartkiln-pulse", "mending-coal-glow"],
+    "frayingRule": "Corruption uses snapped fibers, unraveling seams and wrong-direction ember-thread rather than generic dark magic."
+  },
+  "audio": {
+    "bgm": 16,
+    "ambientLoops": 20,
+    "battleTracksAndStingers": 10,
+    "worldSfx": 56,
+    "combatSfx": 48,
+    "guardianSfx": 32,
+    "uiAndCraftingSfx": 32,
+    "identity": ["hand percussion", "warm plucked strings", "soft hammered metal", "kiln breath", "wind across basalt", "ceramic taps", "restrained industrial rhythm without modern machinery"]
+  },
+  "productionBatches": [
+    "CIN-ENV-01 tiles and terrain",
+    "CIN-ENV-02 architecture and interiors",
+    "CIN-ENV-03 props foliage weather",
+    "CIN-NPC-01 adult and elder population",
+    "CIN-NPC-02 teen child and ambient population",
+    "CIN-CHR-01 regional creator wardrobe",
+    "CIN-GRD-01 core Guardian families",
+    "CIN-GRD-02 rare Guardian variants and expressions",
+    "CIN-ENM-01 common and veteran enemies",
+    "CIN-ENM-02 elites minibosses and bosses",
+    "CIN-ITM-01 items equipment and icons",
+    "CIN-VFX-01 battle field weather and UI effects",
+    "CIN-AUD-01 music ambience and sound effects"
+  ],
+  "twoXReservePolicy": "Reserve is expressed through meaningful silhouette, material, occupation, state, animation and subregional variants rather than blind recolors.",
+  "completionGate": ["every asset has stable logical ID", "dimensions/import format recorded", "transparent/background policy satisfied", "provenance recorded", "visual QA passed", "normal readable anatomy", "mobile readability passed", "manifest status may only become ready after the actual asset exists"]
+}

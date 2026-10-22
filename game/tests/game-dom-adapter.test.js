@@ -14,14 +14,15 @@ function makeDocument() {
   const worldMap = element();
   const questInfo = element();
   const gold = element();
+  const dialogue = element();
   const mapScreen = element();
   const selectors = new Map([
     ['#mapName', mapInfo], ['#mapScreen .world-map', worldMap],
-    ['#questStatus', questInfo], ['#goldValue', gold], ['#mapScreen', mapScreen]
+    ['#questStatus', questInfo], ['#goldValue', gold], ['#dialogueText', dialogue], ['#mapScreen', mapScreen]
   ]);
   let clickListener = null;
   return {
-    nodes: { mapInfo, worldMap, questInfo, gold, mapScreen },
+    nodes: { mapInfo, worldMap, questInfo, gold, dialogue, mapScreen },
     querySelector(selector) { return selectors.get(selector) || null; },
     addEventListener(type, fn) { if (type === 'click') clickListener = fn; },
     removeEventListener(type, fn) { if (type === 'click' && clickListener === fn) clickListener = null; },
@@ -41,16 +42,27 @@ function makeScope(document) {
   };
 }
 
-test('DOM adapter renders live map, quest and gold state into reconstructed shell selectors', () => {
+test('DOM adapter renders live map, quest, gold and dialogue state into reconstructed shell selectors', () => {
   const document = makeDocument();
   const scope = makeScope(document);
-  const bridge = { snapshot: () => ({ currentMap: 'elyndor-sunny-plains', gold: 100, quests: { q: { id: 'q', name: 'A Thread Begins', status: 'active' } } }) };
+  const bridge = { snapshot: () => ({
+    currentMap: 'elyndor-sunny-plains',
+    mapName: 'Sunny Plains of Elyndor',
+    gold: 100,
+    quests: { q: { id: 'q', name: 'A Thread Begins', status: 'active', objectives: { first: 1 } } },
+    messages: [{ text: 'Stay close to your Guardian.', speaker: 'Lio', portrait: 'npc/lio/portrait' }],
+    actions: [{ eventId: 'lio', label: 'Talk to Lio', trigger: 'action', kind: 'interact', x: 18, y: 9 }]
+  }) };
   const adapter = new GameDomAdapter({ scope, bridge }).attach();
   assert.equal(document.nodes.mapInfo.textContent, 'Sunny Plains of Elyndor');
   assert.equal(document.nodes.worldMap.dataset.plushboundMapId, 'elyndor-sunny-plains');
-  assert.equal(document.nodes.questInfo.textContent, 'A Thread Begins — active');
+  assert.equal(document.nodes.questInfo.textContent, 'A Thread Begins — active (1)');
   assert.equal(document.nodes.gold.textContent, '100 G');
+  assert.equal(document.nodes.dialogue.textContent, 'Lio: Stay close to your Guardian.');
+  assert.equal(document.nodes.dialogue.dataset.speaker, 'Lio');
+  assert.equal(document.nodes.dialogue.dataset.portrait, 'npc/lio/portrait');
   assert.equal(document.nodes.mapScreen.dataset.plushboundLive, 'true');
+  assert.equal(document.nodes.mapScreen.dataset.plushboundActionCount, '1');
   adapter.detach();
   assert.equal(document.listener(), null);
 });
@@ -63,7 +75,7 @@ test('DOM adapter routes declarative UI actions through GameShellBridge', () => 
     const scope = makeScope(document);
     const calls = [];
     const bridge = {
-      snapshot: () => ({ currentMap: 'elyndor-sunny-plains', gold: 0, quests: {} }),
+      snapshot: () => ({ currentMap: 'elyndor-sunny-plains', gold: 0, quests: {}, messages: [], actions: [] }),
       interact: id => calls.push(['interact', id]),
       openShop: id => calls.push(['shop', id]),
       enterMap: (...args) => calls.push(['map', ...args]),

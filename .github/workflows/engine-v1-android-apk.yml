@@ -62,19 +62,50 @@ jobs:
             "branch": "engine-v1-rebuild",
             "entrypoints": {
               "kernel": "core/EngineKernel.js",
-              "androidHost": "platform/AndroidHostBridge.js"
+              "androidHost": "platform/AndroidHostBridge.js",
+              "webViewRuntime": "runtime/BrowserRuntimeEntry.js"
             },
             "releaseGate": "release-gate.json"
           }
           JSON
+
+      - name: Inject Engine v1 runtime into reconstructed WebView shell
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          root = Path('app/src/main/assets')
+          target = root / 'engine-v1/runtime/BrowserRuntimeEntry.js'
+          html_files = sorted(root.rglob('*.html'))
+          if not html_files:
+              raise SystemExit('No Android WebView HTML entrypoint found under app/src/main/assets')
+          marker = 'data-plushbound-engine-v1="runtime"'
+          injected = 0
+          for html in html_files:
+              text = html.read_text(encoding='utf-8')
+              if marker in text:
+                  injected += 1
+                  continue
+              rel = target.relative_to(html.parent) if target.is_relative_to(html.parent) else Path(__import__('os').path.relpath(target, html.parent))
+              tag = f'<script type="module" src="{rel.as_posix()}" {marker}></script>'
+              if '</body>' in text:
+                  text = text.replace('</body>', tag + '\n</body>', 1)
+              else:
+                  text += '\n' + tag + '\n'
+              html.write_text(text, encoding='utf-8')
+              injected += 1
+          print(f'Injected Engine v1 runtime into {injected} HTML file(s).')
+          PY
+          grep -R -q 'data-plushbound-engine-v1="runtime"' app/src/main/assets --include='*.html'
 
       - name: Validate packaged Engine v1 modules
         run: |
           test -f app/src/main/assets/engine-v1/core/EngineKernel.js
           test -f app/src/main/assets/engine-v1/platform/AndroidHostBridge.js
           test -f app/src/main/assets/engine-v1/platform/PerformanceBudget.js
+          test -f app/src/main/assets/engine-v1/runtime/BrowserRuntimeEntry.js
           test -f app/src/main/assets/engine-v1/release-gate.json
           grep -q "${GITHUB_SHA}" app/src/main/assets/engine-v1/release-gate.json
+          grep -R -q 'engine-v1/runtime/BrowserRuntimeEntry.js' app/src/main/assets --include='*.html'
           find app/src/main/assets/engine-v1 -name '*.js' -print0 | xargs -0 -n1 node --check
           python -m json.tool app/src/main/assets/engine-v1/package-manifest.json >/dev/null
           python -m json.tool app/src/main/assets/engine-v1/release-gate.json >/dev/null
@@ -115,9 +146,14 @@ jobs:
           unzip -l "$APK" | grep -q 'assets/engine-v1/core/EngineKernel.js'
           unzip -l "$APK" | grep -q 'assets/engine-v1/platform/AndroidHostBridge.js'
           unzip -l "$APK" | grep -q 'assets/engine-v1/platform/PerformanceBudget.js'
+          unzip -l "$APK" | grep -q 'assets/engine-v1/runtime/BrowserRuntimeEntry.js'
           unzip -l "$APK" | grep -q 'assets/engine-v1/package-manifest.json'
           unzip -l "$APK" | grep -q 'assets/engine-v1/release-gate.json'
           unzip -p "$APK" assets/engine-v1/release-gate.json | grep -q "${GITHUB_SHA}"
+          HTML=$(unzip -Z1 "$APK" | grep '^assets/.*\.html$' | head -n 1)
+          test -n "$HTML"
+          unzip -p "$APK" "$HTML" | grep -q 'data-plushbound-engine-v1="runtime"'
+          unzip -p "$APK" "$HTML" | grep -q 'engine-v1/runtime/BrowserRuntimeEntry.js'
 
       - name: Verify Android installability metadata
         run: |

@@ -86,6 +86,7 @@ jobs:
             "game": "Plushbound Legends",
             "engineBaseline": "160d9fd95bc0d3db39224f8bb4c5e1e3a1f54425",
             "bootstrap": "runtime/AndroidGameBootstrap.js",
+            "shellBridge": "runtime/GameShellBridge.js",
             "contentIndex": "content/content-index.json",
             "runtimeMaps": "runtime/elyndor-route-one.maps.json",
             "releaseGate": "release-gate.json"
@@ -101,6 +102,7 @@ jobs:
           engine = root / 'engine-v1/runtime/BrowserRuntimeEntry.js'
           manifest = root / 'engine-v1/content/asset-manifest.json'
           game = root / 'game/runtime/AndroidGameBootstrap.js'
+          shell = root / 'game/runtime/GameShellBridge.js'
           html_files = sorted(root.rglob('*.html'))
           if not html_files:
               raise SystemExit('No Android WebView HTML entrypoint found')
@@ -109,10 +111,13 @@ jobs:
               engine_rel = Path(os.path.relpath(engine, html.parent)).as_posix()
               manifest_rel = Path(os.path.relpath(manifest, html.parent)).as_posix()
               game_rel = Path(os.path.relpath(game, html.parent)).as_posix()
+              shell_rel = Path(os.path.relpath(shell, html.parent)).as_posix()
               engine_tag = f'<script type="module" src="{engine_rel}" data-plushbound-engine-v1="runtime" data-asset-manifest="{manifest_rel}"></script>'
               game_tag = f'<script type="module" src="{game_rel}" data-plushbound-game="runtime"></script>'
+              shell_tag = f'<script type="module" src="{shell_rel}" data-plushbound-shell="bridge"></script>'
               tags = []
               if 'data-plushbound-engine-v1="runtime"' not in text: tags.append(engine_tag)
+              if 'data-plushbound-shell="bridge"' not in text: tags.append(shell_tag)
               if 'data-plushbound-game="runtime"' not in text: tags.append(game_tag)
               if tags:
                   injection = '\n'.join(tags)
@@ -127,12 +132,14 @@ jobs:
           test -f app/src/main/assets/game/runtime/AndroidGameBootstrap.js
           test -f app/src/main/assets/game/runtime/PlushboundGameSession.js
           test -f app/src/main/assets/game/runtime/GameContentRuntime.js
+          test -f app/src/main/assets/game/runtime/GameShellBridge.js
           test -f app/src/main/assets/game/runtime/elyndor-route-one.maps.json
           test -f app/src/main/assets/game/content/content-index.json
           grep -q '160d9fd95bc0d3db39224f8bb4c5e1e3a1f54425' app/src/main/assets/game/content/content-index.json
           grep -q '../../engine-v1/core/GameState.js' app/src/main/assets/game/runtime/AndroidGameBootstrap.js
           grep -q '../../engine-v1/maps/MapRuntime.js' app/src/main/assets/game/runtime/PlushboundGameSession.js
           grep -R -q 'data-plushbound-game="runtime"' app/src/main/assets --include='*.html'
+          grep -R -q 'data-plushbound-shell="bridge"' app/src/main/assets --include='*.html'
           grep -R -q 'Plushbound Engine v1 native-surface policy' app/src/main/assets --include='style.css'
           find app/src/main/assets/engine-v1 app/src/main/assets/game/runtime -name '*.js' -print0 | xargs -0 -n1 node --check
           find app/src/main/assets/game -name '*.json' -print0 | xargs -0 -n1 python -m json.tool >/dev/null
@@ -172,12 +179,14 @@ jobs:
           unzip -t "$APK" >/dev/null
           unzip -l "$APK" | grep -q 'assets/engine-v1/core/GameState.js'
           unzip -l "$APK" | grep -q 'assets/game/runtime/AndroidGameBootstrap.js'
+          unzip -l "$APK" | grep -q 'assets/game/runtime/GameShellBridge.js'
           unzip -l "$APK" | grep -q 'assets/game/runtime/elyndor-route-one.maps.json'
           unzip -l "$APK" | grep -q 'assets/game/content/content-index.json'
           unzip -p "$APK" assets/game/release-gate.json | grep -q "${GITHUB_SHA}"
           HTML=$(unzip -Z1 "$APK" | grep '^assets/.*\.html$' | head -n 1)
           CSS=$(unzip -Z1 "$APK" | grep '^assets/.*style\.css$' | head -n 1)
           unzip -p "$APK" "$HTML" | grep -q 'data-plushbound-game="runtime"'
+          unzip -p "$APK" "$HTML" | grep -q 'data-plushbound-shell="bridge"'
           unzip -p "$APK" "$CSS" | grep -q 'overflow:hidden!important'
           aapt dump badging "$APK" | tee apk-badging.txt
           grep -q "package: name='com.plushbound.legends'" apk-badging.txt

@@ -42,11 +42,50 @@ function ensureLiveHud(root) {
   const quest = root.createElement('span');
   quest.dataset.plushboundQuestInfo = 'true';
   Object.assign(quest.style || {}, { gridColumn: '1 / -1', opacity: '0.9' });
+  const actions = root.createElement('div');
+  actions.dataset.plushboundActions = 'true';
+  Object.assign(actions.style || {}, {
+    gridColumn: '1 / -1',
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit,minmax(112px,1fr))',
+    gap: '5px',
+    maxHeight: '96px',
+    overflow: 'hidden'
+  });
   hud.appendChild(map);
   hud.appendChild(gold);
   hud.appendChild(quest);
+  hud.appendChild(actions);
   host.appendChild(hud);
   return hud;
+}
+
+function renderActions(root, actions = []) {
+  const host = find(root, ['[data-plushbound-actions]']);
+  if (!host || !root?.createElement || !host.replaceChildren) return;
+  const buttons = [];
+  for (const action of actions.slice(0, 8)) {
+    const button = root.createElement('button');
+    button.type = 'button';
+    button.textContent = action.label || action.eventId;
+    button.dataset.plushboundAction = action.trigger === 'touch' ? 'touch' : 'interact';
+    button.dataset.eventId = action.eventId;
+    button.dataset.x = String(action.x ?? 0);
+    button.dataset.y = String(action.y ?? 0);
+    button.dataset.trigger = action.trigger || 'action';
+    button.dataset.actionKind = action.kind || 'interact';
+    if (action.shopId) button.dataset.shopId = action.shopId;
+    if (action.destinationMapId) button.dataset.destinationMapId = action.destinationMapId;
+    Object.assign(button.style || {}, {
+      minHeight: '32px',
+      padding: '5px 8px',
+      fontSize: '11px',
+      lineHeight: '1.1'
+    });
+    buttons.push(button);
+  }
+  host.replaceChildren(...buttons);
+  host.dataset.actionCount = String(actions.length);
 }
 
 export class GameDomAdapter {
@@ -81,7 +120,7 @@ export class GameDomAdapter {
     if (!this.root || !snapshot) return snapshot;
     ensureLiveHud(this.root);
     const mapId = snapshot.currentMap || snapshot.map?.id || '';
-    const mapName = MAP_NAMES[mapId] || mapId || 'Plustopia';
+    const mapName = snapshot.mapName || MAP_NAMES[mapId] || mapId || 'Plustopia';
     const mapInfo = find(this.root, ['[data-plushbound-map-info]', '#mapInfo', '#mapName', '#locationName']);
     const worldMap = find(this.root, ['[data-plushbound-world-map]', '#worldMap', '#mapScreen .world-map']);
     const questInfo = find(this.root, ['[data-plushbound-quest-info]', '#questInfo', '#questStatus', '#mapScreen .quest-info']);
@@ -93,17 +132,21 @@ export class GameDomAdapter {
 
     const activeQuest = Object.values(snapshot.quests || {}).find(q => q && q.status !== 'complete') || Object.values(snapshot.quests || {}).find(Boolean);
     if (activeQuest) {
-      text(questInfo, `${activeQuest.name || activeQuest.id} — ${activeQuest.status}`);
+      const progress = Object.values(activeQuest.objectives || {}).reduce((sum, value) => sum + Number(value || 0), 0);
+      text(questInfo, `${activeQuest.name || activeQuest.id} — ${activeQuest.status}${progress ? ` (${progress})` : ''}`);
       if (questInfo) questInfo.dataset.questId = activeQuest.id;
     } else {
       text(questInfo, 'No active quest');
       if (questInfo) delete questInfo.dataset.questId;
     }
 
+    renderActions(this.root, snapshot.actions || []);
+
     const mapScreen = find(this.root, ['#mapScreen', '[data-screen="map"]']);
     if (mapScreen) {
       mapScreen.dataset.plushboundLive = 'true';
       mapScreen.dataset.plushboundMapId = mapId;
+      mapScreen.dataset.plushboundActionCount = String((snapshot.actions || []).length);
     }
     return snapshot;
   }

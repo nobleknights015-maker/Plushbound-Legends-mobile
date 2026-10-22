@@ -27,9 +27,15 @@ test('Android game bootstrap creates a session on the frozen engine baseline and
 
   try {
     const events = [];
+    const listeners = new Map();
     const scope = {
       location: { href: 'file:///android_asset/index.html' },
-      dispatchEvent(event) { events.push(event); }
+      addEventListener(type, fn) { if (!listeners.has(type)) listeners.set(type, new Set()); listeners.get(type).add(fn); },
+      removeEventListener(type, fn) { listeners.get(type)?.delete(fn); },
+      dispatchEvent(event) {
+        events.push(event);
+        for (const fn of listeners.get(event.type) || []) fn(event);
+      }
     };
     const runtime = await bootPlushboundGame({
       scope,
@@ -39,7 +45,9 @@ test('Android game bootstrap creates a session on the frozen engine baseline and
     assert.equal(runtime.engineBaseline, '160d9fd95bc0d3db39224f8bb4c5e1e3a1f54425');
     assert.equal(runtime.session.snapshot().currentMap, 'elyndor-sunny-plains');
     assert.equal(scope.PlushboundGame, runtime);
-    assert.equal(events.at(-1)?.type, 'plushbound-game-ready');
+    assert.ok(scope.PlushboundGameShell);
+    assert.equal(events.some(event => event.type === 'plushbound-game-ready'), true);
+    assert.equal(events.some(event => event.type === 'plushbound-shell-update' && event.detail?.snapshot?.currentMap === 'elyndor-sunny-plains'), true);
   } finally {
     globalThis.fetch = originalFetch;
     globalThis.CustomEvent = originalCustomEvent;

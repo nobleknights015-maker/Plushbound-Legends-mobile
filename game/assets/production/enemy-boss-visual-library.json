@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "libraryId": "plushtopia-enemy-boss-visual-library",
+  "purpose": "Oversized whole-game enemy ecology and boss visual reserve for Plushbound Legends.",
+  "designRule": "Enemies are original Plushtopia creatures built from coherent regional ecologies; Plush Guardians are excluded from monster loot/hunt treatment.",
+  "targets": {
+    "commonFamilies": 160,
+    "veteranVariants": 80,
+    "eliteDesigns": 48,
+    "minibossDesigns": 32,
+    "regionalBosses": 16,
+    "majorBosses": 12,
+    "secretBosses": 8,
+    "endgameBossForms": 8,
+    "battleAnimationSets": 364,
+    "statusOverlaySets": 48
+  },
+  "visualArchetypes": [
+    "frayed-beast","stitched-construct","fungal-growth","thorn-flora","cavern-creature","river-creature","sky-predator","ruin-haunt","clockwork-relic","corrupted-toy","living-textile","crystal-growth","shadow-thread","armored-brute","swarm","mimic","elemental-knot","ancient-warden","parasite","spectral-remnant"
+  ],
+  "regionalVariantRules": {
+    "paletteOnlyVariantsForbidden": true,
+    "minimumSilhouetteChangeForVariant": "visible at 48px battle-preview scale",
+    "variantDimensions": ["horns","limbs","armor","growths","tail","wings","material","posture","damage-state"],
+    "ecologySignals": ["habitat","diet","predator-prey role","corruption exposure","weather adaptation","story-state"]
+  },
+  "tierRequirements": {
+    "common":["idle","attack","hit","defeat"],
+    "veteran":["idle","attack","special","hit","defeat"],
+    "elite":["idle","attack","special-a","special-b","break","defeat"],
+    "miniboss":["idle","attack","telegraph","special-a","special-b","phase-shift","break","defeat"],
+    "boss":["portrait-or-intro","idle","attack","telegraphs","phase-forms","environment-interaction","break","defeat"]
+  },
+  "bossVisualPackages": {
+    "regionalBosses": {"count":16,"minimumPhaseForms":2,"battlebackVariant":true,"telegraphVfx":true},
+    "majorBosses": {"count":12,"minimumPhaseForms":3,"battlebackVariant":true,"telegraphVfx":true,"cinematicCutins":true},
+    "secretBosses": {"count":8,"minimumPhaseForms":2,"uniqueArena":true,"uniqueRewardIconSet":true},
+    "endgameBossForms": {"count":8,"minimumPhaseForms":3,"uniqueArena":true,"cinematicCutins":true}
+  },
+  "outputBindings": {
+    "battle":"enemies/{region}/{enemyId}/battle.webp",
+    "sheet":"enemies/{region}/{enemyId}/animations.webp",
+    "portrait":"enemies/{region}/{enemyId}/portrait.webp",
+    "telegraphs":"effects/enemies/{region}/{enemyId}",
+    "bossArena":"environment/battlebacks/{region}/{bossId}"
+  }
+}

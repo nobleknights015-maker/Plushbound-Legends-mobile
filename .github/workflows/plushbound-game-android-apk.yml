@@ -22,7 +22,7 @@ jobs:
 
       - name: Validate game JSON and runtime contracts
         run: |
-          find game/content game/runtime -name '*.json' -print0 | xargs -0 -r -n1 node -e "JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8'))"
+          find game/content game/runtime game/assets -name '*.json' -print0 | xargs -0 -r -n1 node -e "JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8'))"
           node --test game/tests/*.test.js
 
       - name: Re-verify frozen Engine v1 baseline
@@ -65,7 +65,7 @@ jobs:
                   css.write_text(text + native_css, encoding='utf-8')
           PY
 
-      - name: Package frozen engine and game runtime
+      - name: Package frozen engine, game runtime and assets
         run: |
           rm -rf app/src/main/assets/engine-v1 app/src/main/assets/game
           mkdir -p app/src/main/assets/engine-v1/content app/src/main/assets/game
@@ -73,6 +73,7 @@ jobs:
           cp engine/content/asset-manifest.json app/src/main/assets/engine-v1/content/asset-manifest.json
           cp -R game/content app/src/main/assets/game/content
           cp -R game/runtime app/src/main/assets/game/runtime
+          cp -R game/assets app/src/main/assets/game/assets
           cp plushbound-game-release-gate.json app/src/main/assets/game/release-gate.json
           python - <<'PY'
           from pathlib import Path
@@ -88,6 +89,7 @@ jobs:
             "bootstrap": "runtime/AndroidGameBootstrap.js",
             "shellBridge": "runtime/GameShellBridge.js",
             "contentIndex": "content/content-index.json",
+            "assetManifest": "assets/asset-manifest.json",
             "runtimeMaps": "runtime/elyndor-route-one.maps.json",
             "releaseGate": "release-gate.json"
           }
@@ -135,14 +137,17 @@ jobs:
           test -f app/src/main/assets/game/runtime/GameShellBridge.js
           test -f app/src/main/assets/game/runtime/elyndor-route-one.maps.json
           test -f app/src/main/assets/game/content/content-index.json
+          test -f app/src/main/assets/game/assets/asset-manifest.json
+          test -f app/src/main/assets/game/assets/README.md
           grep -q '160d9fd95bc0d3db39224f8bb4c5e1e3a1f54425' app/src/main/assets/game/content/content-index.json
+          grep -q 'plushbound-game-assets' app/src/main/assets/game/content/content-index.json
           grep -q '../../engine-v1/core/GameState.js' app/src/main/assets/game/runtime/AndroidGameBootstrap.js
           grep -q '../../engine-v1/maps/MapRuntime.js' app/src/main/assets/game/runtime/PlushboundGameSession.js
           grep -R -q 'data-plushbound-game="runtime"' app/src/main/assets --include='*.html'
           grep -R -q 'data-plushbound-shell="bridge"' app/src/main/assets --include='*.html'
           grep -R -q 'Plushbound Engine v1 native-surface policy' app/src/main/assets --include='style.css'
           find app/src/main/assets/engine-v1 app/src/main/assets/game/runtime -name '*.js' -print0 | xargs -0 -n1 node --check
-          find app/src/main/assets/game -name '*.json' -print0 | xargs -0 -n1 python -m json.tool >/dev/null
+          find app/src/main/assets/game -name '*.json' -print0 | xargs -0 -r -n1 python -m json.tool >/dev/null
 
       - name: Set up Java 17
         uses: actions/setup-java@v5
@@ -182,6 +187,8 @@ jobs:
           unzip -l "$APK" | grep -q 'assets/game/runtime/GameShellBridge.js'
           unzip -l "$APK" | grep -q 'assets/game/runtime/elyndor-route-one.maps.json'
           unzip -l "$APK" | grep -q 'assets/game/content/content-index.json'
+          unzip -l "$APK" | grep -q 'assets/game/assets/asset-manifest.json'
+          unzip -l "$APK" | grep -q 'assets/game/assets/guardians/README.md'
           unzip -p "$APK" assets/game/release-gate.json | grep -q "${GITHUB_SHA}"
           HTML=$(unzip -Z1 "$APK" | grep '^assets/.*\.html$' | head -n 1)
           CSS=$(unzip -Z1 "$APK" | grep '^assets/.*style\.css$' | head -n 1)

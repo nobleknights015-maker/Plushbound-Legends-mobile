@@ -123,3 +123,20 @@ test('strict asset mode refuses to boot an incomplete content package', async ()
     /Missing required asset: ui\/windowskin\/core/
   );
 });
+
+test('async interaction failures are captured and surfaced instead of leaking unhandled rejections', async () => {
+  const events = [];
+  const scope = {
+    dispatchEvent(event) { events.push(event); },
+    CustomEvent: class { constructor(type, init){ this.type = type; this.detail = init?.detail; } },
+    console: { error(){} }
+  };
+  const runtime = await bootPlushboundEngineV1({ scope });
+  runtime.registerInteraction('title', 'explode', async () => { throw new Error('boom'); });
+  runtime.interaction.setScene({ type: 'title', commands: [{ id: 'explode', rect: { x: 0, y: 0, width: 100, height: 40 }, enabled: true }] });
+  const result = await runtime.handleAction({ type: 'activate', id: 'explode' });
+  assert.equal(result.error, true);
+  assert.equal(runtime.interactionErrors().length, 1);
+  assert.match(runtime.interactionErrors()[0].error, /boom/);
+  assert.equal(events.at(-1).type, 'plushbound-engine-v1-interaction-error');
+});

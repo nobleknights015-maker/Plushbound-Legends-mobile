@@ -25,3 +25,4 @@ attachBuilder(document.getElementById('newCommandType'),document.getElementById(
 attachBuilder(document.getElementById('commonCommandType'),document.getElementById('commonCommandParameters'));
 enhanceCards();
 const observer=new MutationObserver(mutations=>{for(const mutation of mutations)for(const node of mutation.addedNodes)if(node.nodeType===1){if(node.matches?.('.command-card'))enhanceCards(node.parentElement||document);else if(node.querySelector?.('.command-card'))enhanceCards(node);}});observer.observe(document.body,{childList:true,subtree:true});
+if(window.PlushboundEditor) import('./reference-audit.js');

@@ -82,6 +82,7 @@ jobs:
           assert.notEqual(await page.locator('#runtimePackage').inputValue(),verdanciaRuntime);
           assert.equal(await page.locator('#battleMap').inputValue(),'elyndor-sunthread-crossing');
           assert.match(await page.textContent('#battleDiagnostics'),/"map": "elyndor-sunthread-crossing"/);
+          assert.equal(await page.locator('#bossList [data-boss-id="verdancia-unraveled-hart"]').isDisabled(),true);
           await page.fill('#battleRegion','0');
           await page.waitForFunction(()=>document.querySelectorAll('#encounterCandidates [data-enemy-id]').length>0);
           const candidateIds=await page.locator('#encounterCandidates [data-enemy-id]').evaluateAll(nodes=>nodes.map(node=>node.dataset.enemyId));
@@ -99,5 +100,5 @@ jobs:
           assert.match(after,/1\/3/);
           assert.deepEqual(errors,[]);
           await browser.close();
-          console.log('Android battle encounter + boss lifecycle + automatic cross-package map simulation passed');
+          console.log('Android battle encounter + boss lifecycle + automatic cross-package map + persistent sandbox state simulation passed');
           NODE

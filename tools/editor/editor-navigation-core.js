@@ -35,6 +35,8 @@ export function diagnosticDestination(issue={}){
   const mapId=String(issue.mapId||''),eventId=String(issue.eventId||'');
   if(mapId&&eventId)return `./index.html?map=${enc(mapId)}&event=${enc(eventId)}`;
   if(mapId)return `./map-manager.html?map=${enc(mapId)}`;
+  const packageId=String(issue.packageId||''),collectionKey=String(issue.collectionKey||''),recordId=String(issue.recordId||'');
+  if(packageId&&collectionKey&&recordId)return `./database.html?package=${enc(packageId)}&collection=${enc(collectionKey)}&record=${enc(recordId)}`;
   const owner=String(issue.owner||'');
   const match=/^(quest|shop|encounter|waystitch|enemy|item|npc):(.+)$/.exec(owner);
   const query=String(issue.id||match?.[2]||owner||issue.kind||'').trim();

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { collectionDescriptors, collectionRecords, validateCollection, replaceRecord, addRecord, removeRecord } from '../../tools/editor/database-core.js';
+import { collectionDescriptors, collectionRecords, validateCollection, validatePackageCollections, replaceRecord, addRecord, removeRecord } from '../../tools/editor/database-core.js';
 
 const guardians = JSON.parse(readFileSync(new URL('../content/guardians.json', import.meta.url), 'utf8'));
 
@@ -40,4 +40,17 @@ test('database rejects duplicate ids before export', () => {
   assert.throws(() => addRecord(pkg, 'starters', { id: 'cinder', name: 'Duplicate' }), /Duplicate/);
   pkg.starters[1].id = 'cinder';
   assert.ok(validateCollection(pkg, 'starters').some(issue => issue.code === 'duplicate-id'));
+});
+
+test('package validation catches errors outside the currently selected collection', () => {
+  const pkg = {
+    guardians: [{ id: 'cinder', name: 'Cinder' }],
+    enemies: [{ id: 'sprout', name: 'Sprout' }, { id: 'sprout', name: 'Duplicate Sprout' }]
+  };
+  assert.deepEqual(validateCollection(pkg, 'guardians'), []);
+  const issues = validatePackageCollections(pkg);
+  assert.equal(issues.length, 1);
+  assert.equal(issues[0].collectionKey, 'enemies');
+  assert.equal(issues[0].collectionLabel, 'Enemies');
+  assert.equal(issues[0].code, 'duplicate-id');
 });

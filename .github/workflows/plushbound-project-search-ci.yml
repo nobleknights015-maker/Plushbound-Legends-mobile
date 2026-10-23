@@ -6,20 +6,32 @@ on:
     branches: [ plushbound-game-development ]
     paths:
       - 'tools/editor/project-search*'
+      - 'tools/editor/editor-navigation-core.js'
+      - 'tools/editor/editor-deeplinks.js'
       - 'tools/editor/index.html'
+      - 'tools/editor/database.html'
+      - 'tools/editor/map-manager.html'
+      - 'tools/editor/audio.html'
       - 'game/content/**'
       - 'game/runtime/**'
       - 'game/assets/asset-manifest.json'
       - 'game/tests/project-search-core.test.js'
+      - 'game/tests/editor-navigation-core.test.js'
       - '.github/workflows/plushbound-project-search-ci.yml'
   pull_request:
     paths:
       - 'tools/editor/project-search*'
+      - 'tools/editor/editor-navigation-core.js'
+      - 'tools/editor/editor-deeplinks.js'
       - 'tools/editor/index.html'
+      - 'tools/editor/database.html'
+      - 'tools/editor/map-manager.html'
+      - 'tools/editor/audio.html'
       - 'game/content/**'
       - 'game/runtime/**'
       - 'game/assets/asset-manifest.json'
       - 'game/tests/project-search-core.test.js'
+      - 'game/tests/editor-navigation-core.test.js'
       - '.github/workflows/plushbound-project-search-ci.yml'
 
 jobs:
@@ -35,7 +47,9 @@ jobs:
         run: |
           node --check tools/editor/project-search-core.js
           node --check tools/editor/project-search.js
-          node --test game/tests/project-search-core.test.js
+          node --check tools/editor/editor-navigation-core.js
+          node --check tools/editor/editor-deeplinks.js
+          node --test game/tests/project-search-core.test.js game/tests/editor-navigation-core.test.js
       - name: Install Chromium
         run: |
           npm install --no-save playwright@1.49.1
@@ -49,7 +63,7 @@ jobs:
           done
           cat project-search-http.log
           exit 1
-      - name: Simulate project search on Android viewport
+      - name: Simulate project search and deep links on Android viewport
         run: |
           node --input-type=module <<'NODE'
           import { chromium } from 'playwright';
@@ -60,21 +74,36 @@ jobs:
           await page.goto('http://127.0.0.1:4175/tools/editor/project-search.html');
           await page.waitForFunction(()=>window.PlushboundProjectSearch?.getIndex().length>100);
           assert.ok((await page.locator('.result').count())>0);
-          await page.locator('#projectQuery').fill('menders-rest-provisions');
+
+          await page.locator('#projectType').selectOption('content');
+          await page.locator('#projectQuery').fill('threads-out-of-tune');
           await page.waitForTimeout(50);
-          assert.ok((await page.locator('.result').count())>0);
-          assert.ok((await page.locator('.result').first().innerText()).toLowerCase().includes('mender'));
+          const databaseLink=page.locator('.result a.result-open[href*="database.html"]').first();
+          assert.ok(await databaseLink.count());
+          const databaseHref=await databaseLink.getAttribute('href');
+          assert.match(databaseHref,/record=threads-out-of-tune/);
+          const db=await browser.newPage({viewport:{width:412,height:915}});const dbErrors=[];db.on('pageerror',error=>dbErrors.push(String(error)));
+          await db.goto(new URL(databaseHref,page.url()).href);
+          await db.waitForFunction(()=>document.querySelector('#recordIdentity')?.textContent.includes('threads-out-of-tune'));
+          assert.deepEqual(dbErrors,[]);await db.close();
+
           await page.locator('#projectType').selectOption('runtime');
-          await page.locator('#projectQuery').fill('SHOP');
+          await page.locator('#projectQuery').fill('anchor-west');
           await page.waitForTimeout(50);
-          const runtimeResults=await page.locator('.result').allInnerTexts();
-          assert.ok(runtimeResults.length>0);
-          assert.ok(runtimeResults.every(text=>text.toLowerCase().includes('runtime')));
+          const mapLink=page.locator('.result a.result-open[href*="index.html"][href*="event=anchor-west"]').first();
+          assert.ok(await mapLink.count());
+          const mapHref=await mapLink.getAttribute('href');
+          const editor=await browser.newPage({viewport:{width:412,height:915}});const editorErrors=[];editor.on('pageerror',error=>editorErrors.push(String(error)));
+          await editor.goto(new URL(mapHref,page.url()).href);
+          await editor.waitForFunction(()=>window.PlushboundEditor?.getSelectedEventId?.()==='anchor-west');
+          assert.equal(await editor.locator('#mapSelect').inputValue(),'elyndor-sunthread-crossing');
+          assert.deepEqual(editorErrors,[]);await editor.close();
+
           await page.locator('#projectType').selectOption('assets');
           await page.locator('#projectQuery').fill('npc/lio/sprite');
           await page.waitForTimeout(50);
-          assert.ok((await page.locator('.result').count())>0);
+          assert.ok((await page.locator('.result a.result-open').count())>0);
           assert.deepEqual(errors,[]);
           await browser.close();
-          console.log('Android project search simulation passed');
+          console.log('Android project search + editor deep-link simulation passed');
           NODE

@@ -32,6 +32,9 @@ export function paintBlockedBrush(map,x,y,blocked=true,size=1){
 
 export function observedTileIds(map,{includeZero=true,limit=48}={}){
   const ids=new Set(includeZero?[0]:[]);
-  for(const layer of map?.layers||[])for(const value of layer?.data||[])ids.add(Math.max(0,Math.floor(Number(value)||0)));
+  for(const layer of map?.layers||[])for(const value of layer?.data||[]){
+    const id=Math.max(0,Math.floor(Number(value)||0));
+    if(includeZero||id!==0)ids.add(id);
+  }
   return [...ids].sort((a,b)=>a-b).slice(0,Math.max(1,positiveInt(limit,48)));
 }

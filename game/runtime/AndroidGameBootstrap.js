@@ -7,6 +7,7 @@ import { GameSavePersistence } from './GameSavePersistence.js';
 import { createMVPluginRuntime, normalizeMVPluginManifest } from './MVPluginRuntime.js';
 import { createMVDatabaseBridge, normalizeMVDatabaseIdRegistry } from './MVDatabaseBridge.js';
 import { createMVEventCommandBridge } from './MVEventCommandBridge.js';
+import { createMVUiRuntime } from './MVUiRuntime.js';
 
 async function loadJson(url) {
   const response = await fetch(url, { cache: 'no-store' });
@@ -97,7 +98,7 @@ export async function bootPlushboundGame({ scope = globalThis, baseUrl } = {}) {
   const runtime = {
     version: 1, engineBaseline: index.engineBaseline, contentIndex: index, contentPackages,
     runtimeBaseUrl: runtimeBase.href, pluginManifest, mvDatabaseIdRegistry: databaseIdRegistry,
-    mvPlugins: null, mvDatabase: null, mvEventCommands: null,
+    mvPlugins: null, mvDatabase: null, mvEventCommands: null, mvUi: null,
     loadedPackageIds: loaded.contentPackages.map(record => record.entry.id),
     loadedRuntimePackageIds: loaded.runtimePackages.map(record => record.entry.id),
     loadedMapIds: mapPackage.maps.map(map => map.id),
@@ -119,7 +120,10 @@ export async function bootPlushboundGame({ scope = globalThis, baseUrl } = {}) {
   runtime.mvDatabase = mvDatabase;
   const mvEventCommands = createMVEventCommandBridge({ scope, runtime, mvPlugins }).install();
   runtime.mvEventCommands = mvEventCommands;
-  const databaseStatus = mvDatabase.snapshot(), eventCommandStatus = mvEventCommands.snapshot();
+  const mvUi = createMVUiRuntime({ scope, runtime }).install();
+  runtime.mvUi = mvUi;
+
+  const databaseStatus = mvDatabase.snapshot(), eventCommandStatus = mvEventCommands.snapshot(), uiStatus = mvUi.snapshot();
   const pluginStatus = await mvPlugins.loadEnabledPlugins();
 
   scope.dispatchEvent?.(new CustomEvent('plushbound-game-ready', {
@@ -127,7 +131,8 @@ export async function bootPlushboundGame({ scope = globalThis, baseUrl } = {}) {
       engineBaseline: index.engineBaseline, startMapId: index.start.mapId, loadedMaps: mapPackage.maps.length, restoredSave,
       mvPluginTarget: pluginStatus.target, configuredPlugins: pluginStatus.configured, loadedPlugins: pluginStatus.loaded.length,
       mvDatabaseCounts: databaseStatus.counts, mvDatabaseMissingIds: databaseStatus.missingRegistryEntries.length,
-      mvEventCommandsImplemented: eventCommandStatus.implementedCount, mvEventCommandsDeferred: eventCommandStatus.deferredCount
+      mvEventCommandsImplemented: eventCommandStatus.implementedCount, mvEventCommandsDeferred: eventCommandStatus.deferredCount,
+      mvUiClassesInstalled: uiStatus.classCount, mvDeepPixiRenderer: uiStatus.deepPixiRenderer
     }
   }));
   viewportGuard.refresh?.(); shellBridge.publish?.('ready'); return runtime;

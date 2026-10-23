@@ -66,6 +66,16 @@ jobs:
           base64 -d project-source.b64 > project-source-fixed.zip
           unzip -o project-source-fixed.zip -d .
 
+      - name: Apply official Plushbound launcher icon
+        run: |
+          python -m pip install --disable-pip-version-check --quiet pillow
+          python game/tools/apply-android-launcher-icon.py
+          test -f app/src/main/res/mipmap-mdpi/plushbound_launcher.webp
+          test -f app/src/main/res/mipmap-xxxhdpi/plushbound_launcher.webp
+          test -f app/src/main/res/mipmap-anydpi-v26/plushbound_launcher.xml
+          grep -q 'android:icon="@mipmap/plushbound_launcher"' app/src/main/AndroidManifest.xml
+          grep -q 'android:roundIcon="@mipmap/plushbound_launcher_round"' app/src/main/AndroidManifest.xml
+
       - name: Apply native-feel fixed viewport shell policy
         run: |
           python - <<'PY'
@@ -163,6 +173,7 @@ jobs:
           test -f app/src/main/assets/game/content/content-index.json
           test -f app/src/main/assets/game/assets/asset-manifest.json
           test -f app/src/main/assets/game/assets/README.md
+          test -f app/src/main/assets/game/assets/ui/branding/plushbound-launcher-icon.webp
           grep -q '160d9fd95bc0d3db39224f8bb4c5e1e3a1f54425' app/src/main/assets/game/content/content-index.json
           grep -q 'plushbound-game-assets' app/src/main/assets/game/content/content-index.json
           grep -q 'verdancia-region-maps' app/src/main/assets/game/content/content-index.json
@@ -222,6 +233,7 @@ jobs:
           unzip -l "$APK" | grep -q 'assets/game/content/content-index.json'
           unzip -l "$APK" | grep -q 'assets/game/assets/asset-manifest.json'
           unzip -l "$APK" | grep -q 'assets/game/assets/guardians/README.md'
+          unzip -l "$APK" | grep -q 'assets/game/assets/ui/branding/plushbound-launcher-icon.webp'
           unzip -p "$APK" assets/game/release-gate.json | grep -q "${GITHUB_SHA}"
           unzip -p "$APK" assets/game/release-gate.json | grep -q 'verdancia'
           HTML=$(unzip -Z1 "$APK" | grep '^assets/.*\.html$' | head -n 1)
@@ -231,6 +243,7 @@ jobs:
           unzip -p "$APK" "$CSS" | grep -q 'overflow:hidden!important'
           aapt dump badging "$APK" | tee apk-badging.txt
           grep -q "package: name='com.plushbound.legends'" apk-badging.txt
+          grep -q 'plushbound_launcher' apk-badging.txt
           aapt dump permissions "$APK" | tee apk-permissions.txt
           if grep -q 'android.permission.INTERNET' apk-permissions.txt; then exit 1; fi
           apksigner verify --verbose --print-certs "$APK"

@@ -21,6 +21,13 @@ export class BattleEncounterTester{
     return this.mapPackage.maps.map(map=>({id:String(map.id),name:map.name||String(map.id),encounterTable:map.encounterTable||null,width:Number(map.width)||0,height:Number(map.height)||0}));
   }
 
+  bosses(){
+    return this.session.game.bossEncounterIds().map(id=>{
+      const definition=this.session.game.bossEncounter(id);
+      return {...definition,enemy:this.session.game.enemyDefinition(definition.enemyId)};
+    });
+  }
+
   battleQuests(){
     const out=[];
     for(const [id,quest] of this.session.game.quests){
@@ -52,6 +59,16 @@ export class BattleEncounterTester{
     }else picked=this.session.encounters.pick({regionId:preview.regionId,table:preview.tableId});
     if(!picked)return null;
     const encounter={...clone(picked),enemy:this.session.game.enemyDefinition(picked.enemyId)};
+    this.session.lastEncounter=clone(encounter);
+    return clone(encounter);
+  }
+
+  loadBoss(bossId){
+    const definition=this.session.game.bossEncounter(String(bossId));
+    if(!definition)throw new Error(`Unknown boss encounter ${bossId}`);
+    const enemy=this.session.game.enemyDefinition(definition.enemyId);
+    if(!enemy)throw new Error(`Boss encounter ${bossId} references unknown enemy ${definition.enemyId}`);
+    const encounter={enemyId:String(definition.enemyId),enemy,bossId:String(definition.id),bossDefinition:clone(definition)};
     this.session.lastEncounter=clone(encounter);
     return clone(encounter);
   }

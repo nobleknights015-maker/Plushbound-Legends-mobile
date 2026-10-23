@@ -1,0 +1,90 @@
+name: Plushbound Event Command UI CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ plushbound-game-development ]
+    paths:
+      - 'tools/editor/editor.js'
+      - 'tools/editor/event-command-core.js'
+      - 'tools/editor/command-forms.js'
+      - 'game/tests/event-command-core.test.js'
+      - '.github/workflows/plushbound-event-command-ui-ci.yml'
+  pull_request:
+    paths:
+      - 'tools/editor/editor.js'
+      - 'tools/editor/event-command-core.js'
+      - 'tools/editor/command-forms.js'
+      - 'game/tests/event-command-core.test.js'
+      - '.github/workflows/plushbound-event-command-ui-ci.yml'
+
+jobs:
+  event-command-ui-simulation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run command structure contracts
+        run: |
+          node --check tools/editor/event-command-core.js
+          node --check tools/editor/editor.js
+          node --check tools/editor/command-forms.js
+          node --test game/tests/event-command-core.test.js
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: Serve repository
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >event-command-http.log 2>&1 &
+          for i in {1..20}; do
+            curl -fsS http://127.0.0.1:4173/tools/editor/index.html >/dev/null && exit 0
+            sleep 1
+          done
+          cat event-command-http.log
+          exit 1
+      - name: Simulate command copy reorder and undo on Android viewport
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+          import assert from 'node:assert/strict';
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:412,height:915}});
+          const errors=[];page.on('pageerror',error=>errors.push(String(error)));
+          await page.goto('http://127.0.0.1:4173/tools/editor/index.html');
+          await page.click('#loadElyndor');
+          await page.waitForFunction(()=>window.PlushboundEditor?.getPackage()?.maps?.length===3);
+          await page.click('[data-event-id="lio"]');
+          const first=page.locator('.command-card[data-command-index="0"]');
+          assert.ok(await first.locator('.command-structure-actions').count());
+          assert.equal(await page.isDisabled('#pasteCommand'),true);
+          await first.locator('[data-command-action="copy"]').click();
+          assert.equal(await page.isDisabled('#pasteCommand'),false);
+          const before=await page.evaluate(()=>window.PlushboundEditor.getCommandCount());
+          await page.click('#pasteCommand');
+          assert.equal(await page.evaluate(()=>window.PlushboundEditor.getCommandCount()),before+1);
+          assert.equal(await page.evaluate(()=>window.PlushboundEditor.getHistory().undo),1);
+          await page.click('#undoEdit');
+          assert.equal(await page.evaluate(()=>window.PlushboundEditor.getCommandCount()),before);
+          await page.click('#redoEdit');
+          assert.equal(await page.evaluate(()=>window.PlushboundEditor.getCommandCount()),before+1);
+
+          const card0=page.locator('.command-card[data-command-index="0"]');
+          await card0.locator('[data-command-action="duplicate"]').click();
+          const commands=await page.evaluate(()=>window.PlushboundEditor.getPackage().maps[0].events.find(e=>e.id==='lio').pages[0].commands);
+          assert.deepEqual(commands[1],commands[0]);
+          assert.equal(await page.evaluate(()=>window.PlushboundEditor.getHistory().undo),2);
+          await page.locator('.command-card[data-command-index="1"] [data-command-action="down"]').click();
+          assert.equal(await page.evaluate(()=>window.PlushboundEditor.getHistory().undo),3);
+          page.once('dialog',dialog=>dialog.accept());
+          await page.locator('.command-card[data-command-index="2"] [data-command-action="delete"]').click();
+          assert.equal(await page.evaluate(()=>window.PlushboundEditor.getHistory().undo),4);
+          await page.click('#undoEdit');
+          assert.equal(await page.evaluate(()=>window.PlushboundEditor.getHistory().undo),3);
+          assert.deepEqual(errors,[]);
+          await browser.close();
+          console.log('Android command structure simulation passed');
+          NODE

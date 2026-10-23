@@ -1,0 +1,118 @@
+name: Plushbound Database CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ plushbound-game-development ]
+    paths:
+      - 'tools/editor/database*'
+      - 'game/content/**'
+      - 'game/tests/database*.test.js'
+      - '.github/workflows/plushbound-database-ci.yml'
+  pull_request:
+    paths:
+      - 'tools/editor/database*'
+      - 'game/content/**'
+      - 'game/tests/database*.test.js'
+      - '.github/workflows/plushbound-database-ci.yml'
+
+jobs:
+  database-simulation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out game development
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run database contracts
+        run: |
+          node --check tools/editor/database-core.js
+          node --check tools/editor/database.js
+          node --test game/tests/database-core.test.js game/tests/database-fields.test.js game/tests/database-transaction-regression.test.js
+
+      - name: Install headless browser
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+
+      - name: Serve repository
+        run: |
+          python3 -m http.server 4174 --bind 127.0.0.1 >database-http.log 2>&1 &
+          echo $! > database-http.pid
+          for i in {1..20}; do
+            if curl -fsS http://127.0.0.1:4174/tools/editor/database.html >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat database-http.log
+          exit 1
+
+      - name: Simulate visual database authoring in Chromium
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+          import assert from 'node:assert/strict';
+
+          const browser = await chromium.launch({ headless: true });
+          const page = await browser.newPage({ viewport: { width: 412, height: 915 } });
+          const errors = [];
+          page.on('pageerror', error => errors.push(String(error)));
+          await page.goto('http://127.0.0.1:4174/tools/editor/database.html');
+          await page.waitForFunction(() => window.PlushboundDatabase?.getState().packages.length > 0);
+
+          const state = await page.evaluate(() => window.PlushboundDatabase.getState());
+          const guardianIndex = state.packages.findIndex(entry => entry.id === 'guardians');
+          assert.ok(guardianIndex >= 0);
+          await page.evaluate(index => window.PlushboundDatabase.selectPackage(index), guardianIndex);
+          await page.evaluate(() => window.PlushboundDatabase.selectCollection('starters'));
+          await page.locator('[data-locator="0"]').click();
+          assert.match(await page.textContent('#recordIdentity'), /Cinder|cinder/i);
+          assert.ok(await page.locator('[data-field-input="name"]').count());
+
+          const before = await page.evaluate(() => structuredClone(window.PlushboundDatabase.getActivePackage().data.starters[0]));
+          await page.fill('[data-field-input="name"]', 'Cinder Editor Test');
+          await page.click('#applyFields');
+          assert.equal(await page.evaluate(() => window.PlushboundDatabase.getActivePackage().data.starters[0].name), 'Cinder Editor Test');
+          assert.deepEqual(await page.evaluate(() => window.PlushboundDatabase.getActivePackage().data.starters[0].assetBindings), before.assetBindings);
+
+          await page.click('#undoDatabase');
+          assert.equal(await page.evaluate(() => window.PlushboundDatabase.getActivePackage().data.starters[0].name), before.name);
+          await page.click('#redoDatabase');
+          assert.equal(await page.evaluate(() => window.PlushboundDatabase.getActivePackage().data.starters[0].name), 'Cinder Editor Test');
+
+          // Rejected duplicate IDs must not corrupt the working package.
+          const packageBeforeInvalidEdit = await page.evaluate(() => JSON.stringify(window.PlushboundDatabase.getActivePackage().data));
+          await page.fill('[data-field-input="id"]', 'mallow');
+          page.once('dialog', dialog => dialog.accept());
+          await page.click('#applyFields');
+          assert.equal(await page.evaluate(() => JSON.stringify(window.PlushboundDatabase.getActivePackage().data)), packageBeforeInvalidEdit);
+
+          assert.deepEqual(errors, []);
+          await browser.close();
+          console.log('Plushbound visual database mobile authoring simulation passed');
+          NODE
+
+      - name: Record database simulation gate
+        if: always()
+        run: |
+          cat > plushbound-database-gate.txt <<EOF
+          Plushbound Database simulation
+          Browser: Chromium headless (412x915 Android-class viewport)
+          Coverage: project load, package/collection selection, visual scalar fields, nested-data preservation, undo/redo, invalid-edit rollback
+          Result: ${{ job.status }}
+          Commit: ${{ github.sha }}
+          EOF
+
+      - name: Upload database diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: plushbound-database-ci
+          path: |
+            plushbound-database-gate.txt
+            database-http.log
+          if-no-files-found: warn

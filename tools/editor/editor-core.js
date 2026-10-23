@@ -1,6 +1,6 @@
 export function clone(value){return typeof structuredClone==='function'?structuredClone(value):JSON.parse(JSON.stringify(value));}
 
-export const EDITABLE_COMMANDS=new Set(['MESSAGE','SWITCH','TRANSFER','SHOP','SE','SCRIPT_HOOK']);
+export const EDITABLE_COMMANDS=new Set(['WAIT','SWITCH','VARIABLE','VARIABLE_OP','SELF_SWITCH','CONDITIONAL','JUMP','EXIT_EVENT','COMMON_EVENT','MESSAGE','CHOICE','INPUT_NUMBER','TRANSFER','MOVE_ROUTE','RELOCATE_EVENT','ERASE_EVENT','TRANSPARENCY','FADE_SCREEN','TINT_SCREEN','FLASH_SCREEN','SHAKE_SCREEN','BGM','BGM_STOP','BGM_FADE','BGS','BGS_STOP','BGS_FADE','ME','SE','BATTLE','SHOP','SCRIPT_HOOK']);
 export const EDITOR_ASSET_TYPES=new Set(['character-sprite','guardian-sprite','map-object','map-overlay','tileset','parallax']);
 export const DIRECTIONS=new Set([2,4,6,8]);
 

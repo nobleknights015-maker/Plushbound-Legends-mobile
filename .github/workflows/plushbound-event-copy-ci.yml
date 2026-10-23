@@ -1,0 +1,29 @@
+name: Plushbound Event Copy CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ plushbound-game-development ]
+    paths:
+      - 'tools/editor/event-copy-core.js'
+      - 'game/tests/event-copy-core.test.js'
+      - '.github/workflows/plushbound-event-copy-ci.yml'
+  pull_request:
+    paths:
+      - 'tools/editor/event-copy-core.js'
+      - 'game/tests/event-copy-core.test.js'
+      - '.github/workflows/plushbound-event-copy-ci.yml'
+
+jobs:
+  event-copy-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run event copy contracts
+        run: |
+          node --check tools/editor/event-copy-core.js
+          node --test game/tests/event-copy-core.test.js

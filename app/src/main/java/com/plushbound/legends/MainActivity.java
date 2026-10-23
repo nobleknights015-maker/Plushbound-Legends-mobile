@@ -59,7 +59,7 @@ public class MainActivity extends Activity {
 
         setContentView(webView);
         if (savedInstanceState == null) {
-            webView.loadUrl("file:///android_asset/editor/index.html");
+            webView.loadUrl("file:///android_asset/tools/editor/index.html");
         } else {
             webView.restoreState(savedInstanceState);
         }

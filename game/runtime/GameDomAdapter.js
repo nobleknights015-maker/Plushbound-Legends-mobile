@@ -4,8 +4,11 @@ const MAP_NAMES = Object.freeze({
   'elyndor-menders-rest': "Mender's Rest"
 });
 
+export const GAME_TOUCH_TARGET_PX = 44;
+
 function text(el, value) { if (el) el.textContent = value == null ? '' : String(value); }
 function find(root, selectors = []) { for (const selector of selectors) { const found = root?.querySelector?.(selector); if (found) return found; } return null; }
+function touchStyle(extra = {}) { return { minHeight:`${GAME_TOUCH_TARGET_PX}px`, minWidth:0, touchAction:'manipulation', ...extra }; }
 
 function ensureLiveHud(root) {
   const existing = find(root, ['[data-plushbound-live-hud]']);
@@ -15,14 +18,27 @@ function ensureLiveHud(root) {
   const hud = root.createElement('div');
   hud.dataset.plushboundLiveHud = 'true';
   hud.setAttribute?.('aria-live', 'polite');
-  Object.assign(hud.style || {}, { display:'grid', gridTemplateColumns:'minmax(0,1fr) auto', gap:'4px 12px', alignItems:'center', width:'100%', fontSize:'12px', lineHeight:'1.25' });
-  const map = root.createElement('strong'); map.dataset.plushboundMapInfo = 'true';
-  const gold = root.createElement('span'); gold.dataset.plushboundGold = 'true';
-  const quest = root.createElement('span'); quest.dataset.plushboundQuestInfo = 'true'; Object.assign(quest.style || {}, { gridColumn:'1 / -1', opacity:'0.9' });
-  const dialogue = root.createElement('div'); dialogue.dataset.plushboundDialogue = 'true'; Object.assign(dialogue.style || {}, { gridColumn:'1 / -1', minHeight:'34px', maxHeight:'58px', overflow:'hidden', padding:'6px 8px', borderRadius:'6px', background:'rgba(0,0,0,0.28)' });
-  const dialogueButton = root.createElement('button'); dialogueButton.type='button'; dialogueButton.dataset.plushboundAction='dialogue-next'; dialogueButton.dataset.plushboundDialogueNext='true'; dialogueButton.textContent='Next'; Object.assign(dialogueButton.style || {}, { gridColumn:'1 / -1', minHeight:'30px', padding:'4px 8px', display:'none' });
-  const shop = root.createElement('div'); shop.dataset.plushboundShop='true'; Object.assign(shop.style || {}, { gridColumn:'1 / -1', display:'none', gridTemplateColumns:'repeat(3,minmax(0,1fr))', gap:'5px', maxHeight:'100px', overflow:'hidden', padding:'6px', borderRadius:'6px', background:'rgba(0,0,0,0.24)' });
-  const actions = root.createElement('div'); actions.dataset.plushboundActions='true'; Object.assign(actions.style || {}, { gridColumn:'1 / -1', display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(112px,1fr))', gap:'5px', maxHeight:'96px', overflow:'hidden' });
+  Object.assign(hud.style || {}, {
+    display:'grid', gridTemplateColumns:'minmax(0,1fr) auto', gap:'6px 10px', alignItems:'center',
+    width:'100%', maxWidth:'100%', minWidth:0, boxSizing:'border-box', fontSize:'12px', lineHeight:'1.3', overflowWrap:'anywhere'
+  });
+  const map = root.createElement('strong'); map.dataset.plushboundMapInfo = 'true'; Object.assign(map.style || {}, { minWidth:0, overflowWrap:'anywhere' });
+  const gold = root.createElement('span'); gold.dataset.plushboundGold = 'true'; Object.assign(gold.style || {}, { whiteSpace:'nowrap' });
+  const quest = root.createElement('span'); quest.dataset.plushboundQuestInfo = 'true'; Object.assign(quest.style || {}, { gridColumn:'1 / -1', minWidth:0, opacity:'0.9', overflowWrap:'anywhere' });
+  const dialogue = root.createElement('div'); dialogue.dataset.plushboundDialogue = 'true'; Object.assign(dialogue.style || {}, {
+    gridColumn:'1 / -1', minWidth:0, minHeight:'44px', maxHeight:'30vh', overflowX:'hidden', overflowY:'auto',
+    overflowWrap:'anywhere', whiteSpace:'normal', padding:'8px 10px', borderRadius:'6px', boxSizing:'border-box', background:'rgba(0,0,0,0.28)'
+  });
+  const dialogueButton = root.createElement('button'); dialogueButton.type='button'; dialogueButton.dataset.plushboundAction='dialogue-next'; dialogueButton.dataset.plushboundDialogueNext='true'; dialogueButton.textContent='Next'; Object.assign(dialogueButton.style || {}, touchStyle({ gridColumn:'1 / -1', padding:'8px 10px', display:'none', width:'100%', boxSizing:'border-box' }));
+  const shop = root.createElement('div'); shop.dataset.plushboundShop='true'; Object.assign(shop.style || {}, {
+    gridColumn:'1 / -1', display:'none', gridTemplateColumns:'repeat(auto-fit,minmax(118px,1fr))', gap:'6px',
+    width:'100%', maxWidth:'100%', minWidth:0, maxHeight:'40vh', overflowX:'hidden', overflowY:'auto',
+    padding:'6px', borderRadius:'6px', boxSizing:'border-box', background:'rgba(0,0,0,0.24)'
+  });
+  const actions = root.createElement('div'); actions.dataset.plushboundActions='true'; Object.assign(actions.style || {}, {
+    gridColumn:'1 / -1', display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(118px,1fr))', gap:'6px',
+    width:'100%', maxWidth:'100%', minWidth:0, maxHeight:'38vh', overflowX:'hidden', overflowY:'auto'
+  });
   for (const node of [map,gold,quest,dialogue,dialogueButton,shop,actions]) hud.appendChild(node);
   host.appendChild(hud);
   return hud;
@@ -31,14 +47,14 @@ function ensureLiveHud(root) {
 function renderActions(root, actions = []) {
   const host = find(root, ['[data-plushbound-actions]']);
   if (!host || !root?.createElement || !host.replaceChildren) return;
-  const buttons = actions.slice(0,8).map(action => {
+  const buttons = actions.map(action => {
     const button = root.createElement('button');
     button.type='button'; button.textContent=action.label || action.eventId;
     button.dataset.plushboundAction = action.trigger === 'touch' ? 'touch' : 'interact';
     button.dataset.eventId=action.eventId; button.dataset.x=String(action.x ?? 0); button.dataset.y=String(action.y ?? 0); button.dataset.trigger=action.trigger || 'action'; button.dataset.actionKind=action.kind || 'interact';
     if (action.shopId) button.dataset.shopId=action.shopId;
     if (action.destinationMapId) button.dataset.destinationMapId=action.destinationMapId;
-    Object.assign(button.style || {}, { minHeight:'32px', padding:'5px 8px', fontSize:'11px', lineHeight:'1.1' });
+    Object.assign(button.style || {}, touchStyle({ padding:'7px 8px', fontSize:'11px', lineHeight:'1.2', width:'100%', maxWidth:'100%', boxSizing:'border-box', overflowWrap:'anywhere', whiteSpace:'normal' }));
     return button;
   });
   host.replaceChildren(...buttons); host.dataset.actionCount=String(actions.length);
@@ -61,14 +77,14 @@ function renderShop(root, shop) {
   if (!host || !root?.createElement || !host.replaceChildren) return;
   if (!shop) { host.replaceChildren(); if (host.style) host.style.display='none'; delete host.dataset.shopId; return; }
   const nodes=[];
-  const title=root.createElement('strong'); title.textContent=shop.name || shop.id; Object.assign(title.style || {}, { gridColumn:'1 / -1' }); nodes.push(title);
-  for (const entry of (shop.inventory || []).slice(0,5)) {
+  const title=root.createElement('strong'); title.textContent=shop.name || shop.id; Object.assign(title.style || {}, { gridColumn:'1 / -1', minWidth:0, overflowWrap:'anywhere' }); nodes.push(title);
+  for (const entry of (shop.inventory || [])) {
     const buy=root.createElement('button');
     buy.type='button'; buy.dataset.plushboundAction='buy'; buy.dataset.itemId=entry.itemId; buy.dataset.price=String(Number(entry.price)||0);
     buy.textContent=`${entry.item?.name || entry.itemId} — ${Number(entry.price)||0} G`;
-    Object.assign(buy.style || {}, { minHeight:'30px', padding:'4px 6px', fontSize:'11px', lineHeight:'1.1' }); nodes.push(buy);
+    Object.assign(buy.style || {}, touchStyle({ padding:'7px 8px', fontSize:'11px', lineHeight:'1.2', width:'100%', maxWidth:'100%', boxSizing:'border-box', overflowWrap:'anywhere', whiteSpace:'normal' })); nodes.push(buy);
   }
-  const close=root.createElement('button'); close.type='button'; close.textContent='Close Shop'; close.dataset.plushboundAction='shop-close'; nodes.push(close);
+  const close=root.createElement('button'); close.type='button'; close.textContent='Close Shop'; close.dataset.plushboundAction='shop-close'; Object.assign(close.style || {}, touchStyle({ gridColumn:'1 / -1', width:'100%', boxSizing:'border-box' })); nodes.push(close);
   host.replaceChildren(...nodes); host.dataset.shopId=shop.id; if (host.style) host.style.display='grid';
 }
 

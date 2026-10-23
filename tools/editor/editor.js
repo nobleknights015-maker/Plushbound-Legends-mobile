@@ -6,7 +6,7 @@ import { EditorPlaytest } from './playtest.js';
 
 const state={pkg:null,map:null,selectedEventId:null,selectedPage:0,selectedLayer:0,tool:'select',tilePx:28,assets:[],contentPackages:[],history:createHistory(80),eventClipboard:null,commandClipboard:null,playtest:null};
 const $=id=>document.getElementById(id);
-const ids=['fileInput','loadElyndor','exportJson','undoEdit','redoEdit','runValidation','startPlaytest','mapSelect','mapMeta','mapCanvas','eventList','status','cursorReadout','showGrid','showRegions','showBlocked','showEvents','inspector','inspectorEmpty','eventId','eventAsset','eventX','eventY','applyEvent','deleteEvent','pageEditor','pageSelect','pageTrigger','pageConditions','applyPage','addPage','eventPageSummary','commandEditor','commandList','newCommandType','newCommandParameters','addCommand','packageMeta','layerSelect','tileId','layerZ','layerVisible','applyLayer','addLayer','newEventId','armNewEvent','assetSearch','assetType','assetList','regionId','encounterPreview','transferEventId','transferTargetMap','transferX','transferY','transferDirection','armTransfer','validateLinks','linkSummary','linkIssues','validationSummary','validationIssues','playtestOverlay','stopPlaytest','playtestStatus','playtestMap','playtestInteract','playtestEvents'];
+const ids=['fileInput','loadElyndor','exportJson','undoEdit','redoEdit','runValidation','startPlaytest','mapSelect','mapMeta','mapCanvas','eventList','status','cursorReadout','showGrid','showRegions','showBlocked','showEvents','inspector','inspectorEmpty','eventId','eventAsset','eventX','eventY','applyEvent','deleteEvent','pageEditor','pageSelect','pageTrigger','pageConditions','applyPage','addPage','eventPageSummary','commandEditor','commandList','newCommandType','newCommandParameters','addCommand','packageMeta','layerSelect','tileId','layerZ','layerVisible','applyLayer','addLayer','newEventId','armNewEvent','assetSearch','assetType','assetList','regionId','encounterPreview','transferEventId','transferTargetMap','transferX','transferY','transferDirection','armTransfer','validateLinks','linkSummary','linkIssues','playtestOverlay','stopPlaytest','playtestStatus','playtestMap','playtestInteract','playtestEvents'];
 const els=Object.fromEntries(ids.map(id=>[id,$(id)]));
 
 function encounterTables(){return state.contentPackages.flatMap(content=>content.encounterTables||[]);}
@@ -36,7 +36,13 @@ async function loadDefault(){
   state.assets=normalizeAssetManifest(manifest);state.contentPackages=[opening,route];installPackage(pkg,{resetHistory:true});
 }
 function remember(label){if(!state.pkg)return;checkpointHistory(state.history,state.pkg,label);updateHistoryButtons();}
-function restoreHistory(entry){if(!entry)return false;const mapId=currentMapId();installPackage(entry.pkg,{resetHistory:false,preserveMapId:mapId});setStatus(`Restored: ${entry.label}`);return true;}
+function restoreHistory(entry){
+  if(!entry)return false;
+  const mapId=currentMapId(),eventId=state.selectedEventId,pageIndex=state.selectedPage,layerIndex=state.selectedLayer;
+  installPackage(entry.pkg,{resetHistory:false,preserveMapId:mapId});
+  if(state.map){state.selectedLayer=Math.min(Math.max(0,layerIndex),Math.max(0,state.map.layers.length-1));const event=(state.map.events||[]).find(item=>item.id===eventId);if(event){state.selectedEventId=event.id;state.selectedPage=Math.min(Math.max(0,pageIndex),Math.max(0,(event.pages?.length||1)-1));}renderAll();}
+  setStatus(`Restored: ${entry.label}`);return true;
+}
 function undo(){const result=undoHistory(state.history,state.pkg);const ok=restoreHistory(result);updateHistoryButtons();return ok;}
 function redo(){const result=redoHistory(state.history,state.pkg);const ok=restoreHistory(result);updateHistoryButtons();return ok;}
 function updateHistoryButtons(){els.undoEdit.disabled=!state.history.undo.length;els.redoEdit.disabled=!state.history.redo.length;els.undoEdit.title=state.history.undo.at(-1)?.label||'Nothing to undo';els.redoEdit.title=state.history.redo.at(-1)?.label||'Nothing to redo';}

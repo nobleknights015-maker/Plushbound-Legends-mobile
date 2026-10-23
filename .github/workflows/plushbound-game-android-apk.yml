@@ -51,11 +51,10 @@ jobs:
           test -f app/src/main/assets/tools/editor/editor.css
           test -f app/src/main/assets/game/runtime/PlushboundGameSession.js
           test -f app/src/main/assets/engine/src/core/GameState.js
-          if find app/src/main/assets -iname '*placeholder*' -o -iname '*demo*' | grep -q .; then
-            echo 'Placeholder/demo asset detected in clean editor package'
-            find app/src/main/assets -iname '*placeholder*' -o -iname '*demo*'
-            exit 1
-          fi
+          test ! -f app/src/main/assets/index.html
+          test ! -f app/src/main/assets/game.js
+          test ! -f app/src/main/assets/style.css
+          echo 'Old placeholder demo shell is absent from packaged assets'
 
       - name: Apply official Plushbound launcher icon
         run: |

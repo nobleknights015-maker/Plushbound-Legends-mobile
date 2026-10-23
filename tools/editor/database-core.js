@@ -1,6 +1,7 @@
 export function clone(value){return typeof structuredClone==='function'?structuredClone(value):JSON.parse(JSON.stringify(value));}
 
 function isRecord(value){return !!value&&typeof value==='object'&&!Array.isArray(value);}
+function isScalar(value){return value===null||['string','number','boolean'].includes(typeof value);}
 function recordId(record,fallback=''){return String(record?.id??fallback??'').trim();}
 
 export function collectionDescriptors(pkg={}){
@@ -37,21 +38,38 @@ export function validateCollection(pkg,key){
   return issues;
 }
 
+function scalarDescriptor(path,value){
+  const parts=path.split('.');
+  return {key:path,label:parts.map(labelFor).join(' · '),type:value===null?'string':typeof value,value:value??'',depth:parts.length-1};
+}
+
 export function scalarFieldDescriptors(record={}){
   if(!isRecord(record)) return [];
-  return Object.entries(record).filter(([,value])=>value===null||['string','number','boolean'].includes(typeof value)).map(([key,value])=>({key,label:labelFor(key),type:value===null?'string':typeof value,value:value??''}));
+  const fields=[];
+  for(const [key,value] of Object.entries(record)){
+    if(isScalar(value)){fields.push(scalarDescriptor(key,value));continue;}
+    if(isRecord(value)) for(const [childKey,childValue] of Object.entries(value)) if(isScalar(childValue)) fields.push(scalarDescriptor(`${key}.${childKey}`,childValue));
+  }
+  return fields;
+}
+
+function getPath(record,path){
+  const parts=String(path).split('.');let current=record;
+  for(const part of parts){if(!isRecord(current)||!Object.prototype.hasOwnProperty.call(current,part))return {exists:false};current=current[part];}
+  return {exists:true,value:current,parts};
 }
 
 export function applyScalarFields(record,fields={}){
   if(!isRecord(record)) throw new Error('Record must be a JSON object');
   const next=clone(record);
-  for(const [key,input] of Object.entries(fields||{})){
-    if(!Object.prototype.hasOwnProperty.call(next,key)) continue;
-    const current=next[key];
-    if(typeof current==='boolean') next[key]=input===true||input==='true'||input===1||input==='1';
+  for(const [path,input] of Object.entries(fields||{})){
+    const found=getPath(next,path);if(!found.exists)continue;
+    const current=found.value;let value;
+    if(typeof current==='boolean') value=input===true||input==='true'||input===1||input==='1';
     else if(typeof current==='number'){
-      const value=Number(input);if(!Number.isFinite(value)) throw new Error(`${labelFor(key)} must be a number`);next[key]=value;
-    }else next[key]=String(input??'');
+      value=Number(input);if(!Number.isFinite(value)) throw new Error(`${found.parts.map(labelFor).join(' · ')} must be a number`);
+    }else value=String(input??'');
+    let target=next;for(const part of found.parts.slice(0,-1))target=target[part];target[found.parts.at(-1)]=value;
   }
   return next;
 }

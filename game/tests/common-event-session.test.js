@@ -46,3 +46,28 @@ test('game session supports nested runtime common events without mutating the so
   assert.equal(session.state.variable('nested-count'),7);
   assert.deepEqual(commonEvents,before);
 });
+
+test('game session rejects missing common-event references before play begins', () => {
+  assert.throws(()=>new PlushboundGameSession({
+    mapPackage:mapPackage([]),
+    commonEvents:{schemaVersion:1,commonEvents:[
+      {id:'caller',commands:[{code:'COMMON_EVENT',parameters:['missing']}]}
+    ]}
+  }),/references unknown common event: missing/i);
+});
+
+test('game session rejects recursive common-event call graphs before play begins', () => {
+  assert.throws(()=>new PlushboundGameSession({
+    mapPackage:mapPackage([]),
+    commonEvents:{schemaVersion:1,commonEvents:[
+      {id:'loop',commands:[{code:'COMMON_EVENT',parameters:['loop']}]}
+    ]}
+  }),/recursive common event cycle: loop -> loop/i);
+  assert.throws(()=>new PlushboundGameSession({
+    mapPackage:mapPackage([]),
+    commonEvents:{schemaVersion:1,commonEvents:[
+      {id:'a',commands:[{code:'COMMON_EVENT',parameters:['b']}]},
+      {id:'b',commands:[{code:'COMMON_EVENT',parameters:['a']}]}
+    ]}
+  }),/recursive common event cycle: a -> b -> a/i);
+});

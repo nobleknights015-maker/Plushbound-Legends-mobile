@@ -11,7 +11,7 @@
   <div id="battleApp">
     <header class="topbar">
       <div><strong>Battle & Encounter Test</strong><span class="sub">Runtime-backed encounter validation • frozen-engine compatible</span></div>
-      <div class="actions"><button type="button" onclick="location.href='./index.html'">Map Editor</button><button type="button" onclick="location.href='./database.html'">Database</button><button id="reloadBattle">Reload Project</button></div>
+      <div class="actions"><button type="button" onclick="location.href='./index.html'">Map Editor</button><button type="button" onclick="location.href='./database.html'">Database</button><button type="button" onclick="location.href='./items.html'">Items & Equipment</button><button id="reloadBattle">Reload Project</button></div>
     </header>
     <main class="battle-workspace">
       <section class="battle-card setup-card">
@@ -27,6 +27,13 @@
         <div class="card-head"><h2>Encounter Candidates</h2><button id="rollEncounter">Weighted Pick</button></div>
         <div id="encounterTableMeta" class="meta"></div>
         <div id="encounterCandidates" class="candidate-list"></div>
+      </section>
+
+      <section class="battle-card boss-card">
+        <h2>Boss Definitions</h2>
+        <div id="bossMeta" class="meta"></div>
+        <div id="bossList" class="candidate-list"></div>
+        <div class="note">Boss definitions are now queryable through the game content runtime. Loading one here tests its real enemy definition. Current runtime does not yet auto-apply one-time/completion-switch semantics after victory, so this workspace does not pretend otherwise.</div>
       </section>
 
       <section class="battle-card enemy-card">

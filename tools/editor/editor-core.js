@@ -17,8 +17,10 @@ export function validatePackage(pkg){
     if(map.blocked!==undefined&&!Array.isArray(map.blocked)) throw new Error(`blocked must be an array for ${map.id}`);
     if(map.layers!==undefined&&!Array.isArray(map.layers)) throw new Error(`layers must be an array for ${map.id}`);
     if(map.regions!==undefined&&!Array.isArray(map.regions)) throw new Error(`regions must be an array for ${map.id}`);
+    const eventIds=new Set();
     for(const event of map.events||[]){
       if(!event.id) throw new Error(`Event without id on ${map.id}`);
+      if(eventIds.has(String(event.id))) throw new Error(`Duplicate event id ${event.id} on ${map.id}`); eventIds.add(String(event.id));
       if(!Number.isInteger(event.x)||!Number.isInteger(event.y)) throw new Error(`Event ${event.id} has invalid coordinates`);
       if(event.x<0||event.y<0||event.x>=map.width||event.y>=map.height) throw new Error(`Event ${event.id} is outside ${map.id}`);
       if(event.pages!==undefined&&!Array.isArray(event.pages)) throw new Error(`Event ${event.id} pages must be an array`);
@@ -165,6 +167,59 @@ export function validateTransferLinks(pkg){
     if(!DIRECTIONS.has(link.direction)) issues.push({...link,reason:'invalid-direction'});
   }
   return issues;
+}
+
+export function encounterCandidates(table,regionId=0){
+  if(!table) return [];
+  return clone((table.entries||[]).filter(entry=>!Array.isArray(entry.regions)||entry.regions.length===0||entry.regions.map(Number).includes(Number(regionId))));
+}
+
+export function validatePlayablePackage(pkg,{assetIds=[],encounterTableIds=[]}={}){
+  const issues=[];
+  try{validatePackage(pkg);}catch(error){return [{severity:'error',code:'package-invalid',message:error.message}];}
+  const knownAssets=new Set((assetIds||[]).map(String));
+  const knownTables=new Set((encounterTableIds||[]).map(String));
+  for(const map of pkg.maps||[]){
+    const cells=map.width*map.height;
+    if(!(map.layers||[]).length) issues.push({severity:'warning',code:'no-layers',mapId:map.id,message:'Map has no tile layers'});
+    for(const [index,layer] of (map.layers||[]).entries()) if(!Array.isArray(layer.data)||layer.data.length!==cells) issues.push({severity:'error',code:'layer-size',mapId:map.id,message:`Layer ${layer.id||index+1} has ${layer.data?.length??0}/${cells} cells`});
+    if(!Array.isArray(map.regions)||map.regions.length!==cells) issues.push({severity:'error',code:'region-size',mapId:map.id,message:`Region grid has ${map.regions?.length??0}/${cells} cells`});
+    for(const cell of map.blocked||[]){
+      const match=/^(\d+),(\d+)$/.exec(String(cell));
+      if(!match){issues.push({severity:'error',code:'blocked-format',mapId:map.id,message:`Invalid blocked cell ${cell}`});continue;}
+      const x=Number(match[1]),y=Number(match[2]);
+      if(x>=map.width||y>=map.height) issues.push({severity:'error',code:'blocked-bounds',mapId:map.id,message:`Blocked cell ${cell} is outside map`});
+    }
+    for(const event of map.events||[]){
+      if(!(event.pages||[]).length) issues.push({severity:'warning',code:'event-no-pages',mapId:map.id,eventId:event.id,message:`Event ${event.id} has no pages`});
+      if(event.assetId&&knownAssets.size&&!knownAssets.has(String(event.assetId))) issues.push({severity:'warning',code:'asset-unregistered',mapId:map.id,eventId:event.id,message:`Unregistered asset ${event.assetId}`});
+      const hasTouchTransfer=(event.pages||[]).some(page=>(page.trigger||'action')==='touch'&&(page.commands||[]).some(command=>command.code==='TRANSFER'));
+      if(hasTouchTransfer&&event.through===false) issues.push({severity:'warning',code:'transfer-blocking',mapId:map.id,eventId:event.id,message:`Touch transfer ${event.id} is not through`});
+    }
+    if(map.encounterTable&&knownTables.size&&!knownTables.has(String(map.encounterTable))) issues.push({severity:'error',code:'encounter-table-missing',mapId:map.id,message:`Unknown encounter table ${map.encounterTable}`});
+  }
+  for(const link of validateTransferLinks(pkg)) issues.push({severity:'error',code:`transfer-${link.reason}`,mapId:link.fromMapId,eventId:link.eventId,message:`Transfer ${link.eventId} → ${link.targetMapId} is ${link.reason}`});
+  return issues;
+}
+
+export function createHistory(limit=60){return {undo:[],redo:[],limit:Math.max(1,Number(limit)||60)};}
+export function checkpointHistory(history,pkg,label='Edit'){
+  history.undo.push({pkg:clone(pkg),label:String(label)});
+  if(history.undo.length>history.limit) history.undo.splice(0,history.undo.length-history.limit);
+  history.redo=[];
+  return history;
+}
+export function undoHistory(history,currentPkg){
+  if(!history.undo.length) return null;
+  const entry=history.undo.pop();
+  history.redo.push({pkg:clone(currentPkg),label:entry.label});
+  return {pkg:clone(entry.pkg),label:entry.label};
+}
+export function redoHistory(history,currentPkg){
+  if(!history.redo.length) return null;
+  const entry=history.redo.pop();
+  history.undo.push({pkg:clone(currentPkg),label:entry.label});
+  return {pkg:clone(entry.pkg),label:entry.label};
 }
 
 export function normalizeAssetManifest(manifest){if(!manifest||!Array.isArray(manifest.entries)) throw new Error('Asset manifest must contain entries[]');return clone(manifest.entries).filter(entry=>entry&&entry.id&&EDITOR_ASSET_TYPES.has(entry.type));}

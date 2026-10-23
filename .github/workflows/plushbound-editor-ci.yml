@@ -11,6 +11,7 @@ on:
       - 'game/assets/asset-manifest.json'
       - 'game/tests/editor-core.test.js'
       - 'game/tests/encounter-session.test.js'
+      - 'game/tests/common-event-core.test.js'
       - '.github/workflows/plushbound-editor-ci.yml'
   pull_request:
     paths:
@@ -20,6 +21,7 @@ on:
       - 'game/assets/asset-manifest.json'
       - 'game/tests/editor-core.test.js'
       - 'game/tests/encounter-session.test.js'
+      - 'game/tests/common-event-core.test.js'
       - '.github/workflows/plushbound-editor-ci.yml'
 
 jobs:
@@ -40,9 +42,12 @@ jobs:
           node --check tools/editor/editor-core.js
           node --check tools/editor/playtest.js
           node --check tools/editor/editor.js
+          node --check tools/editor/common-event-core.js
+          node --check tools/editor/common-event-map.js
+          node --check tools/editor/common-events.js
           node --check game/runtime/GameContentRuntime.js
           node --check game/runtime/PlushboundGameSession.js
-          node --test game/tests/editor-core.test.js game/tests/encounter-session.test.js
+          node --test game/tests/editor-core.test.js game/tests/encounter-session.test.js game/tests/common-event-core.test.js
 
       - name: Install headless browser
         run: |
@@ -147,6 +152,26 @@ jobs:
           assert.equal(authored.trigger, 'touch');
           assert.equal(authored.commands[0].parameters[0], 'Hello from the visual editor');
 
+          // Reusable common-event insertion preserves the current map/page and normal undo history.
+          await page.selectOption('#mapSelect', 'elyndor-sunthread-crossing');
+          await page.click('[data-event-id="anchor-west"]');
+          const commonOriginalCount = await page.evaluate(() => window.PlushboundEditor.getPackage().maps.find(m => m.id === 'elyndor-sunthread-crossing').events.find(e => e.id === 'anchor-west').pages[0].commands.length);
+          const historyBeforeCommon = await page.evaluate(() => window.PlushboundEditor.getHistory().undo);
+          await page.evaluate(() => window.PlushboundCommonEventMap.setLibrary({schemaVersion:1,commonEvents:[{id:'ci-reusable',name:'CI Reusable',commands:[{code:'MESSAGE',parameters:['Reusable hello']},{code:'WAIT',parameters:[0.1]}]}]}));
+          await page.click('#insertCommonEvent');
+          assert.equal(await page.inputValue('#mapSelect'), 'elyndor-sunthread-crossing');
+          assert.equal(await page.inputValue('#eventId'), 'anchor-west');
+          assert.equal(await page.evaluate(() => window.PlushboundEditor.getPackage().maps.find(m => m.id === 'elyndor-sunthread-crossing').events.find(e => e.id === 'anchor-west').pages[0].commands.length), commonOriginalCount + 2);
+          assert.equal(await page.evaluate(() => window.PlushboundEditor.getHistory().undo), historyBeforeCommon + 2);
+          await page.click('#undoEdit');
+          await page.click('#undoEdit');
+          assert.equal(await page.inputValue('#mapSelect'), 'elyndor-sunthread-crossing');
+          assert.equal(await page.evaluate(() => window.PlushboundEditor.getPackage().maps.find(m => m.id === 'elyndor-sunthread-crossing').events.find(e => e.id === 'anchor-west').pages[0].commands.length), commonOriginalCount);
+          assert.equal(await page.evaluate(() => window.PlushboundEditor.getHistory().undo), historyBeforeCommon);
+
+          // Return to the first map for transfer and runtime checks.
+          await page.selectOption('#mapSelect', 'elyndor-sunny-plains');
+
           // Create and validate a native cross-map transfer.
           await page.fill('#transferEventId', 'editor-to-crossing');
           await page.selectOption('#transferTargetMap', 'elyndor-sunthread-crossing');
@@ -196,7 +221,7 @@ jobs:
           Plushbound Visual Editor simulation
           Browser: Chromium headless
           Target package: Elyndor runtime maps
-          Coverage: tile layers, regions, encounters, collision, assets, event placement/pages/commands, transfers, undo/redo, validation, real-session playtest
+          Coverage: tile layers, regions, encounters, collision, assets, event placement/pages/full commands, reusable common-event insertion + history, transfers, undo/redo, validation, real-session playtest
           Result: ${{ job.status }}
           Commit: ${{ github.sha }}
           EOF

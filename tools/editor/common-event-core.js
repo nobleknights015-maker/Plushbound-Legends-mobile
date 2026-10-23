@@ -1,6 +1,7 @@
 import { clone, EDITABLE_COMMANDS, addCommand } from './editor-core.js';
 
 function cleanId(value){return String(value??'').trim();}
+function findEvent(target,id){const event=target.commonEvents.find(item=>item.id===cleanId(id));if(!event)throw new Error(`Unknown common event: ${id}`);return event;}
 
 export function validateCommonEventLibrary(library={}){
   if(!library||typeof library!=='object')throw new Error('Common event library must be an object');
@@ -28,17 +29,36 @@ export function addCommonEvent(library,{id,name='',commands=[]}={}){
   const event={id:clean,name:String(name||clean),commands:clone(commands)};validateCommonEventLibrary({schemaVersion:1,commonEvents:[event]});target.commonEvents.push(event);return target;
 }
 
+export function updateCommonEvent(library,id,{id:nextId,name}={}){
+  const target=normalizeCommonEventLibrary(library);const event=findEvent(target,id);const clean=cleanId(nextId??event.id);if(!clean)throw new Error('Common event id is required');
+  if(clean!==event.id&&target.commonEvents.some(item=>item.id===clean))throw new Error(`Common event already exists: ${clean}`);
+  event.id=clean;if(name!==undefined)event.name=String(name||clean);validateCommonEventLibrary(target);return target;
+}
+
 export function removeCommonEvent(library,id){
   const target=normalizeCommonEventLibrary(library);const index=target.commonEvents.findIndex(event=>event.id===cleanId(id));if(index<0)throw new Error(`Unknown common event: ${id}`);target.commonEvents.splice(index,1);return target;
 }
 
 export function appendCommonEventCommand(library,id,command){
   if(!command||!EDITABLE_COMMANDS.has(command.code))throw new Error('Command type is not supported');
-  const target=normalizeCommonEventLibrary(library);const event=target.commonEvents.find(item=>item.id===cleanId(id));if(!event)throw new Error(`Unknown common event: ${id}`);event.commands.push(clone(command));return target;
+  const target=normalizeCommonEventLibrary(library);findEvent(target,id).commands.push(clone(command));return target;
+}
+
+export function replaceCommonEventCommand(library,id,index,command){
+  if(!command||!EDITABLE_COMMANDS.has(command.code))throw new Error('Command type is not supported');
+  const target=normalizeCommonEventLibrary(library);const event=findEvent(target,id);const position=Number(index);if(!Number.isInteger(position)||position<0||position>=event.commands.length)throw new Error(`Unknown command: ${index}`);event.commands[position]=clone(command);return target;
+}
+
+export function removeCommonEventCommand(library,id,index){
+  const target=normalizeCommonEventLibrary(library);const event=findEvent(target,id);const position=Number(index);if(!Number.isInteger(position)||position<0||position>=event.commands.length)throw new Error(`Unknown command: ${index}`);event.commands.splice(position,1);return target;
+}
+
+export function moveCommonEventCommand(library,id,index,direction){
+  const target=normalizeCommonEventLibrary(library);const event=findEvent(target,id);const from=Number(index),to=from+Number(direction);if(!Number.isInteger(from)||from<0||from>=event.commands.length)throw new Error(`Unknown command: ${index}`);if(to<0||to>=event.commands.length)return target;[event.commands[from],event.commands[to]]=[event.commands[to],event.commands[from]];return target;
 }
 
 export function instantiateCommonEventCommands(library,id){
-  const target=normalizeCommonEventLibrary(library);const event=target.commonEvents.find(item=>item.id===cleanId(id));if(!event)throw new Error(`Unknown common event: ${id}`);return clone(event.commands);
+  const target=normalizeCommonEventLibrary(library);return clone(findEvent(target,id).commands);
 }
 
 export function insertCommonEvent(event,pageIndex,library,id){

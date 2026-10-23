@@ -41,6 +41,7 @@
     {"id":"environment/waystitch/elyndor-small","type":"map-object","path":"environment/props/waystitches/elyndor-small.png","status":"planned"},
     {"id":"environment/elyndor/sunthread-bridge","type":"map-overlay","path":"environment/overlays/elyndor/sunthread-bridge.webp","status":"planned"},
     {"id":"environment/elyndor/thread-anchor-damaged","type":"map-object","path":"environment/props/elyndor/thread-anchor-damaged.png","status":"planned"},
+    {"id":"environment/elyndor/thread-anchor-stable","type":"map-object","path":"environment/props/elyndor/thread-anchor-stable.png","status":"planned"},
     {"id":"environment/elyndor/menders-rest-overlays","type":"map-overlay","path":"environment/overlays/elyndor/menders-rest.webp","status":"planned"},
     {"id":"environment/elyndor/nessa-cart","type":"map-object","path":"environment/props/elyndor/nessa-cart.png","status":"planned"},
     {"id":"environment/elyndor/bram-farmhouse","type":"map-object","path":"environment/props/elyndor/bram-farmhouse.png","status":"planned"},

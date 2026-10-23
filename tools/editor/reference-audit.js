@@ -24,8 +24,8 @@ async function audit(){
   try{
     const [contentPackages,pkg]=await Promise.all([loadContentPackages(),Promise.resolve(window.PlushboundEditor.getPackage())]);
     if(!pkg){summary.textContent='Load a package to audit references.';issuesHost.innerHTML='';return [];}
-    const issues=auditContentReferences(pkg,contentPackages);summary.textContent=`${issues.length} command reference issue(s)`;issuesHost.innerHTML='';
-    for(const issue of issues.slice(0,80)){const row=document.createElement('div');row.className='page-row error';row.textContent=`${issue.mapId}/${issue.eventId} • ${issue.message}`;issuesHost.append(row);}return issues;
+    const issues=auditContentReferences(pkg,contentPackages);summary.textContent=`${issues.length} project reference issue(s)`;issuesHost.innerHTML='';
+    for(const issue of issues.slice(0,100)){const row=document.createElement('div');row.className='page-row error';row.textContent=`${issue.location||`${issue.mapId||'content'}/${issue.eventId||issue.owner||'reference'}`} • ${issue.message}`;issuesHost.append(row);}return issues;
   }catch(error){summary.textContent=`Reference audit unavailable: ${error.message}`;issuesHost.innerHTML='';return [];}
 }
 

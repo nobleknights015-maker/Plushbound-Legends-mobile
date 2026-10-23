@@ -10,6 +10,7 @@ on:
       - 'game/**'
       - 'tools/editor/**'
       - 'gradle.properties'
+      - '.github/scripts/moto-g-smoke.sh'
       - '.github/workflows/plushbound-game-android-apk.yml'
       - '.github/workflows/moto-g-production-gate.yml'
 
@@ -35,6 +36,7 @@ jobs:
           node --test game/tests/*.test.js
           find tools/editor game/runtime engine/src -name '*.js' -print0 | xargs -0 -r -n1 node --check
           find game/content game/runtime game/assets -name '*.json' -print0 | xargs -0 -r -n1 node -e "JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8'))"
+          bash -n .github/scripts/moto-g-smoke.sh
 
       - name: Assert obsolete demo reconstruction is gone
         run: |

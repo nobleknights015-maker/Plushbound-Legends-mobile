@@ -12,6 +12,7 @@ on:
       - 'game/runtime/**'
       - 'game/content/**'
       - 'game/assets/**'
+      - '.github/scripts/moto-g-smoke.sh'
       - '.github/workflows/moto-g-production-gate.yml'
       - '.github/workflows/plushbound-game-android-apk.yml'
   workflow_dispatch:
@@ -31,6 +32,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: plushbound-game-development
+
+      - name: Validate Moto G smoke harness
+        run: bash -n .github/scripts/moto-g-smoke.sh
 
       - name: Resolve source Android build run
         id: buildrun
@@ -112,89 +116,7 @@ jobs:
           avd-name: plushbound-moto-g
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -memory 4096 -skin 720x1600
-          script: |
-            set -euo pipefail
-
-            wait_for_editor_ready() {
-              PHASE="$1"
-              LOG_FILE="$2"
-              MAX_ATTEMPTS="${3:-30}"
-              for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
-                adb logcat -d > "$LOG_FILE"
-                if grep -q 'PLUSHBOUND_EDITOR_NOT_READY' "$LOG_FILE"; then
-                  echo "Editor reported NOT_READY during $PHASE."
-                  return 1
-                fi
-                if grep -q 'PLUSHBOUND_EDITOR_READY' "$LOG_FILE"; then
-                  echo "Editor ready during $PHASE (attempt $attempt/$MAX_ATTEMPTS)."
-                  return 0
-                fi
-                PID=$(adb shell pidof com.plushbound.legends 2>/dev/null | tr -d '\r' || true)
-                if [ "$attempt" -ge 5 ] && [ -z "$PID" ]; then
-                  echo "Plushbound process exited before readiness during $PHASE."
-                  return 1
-                fi
-                sleep 2
-              done
-              adb logcat -d > "$LOG_FILE"
-              echo "Timed out waiting for editor readiness during $PHASE."
-              return 1
-            }
-
-            adb wait-for-device
-            adb shell wm size 720x1600
-            adb shell wm density 270
-            adb logcat -c
-            echo "Installing clean engine/editor APK on Moto G class emulator..."
-            adb install -r plushbound-moto-g-test.apk
-            echo "Cold launching Plushbound editor..."
-            adb shell monkey -p com.plushbound.legends -c android.intent.category.LAUNCHER 1 >/dev/null
-            wait_for_editor_ready "cold launch" moto-g-editor-startup-logcat.txt 30
-            test -n "$(adb shell pidof com.plushbound.legends | tr -d '\r')"
-            echo "Capturing editor startup diagnostics..."
-            grep -E 'PlushboundEditor|chromium|cr_' moto-g-editor-startup-logcat.txt | tee moto-g-editor-startup-diagnostics.txt || true
-            echo "Proving real editor modules executed in Android WebView..."
-            grep -q 'PLUSHBOUND_EDITOR_READY' moto-g-editor-startup-logcat.txt
-            ! grep -q 'PLUSHBOUND_EDITOR_NOT_READY' moto-g-editor-startup-logcat.txt
-            echo "Recording initial memory footprint..."
-            adb shell dumpsys meminfo com.plushbound.legends | tee moto-g-meminfo-initial.txt
-            echo "Running constrained interaction smoke..."
-            adb shell monkey -p com.plushbound.legends --pct-touch 35 --pct-motion 20 --pct-nav 15 --pct-majornav 10 --pct-appswitch 5 --throttle 80 -s 20261022 180 >/dev/null || true
-            sleep 3
-            test -n "$(adb shell pidof com.plushbound.legends | tr -d '\r')"
-            echo "Background / foreground lifecycle check..."
-            adb shell input keyevent KEYCODE_HOME
-            sleep 2
-            adb shell monkey -p com.plushbound.legends -c android.intent.category.LAUNCHER 1 >/dev/null
-            sleep 4
-            test -n "$(adb shell pidof com.plushbound.legends | tr -d '\r')"
-            echo "Rotation lifecycle check..."
-            adb shell settings put system accelerometer_rotation 0 || true
-            adb shell settings put system user_rotation 1 || true
-            sleep 3
-            test -n "$(adb shell pidof com.plushbound.legends | tr -d '\r')"
-            adb shell settings put system user_rotation 0 || true
-            sleep 3
-            test -n "$(adb shell pidof com.plushbound.legends | tr -d '\r')"
-            adb shell settings put system accelerometer_rotation 1 || true
-            echo "Memory pressure check..."
-            adb shell am send-trim-memory com.plushbound.legends RUNNING_LOW || true
-            sleep 2
-            test -n "$(adb shell pidof com.plushbound.legends | tr -d '\r')"
-            echo "Force-stop / clean relaunch check..."
-            adb shell am force-stop com.plushbound.legends
-            sleep 1
-            adb logcat -c
-            adb shell monkey -p com.plushbound.legends -c android.intent.category.LAUNCHER 1 >/dev/null
-            wait_for_editor_ready "force-stop relaunch" moto-g-editor-relaunch-logcat.txt 30
-            test -n "$(adb shell pidof com.plushbound.legends | tr -d '\r')"
-            adb shell dumpsys meminfo com.plushbound.legends | tee moto-g-meminfo-final.txt
-            adb shell dumpsys gfxinfo com.plushbound.legends framestats | tee moto-g-gfxinfo.txt || true
-            adb logcat -d > moto-g-logcat.txt
-            echo "Checking for application crashes and ANRs..."
-            grep -E -A12 -B5 'FATAL EXCEPTION|ANR in com\.plushbound\.legends|Process com\.plushbound\.legends .* has died' moto-g-logcat.txt | tee moto-g-crash-scan.txt || true
-            ! grep -E -A12 -B5 'FATAL EXCEPTION|ANR in com\.plushbound\.legends|Process com\.plushbound\.legends .* has died' moto-g-logcat.txt | grep -q 'com.plushbound.legends'
-            echo "Moto G class editor simulation gate passed."
+          script: bash .github/scripts/moto-g-smoke.sh
 
       - name: Record Moto G production gate result
         if: always()

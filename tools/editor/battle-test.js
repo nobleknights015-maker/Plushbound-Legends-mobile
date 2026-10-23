@@ -71,7 +71,19 @@ function renderDiagnostics(message='Ready'){
 function refreshAll(message='Ready'){renderCandidates();renderBosses();renderActive();renderQuestProgress();renderDiagnostics(message);}
 
 function pick(enemyId=null){const encounter=state.tester.pickEncounter({mapId:els.battleMap.value,regionId:Number(els.battleRegion.value)||0,enemyId});refreshAll(encounter?`Encounter loaded: ${encounter.enemy?.name||encounter.enemyId}`:'No eligible encounter candidate');}
-function loadBoss(id){try{const encounter=state.tester.loadBoss(id);refreshAll(`Boss loaded: ${encounter.enemy?.name||encounter.enemyId}`);}catch(error){refreshAll(error.message);}}
+function loadBoss(id){
+  try{
+    const definition=state.tester.session.game.bossEncounter(id),targetMapId=definition?.mapId?String(definition.mapId):null;
+    if(targetMapId&&!state.tester.session.maps.maps.has(targetMapId)){
+      const runtimeIndex=state.runtimePackages.findIndex(entry=>(entry.data?.maps||[]).some(map=>String(map.id)===targetMapId));
+      if(runtimeIndex<0)throw new Error(`Boss encounter ${id} references unknown map ${targetMapId}`);
+      state.activeRuntimeIndex=runtimeIndex;renderRuntimePackages();createTester();
+    }
+    const encounter=state.tester.loadBoss(id);
+    if(encounter?.bossDefinition?.mapId&&state.tester.maps().some(map=>map.id===String(encounter.bossDefinition.mapId)))els.battleMap.value=String(encounter.bossDefinition.mapId);
+    refreshAll(`Boss loaded: ${encounter.enemy?.name||encounter.enemyId}`);
+  }catch(error){refreshAll(error.message);}
+}
 function resolve(result){try{const resolved=state.tester.resolveEncounter(result);const bossNote=resolved.boss?` • boss ${resolved.boss.available?'remains available':'marked complete'}`:'';refreshAll(`Resolved ${resolved.encounter.enemy?.name||resolved.encounter.enemyId}: ${result}${bossNote}`);}catch(error){refreshAll(error.message);}}
 
 function prepareQuest(){const id=els.battleQuest.value;if(!id)return;try{const definition=state.tester.session.game.questDefinition(id);for(const prerequisite of definition?.prerequisites||[])if(prerequisite.questComplete)state.tester.setQuestCompleteForTest(prerequisite.questComplete);state.tester.startQuest(id);refreshAll(`Started quest sandbox: ${definition?.name||id}`);}catch(error){refreshAll(`Quest could not start: ${error.message}`);}}

@@ -86,6 +86,8 @@ jobs:
           test -f "$APK"
           test "$(stat -c%s "$APK")" -gt 10000
           unzip -t "$APK" >/dev/null
+          unzip -l "$APK" | grep -q 'assets/tools/editor/index.html'
+          unzip -l "$APK" | grep -q 'assets/tools/editor/editor-entry.js'
           cp "$APK" plushbound-moto-g-test.apk
           sha256sum plushbound-moto-g-test.apk | tee moto-g-tested-apk.sha256
 
@@ -95,7 +97,7 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: Moto G class launch and lifecycle smoke test
+      - name: Moto G class editor launch and lifecycle smoke test
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
@@ -110,12 +112,26 @@ jobs:
             adb shell wm size 720x1600
             adb shell wm density 270
             adb logcat -c
-            echo "Installing APK on Moto G class emulator..."
+            echo "Installing clean engine/editor APK on Moto G class emulator..."
             adb install -r plushbound-moto-g-test.apk
-            echo "Cold launching game..."
+            echo "Cold launching Plushbound editor..."
             adb shell monkey -p com.plushbound.legends -c android.intent.category.LAUNCHER 1 >/dev/null
             sleep 8
             test -n "$(adb shell pidof com.plushbound.legends | tr -d '\r')"
+            echo "Proving real editor modules executed in Android WebView..."
+            EDITOR_READY=0
+            for attempt in $(seq 1 10); do
+              if adb logcat -d -s PlushboundEditor:I '*:S' | grep -q 'PLUSHBOUND_EDITOR_READY'; then
+                EDITOR_READY=1
+                break
+              fi
+              sleep 1
+            done
+            test "$EDITOR_READY" = "1"
+            if adb logcat -d -s PlushboundEditor:E '*:S' | grep -q 'PLUSHBOUND_EDITOR_NOT_READY'; then
+              echo "Editor module readiness check failed"
+              exit 1
+            fi
             echo "Recording initial memory footprint..."
             adb shell dumpsys meminfo com.plushbound.legends | tee moto-g-meminfo-initial.txt
             echo "Running constrained interaction smoke..."
@@ -135,26 +151,29 @@ jobs:
             echo "Force-stop / clean relaunch check..."
             adb shell am force-stop com.plushbound.legends
             sleep 1
+            adb logcat -c
             adb shell monkey -p com.plushbound.legends -c android.intent.category.LAUNCHER 1 >/dev/null
             sleep 6
             test -n "$(adb shell pidof com.plushbound.legends | tr -d '\r')"
+            adb logcat -d -s PlushboundEditor:I '*:S' | grep -q 'PLUSHBOUND_EDITOR_READY'
             adb shell dumpsys meminfo com.plushbound.legends | tee moto-g-meminfo-final.txt
             adb shell dumpsys gfxinfo com.plushbound.legends framestats | tee moto-g-gfxinfo.txt || true
             adb logcat -d > moto-g-logcat.txt
             echo "Checking for application crashes and ANRs..."
             if grep -E -A12 -B5 'FATAL EXCEPTION|ANR in com\.plushbound\.legends|Process com\.plushbound\.legends .* has died' moto-g-logcat.txt | grep -q 'com.plushbound.legends'; then echo "Moto G simulation detected a Plushbound crash/ANR"; grep -E -A12 -B5 'FATAL EXCEPTION|ANR in com\.plushbound\.legends|Process com\.plushbound\.legends .* has died' moto-g-logcat.txt || true; exit 1; fi
-            echo "Moto G class simulation gate passed."
+            echo "Moto G class editor simulation gate passed."
 
       - name: Record Moto G production gate result
         if: always()
         run: |
           cat > moto-g-production-gate.txt <<EOF
-          Plushbound Legends Moto G production simulation
+          Plushbound Legends Moto G engine/editor production simulation
           Target class: 2025 Moto G baseline
           Physical RAM assumption: 4 GB
           Virtual RAM is not counted as guaranteed process RAM
           Emulator viewport: 720x1600
           Android API: 35
+          Editor module readiness: required
           Result: ${{ job.status }}
           Source commit: ${{ steps.buildrun.outputs.source_sha }}
           Source Android workflow run: ${{ steps.buildrun.outputs.run_id }}

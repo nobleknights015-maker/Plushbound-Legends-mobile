@@ -12,13 +12,18 @@ const COLLECTION_PROFILES={
   encounterTables:{title:'Encounter Tables',description:'Weighted encounter groups referenced by map regions.',template:{id:'new-encounter-table',entries:[]}},
   bossEncounters:{title:'Boss Encounters',description:'One-time and story-gated regional boss encounters.',template:{id:'new-boss-encounter',mapId:'',enemyId:'',oneTime:true,completionSwitch:''}},
   namedCore:{title:'Named NPCs',description:'Persistent named NPC identity, home, occupation and quest role.',template:{id:'new-npc',name:'New NPC',ageBand:'adult',home:'',occupation:'',guardianFamily:'',questRole:''}},
-  shops:{title:'Shops',description:'Merchant inventories and economy-facing shop definitions.',template:{id:'new-shop',name:'New Shop'}},
+  quests:{title:'Quests',description:'Quest stages, prerequisites, objectives, rewards and unlock flow.',template:{id:'new-quest',name:'New Quest',stage:1,giver:'',prerequisites:[],summary:'',objectives:[],rewards:{gold:0,items:[]},unlocks:[]}},
+  shops:{title:'Shops',description:'Merchant inventories and economy-facing shop definitions.',template:{id:'new-shop',name:'New Shop',keeper:'',inventory:[]}},
   items:{title:'Items',description:'Consumables and inventory-facing item definitions.',template:{id:'new-item',name:'New Item'}},
   waystitches:{title:'Waystitches',description:'Travel and world-link definitions.',template:{id:'new-waystitch',name:'New Waystitch'}}
 };
 
 const NESTED_RECORD_TEMPLATES={
   entries:{enemyId:'',weight:1},
+  inventory:{itemId:'',price:0},
+  prerequisites:{questComplete:''},
+  objectives:{id:'new-objective',type:'interact',target:'',count:1},
+  'rewards.items':{id:'',count:1},
   'rewards.drops':{itemId:'',chance:0}
 };
 
@@ -76,11 +81,12 @@ export function validatePackageCollections(pkg={}){
 
 function fieldGroup(path){
   const root=String(path).split('.')[0];
-  if(root==='id'||root==='name'||root==='title'||root==='species'||root==='role'||root==='description') return 'Identity';
+  if(root==='id'||root==='name'||root==='title'||root==='species'||root==='role'||root==='description'||root==='summary') return 'Identity';
   if(root==='stats'||root==='level'||root==='skills'||root==='tags'||root==='bond') return 'Gameplay';
   if(root==='rewards') return 'Rewards';
+  if(root==='prerequisites'||root==='objectives'||root==='unlocks'||root==='stage'||root==='giver') return 'Quest Flow';
   if(root==='assets'||root==='assetBindings'||/asset|sprite|portrait|battle/i.test(root)) return 'Assets';
-  if(['mapId','enemyId','oneTime','completionSwitch','home','occupation','guardianFamily','questRole','ageBand'].includes(root)) return 'World & Story';
+  if(['mapId','enemyId','oneTime','completionSwitch','home','occupation','guardianFamily','questRole','ageBand','keeper'].includes(root)) return 'World & Story';
   return 'Details';
 }
 
@@ -242,5 +248,5 @@ export function labelFor(key=''){
 
 export function searchableRecordText(row){
   const record=row?.record||{};
-  return `${row?.id||''} ${record.name||''} ${record.title||''} ${record.species||''} ${record.role||''} ${record.description||''} ${(record.tags||[]).join?.(' ')||''} ${(record.skills||[]).join?.(' ')||''}`.toLowerCase();
+  return `${row?.id||''} ${record.name||''} ${record.title||''} ${record.species||''} ${record.role||''} ${record.description||''} ${record.summary||''} ${(record.tags||[]).join?.(' ')||''} ${(record.skills||[]).join?.(' ')||''} ${(record.unlocks||[]).join?.(' ')||''}`.toLowerCase();
 }

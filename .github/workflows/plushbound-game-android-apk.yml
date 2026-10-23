@@ -66,7 +66,8 @@ jobs:
       - name: Verify editor boot target and repository-shaped payload
         run: |
           set -euo pipefail
-          grep -q 'file:///android_asset/tools/editor/index.html' app/src/main/java/com/plushbound/legends/MainActivity.java
+          grep -q 'https://appassets.androidplatform.net/assets/tools/editor/index.html' app/src/main/java/com/plushbound/legends/MainActivity.java
+          grep -q 'WebViewAssetLoader' app/src/main/java/com/plushbound/legends/MainActivity.java
           grep -q 'applicationId = "com.plushbound.legends"' app/build.gradle.kts
           test -f app/src/main/assets/tools/editor/battle-test.html
           test -f app/src/main/assets/tools/editor/database.html

@@ -4,15 +4,22 @@ function records(value){
   return [];
 }
 
+function packageEntries(packages=[]){
+  return (packages||[]).map((entry,index)=>{
+    if(entry&&typeof entry==='object'&&entry.data&&typeof entry.data==='object')return {sourceId:String(entry.sourceId||entry.id||`package-${index+1}`),data:entry.data};
+    return {sourceId:String(entry?.__sourceId||`package-${index+1}`),data:entry||{}};
+  });
+}
+
 function idsFromPackages(packages,key){
   const ids=new Set();
-  for(const pkg of packages||[]) for(const record of records(pkg?.[key])) if(record?.id!=null) ids.add(String(record.id));
+  for(const entry of packageEntries(packages)) for(const record of records(entry.data?.[key])) if(record?.id!=null) ids.add(String(record.id));
   return ids;
 }
 
 function recordsFromPackages(packages,key){
   const out=[];
-  for(const pkg of packages||[])for(const record of records(pkg?.[key]))if(record&&typeof record==='object')out.push(record);
+  for(const entry of packageEntries(packages))for(const record of records(entry.data?.[key]))if(record&&typeof record==='object')out.push(record);
   return out;
 }
 
@@ -58,21 +65,31 @@ export function commandReferences(pkg={}){
 
 export function auditContentPackageReferences(contentPackages=[]){
   const registry=contentReferenceRegistry(contentPackages),issues=[];
-  const add=(kind,id,owner,message)=>issues.push({severity:'error',code:`missing-${kind}-reference`,kind,id:String(id??''),owner,location:owner,message});
-  for(const quest of recordsFromPackages(contentPackages,'quests')){
-    const owner=`quest:${quest.id}`;
-    for(const prerequisite of quest.prerequisites||[])if(prerequisite.questComplete&&!registry.quests.has(String(prerequisite.questComplete)))add('quest',prerequisite.questComplete,owner,`Quest ${quest.id} requires unknown quest ${prerequisite.questComplete}`);
-    for(const reward of quest.rewards?.items||[])if(reward?.id&&!registry.items.has(String(reward.id)))add('item',reward.id,owner,`Quest ${quest.id} rewards unknown item ${reward.id}`);
-    for(const unlock of quest.unlocks||[])if(String(unlock).startsWith('waystitch-')&&!registry.waystitches.has(String(unlock)))add('waystitch',unlock,owner,`Quest ${quest.id} unlocks unknown Waystitch ${unlock}`);
-    for(const objective of quest.objectives||[]){
-      if(objective.type==='talk'&&objective.target&&!registry.npcs.has(String(objective.target)))add('npc',objective.target,owner,`Quest ${quest.id} objective ${objective.id} targets unknown NPC ${objective.target}`);
-      if(objective.type==='battle'&&objective.targetTag&&!registry.enemyTags.has(String(objective.targetTag)))add('enemy-tag',objective.targetTag,owner,`Quest ${quest.id} objective ${objective.id} uses unknown enemy tag ${objective.targetTag}`);
+  const add=(kind,id,{sourceId,collectionKey,recordId,owner},message)=>issues.push({severity:'error',code:`missing-${kind}-reference`,kind,id:String(id??''),owner,location:owner,packageId:sourceId||null,collectionKey:collectionKey||null,recordId:recordId||null,message});
+  for(const entry of packageEntries(contentPackages)){
+    const sourceId=entry.sourceId,pkg=entry.data;
+    for(const quest of records(pkg.quests)){
+      const owner=`quest:${quest.id}`,source={sourceId,collectionKey:'quests',recordId:String(quest.id),owner};
+      for(const prerequisite of quest.prerequisites||[])if(prerequisite.questComplete&&!registry.quests.has(String(prerequisite.questComplete)))add('quest',prerequisite.questComplete,source,`Quest ${quest.id} requires unknown quest ${prerequisite.questComplete}`);
+      for(const reward of quest.rewards?.items||[])if(reward?.id&&!registry.items.has(String(reward.id)))add('item',reward.id,source,`Quest ${quest.id} rewards unknown item ${reward.id}`);
+      for(const unlock of quest.unlocks||[])if(String(unlock).startsWith('waystitch-')&&!registry.waystitches.has(String(unlock)))add('waystitch',unlock,source,`Quest ${quest.id} unlocks unknown Waystitch ${unlock}`);
+      for(const objective of quest.objectives||[]){
+        if(objective.type==='talk'&&objective.target&&!registry.npcs.has(String(objective.target)))add('npc',objective.target,source,`Quest ${quest.id} objective ${objective.id} targets unknown NPC ${objective.target}`);
+        if(objective.type==='battle'&&objective.targetTag&&!registry.enemyTags.has(String(objective.targetTag)))add('enemy-tag',objective.targetTag,source,`Quest ${quest.id} objective ${objective.id} uses unknown enemy tag ${objective.targetTag}`);
+      }
     }
-  }
-  for(const shop of recordsFromPackages(contentPackages,'shops'))for(const entry of shop.inventory||[])if(entry?.itemId&&!registry.items.has(String(entry.itemId)))add('item',entry.itemId,`shop:${shop.id}`,`Shop ${shop.id} stocks unknown item ${entry.itemId}`);
-  for(const table of recordsFromPackages(contentPackages,'encounterTables'))for(const entry of table.entries||[])if(entry?.enemyId&&!registry.enemies.has(String(entry.enemyId)))add('enemy',entry.enemyId,`encounter:${table.id}`,`Encounter table ${table.id} references unknown enemy ${entry.enemyId}`);
-  for(const waystitch of recordsFromPackages(contentPackages,'waystitches')){
-    const required=waystitch.unlockCondition?.questComplete;if(required&&!registry.quests.has(String(required)))add('quest',required,`waystitch:${waystitch.id}`,`Waystitch ${waystitch.id} requires unknown quest ${required}`);
+    for(const shop of records(pkg.shops)){
+      const source={sourceId,collectionKey:'shops',recordId:String(shop.id),owner:`shop:${shop.id}`};
+      for(const stock of shop.inventory||[])if(stock?.itemId&&!registry.items.has(String(stock.itemId)))add('item',stock.itemId,source,`Shop ${shop.id} stocks unknown item ${stock.itemId}`);
+    }
+    for(const table of records(pkg.encounterTables)){
+      const source={sourceId,collectionKey:'encounterTables',recordId:String(table.id),owner:`encounter:${table.id}`};
+      for(const tableEntry of table.entries||[])if(tableEntry?.enemyId&&!registry.enemies.has(String(tableEntry.enemyId)))add('enemy',tableEntry.enemyId,source,`Encounter table ${table.id} references unknown enemy ${tableEntry.enemyId}`);
+    }
+    for(const waystitch of records(pkg.waystitches)){
+      const source={sourceId,collectionKey:'waystitches',recordId:String(waystitch.id),owner:`waystitch:${waystitch.id}`};
+      const required=waystitch.unlockCondition?.questComplete;if(required&&!registry.quests.has(String(required)))add('quest',required,source,`Waystitch ${waystitch.id} requires unknown quest ${required}`);
+    }
   }
   return issues;
 }

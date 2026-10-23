@@ -1,0 +1,73 @@
+name: Plushbound Audio Browser CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ plushbound-game-development ]
+    paths:
+      - 'tools/editor/audio.html'
+      - 'tools/editor/audio.css'
+      - 'tools/editor/audio.js'
+      - 'tools/editor/audio-core.js'
+      - 'game/tests/audio-core.test.js'
+      - 'game/assets/asset-manifest.json'
+      - '.github/workflows/plushbound-audio-ci.yml'
+  pull_request:
+    paths:
+      - 'tools/editor/audio.html'
+      - 'tools/editor/audio.css'
+      - 'tools/editor/audio.js'
+      - 'tools/editor/audio-core.js'
+      - 'game/tests/audio-core.test.js'
+      - 'game/assets/asset-manifest.json'
+      - '.github/workflows/plushbound-audio-ci.yml'
+
+jobs:
+  audio-browser-simulation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run audio browser contracts
+        run: |
+          node --check tools/editor/audio-core.js
+          node --check tools/editor/audio.js
+          node --test game/tests/audio-core.test.js
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: Serve repository
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >audio-http.log 2>&1 &
+          for i in {1..20}; do curl -fsS http://127.0.0.1:4173/tools/editor/audio.html >/dev/null && exit 0; sleep 1; done
+          cat audio-http.log
+          exit 1
+      - name: Simulate audio browsing on Android viewport
+        run: |
+          node --input-type=module <<'NODE'
+          import {chromium} from 'playwright';
+          import assert from 'node:assert/strict';
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:412,height:915}});
+          const errors=[];page.on('pageerror',error=>errors.push(String(error)));
+          await page.goto('http://127.0.0.1:4173/tools/editor/audio.html');
+          await page.waitForSelector('#audioList [data-audio-id]');
+          await page.fill('#audioSearch','sunny-plains');
+          const bgm=page.locator('#audioList [data-audio-id="bgm/elyndor/sunny-plains"]').first();
+          await bgm.click();
+          assert.equal(await page.textContent('#audioKind'),'BGM');
+          assert.equal(await page.textContent('#audioState'),'planned');
+          assert.equal(await page.isDisabled('#previewAudio'),true);
+          const command=JSON.parse(await page.inputValue('#audioCommand'));
+          assert.deepEqual(command,{code:'BGM',parameters:['bgm/elyndor/sunny-plains',{}]});
+          await page.fill('#audioSearch','chest/open');
+          await page.selectOption('#audioType','se');
+          assert.ok(await page.locator('#audioList [data-audio-id="se/chest/open"]').count());
+          assert.deepEqual(errors,[]);
+          await browser.close();
+          console.log('Android audio browser simulation passed');
+          NODE

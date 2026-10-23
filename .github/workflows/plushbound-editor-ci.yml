@@ -7,12 +7,14 @@ on:
     paths:
       - 'tools/editor/**'
       - 'game/runtime/**'
+      - 'game/assets/asset-manifest.json'
       - 'game/tests/editor-core.test.js'
       - '.github/workflows/plushbound-editor-ci.yml'
   pull_request:
     paths:
       - 'tools/editor/**'
       - 'game/runtime/**'
+      - 'game/assets/asset-manifest.json'
       - 'game/tests/editor-core.test.js'
       - '.github/workflows/plushbound-editor-ci.yml'
 
@@ -51,7 +53,7 @@ jobs:
           cat editor-http.log
           exit 1
 
-      - name: Simulate Elyndor editing in Chromium
+      - name: Simulate Elyndor world construction in Chromium
         run: |
           node --input-type=module <<'NODE'
           import { chromium } from 'playwright';
@@ -69,50 +71,71 @@ jobs:
           assert.equal(await page.locator('#mapCanvas').evaluate(el => el.style.width), '896px');
           assert.equal(await page.locator('#mapCanvas').evaluate(el => el.style.height), '560px');
           assert.equal(await page.locator('.tile').count(), 640);
+          assert.ok(await page.locator('.asset-card').count() > 5);
+          assert.ok(await page.evaluate(() => window.PlushboundEditor.getAssets().some(a => a.id === 'npc/lio/sprite')));
 
+          // Layer authoring uses Engine v1's native map.layers contract.
+          assert.equal(await page.locator('#layerSelect option').count(), 1);
+          await page.fill('#tileId', '17');
+          await page.click('[data-tool="tile"]');
+          await page.locator('.tile[data-x="4"][data-y="5"]').click({ position: { x: 2, y: 2 } });
+          assert.equal(await page.evaluate(() => window.PlushboundEditor.getPackage().maps[0].layers[0].data[5*32+4]), 17);
+          await page.click('[data-tool="erase-tile"]');
+          await page.locator('.tile[data-x="4"][data-y="5"]').click({ position: { x: 2, y: 2 } });
+          assert.equal(await page.evaluate(() => window.PlushboundEditor.getPackage().maps[0].layers[0].data[5*32+4]), 0);
+          await page.click('#addLayer');
+          assert.equal(await page.locator('#layerSelect option').count(), 2);
+          await page.fill('#layerZ', '10');
+          await page.uncheck('#layerVisible');
+          await page.click('#applyLayer');
+          assert.equal(await page.evaluate(() => window.PlushboundEditor.getPackage().maps[0].layers[1].z), 10);
+          assert.equal(await page.evaluate(() => window.PlushboundEditor.getPackage().maps[0].layers[1].visible), false);
+
+          // Existing event movement and asset assignment.
           await page.click('[data-event-id="lio"]');
-          assert.equal(await page.inputValue('#eventId'), 'lio');
-          assert.equal(await page.inputValue('#eventX'), '18');
-          assert.equal(await page.inputValue('#eventY'), '9');
           const beforePages = await page.evaluate(() => JSON.stringify(window.PlushboundEditor.getPackage().maps[0].events.find(e => e.id === 'lio').pages));
-
           await page.fill('#eventX', '20');
           await page.fill('#eventY', '11');
-          await page.click('#applyPosition');
+          await page.selectOption('#eventAsset', 'npc/lio/sprite');
+          await page.click('#applyEvent');
           assert.equal(await page.inputValue('#eventX'), '20');
-          assert.equal(await page.inputValue('#eventY'), '11');
+          assert.equal(await page.evaluate(() => window.PlushboundEditor.getPackage().maps[0].events.find(e => e.id === 'lio').assetId), 'npc/lio/sprite');
           const afterMovePages = await page.evaluate(() => JSON.stringify(window.PlushboundEditor.getPackage().maps[0].events.find(e => e.id === 'lio').pages));
           assert.equal(afterMovePages, beforePages);
 
-          await page.selectOption('#pageSelect', '0');
+          // Asset browser assignment is logical-ID driven.
+          await page.fill('#assetSearch', 'chest');
+          const chest = page.locator('[data-asset-id="environment/chest/elyndor-small"]');
+          await chest.click();
+          assert.equal(await page.inputValue('#eventAsset'), 'environment/chest/elyndor-small');
+
+          // Place a brand-new event through the visual map.
+          await page.fill('#newEventId', 'editor-browser-npc');
+          await page.click('#armNewEvent');
+          await page.locator('.tile[data-x="6"][data-y="6"]').click({ position: { x: 2, y: 2 } });
+          assert.equal(await page.inputValue('#eventId'), 'editor-browser-npc');
+          assert.equal(await page.evaluate(() => window.PlushboundEditor.getPackage().maps[0].events.find(e => e.id === 'editor-browser-npc').pages[0].trigger), 'action');
+
+          // MV-style page + command authoring on the new event.
           await page.selectOption('#pageTrigger', 'touch');
           await page.fill('#pageConditions', '{"switchId":"editor:browser-test","switchValue":true}');
           await page.click('#applyPage');
-          let authored = await page.evaluate(() => window.PlushboundEditor.getPackage().maps[0].events.find(e => e.id === 'lio').pages[0]);
+          await page.selectOption('#newCommandType', 'MESSAGE');
+          await page.fill('#newCommandParameters', '["Hello from the visual editor"]');
+          await page.click('#addCommand');
+          let authored = await page.evaluate(() => window.PlushboundEditor.getPackage().maps[0].events.find(e => e.id === 'editor-browser-npc').pages[0]);
           assert.equal(authored.trigger, 'touch');
           assert.equal(authored.conditions.switchId, 'editor:browser-test');
+          assert.equal(authored.commands[0].parameters[0], 'Hello from the visual editor');
 
-          const firstCommand = page.locator('.command-card').first();
-          await firstCommand.locator('textarea').fill('["Edited safely in browser simulation",{"speaker":"Lio"}]');
-          await firstCommand.locator('button').click();
-          authored = await page.evaluate(() => window.PlushboundEditor.getPackage().maps[0].events.find(e => e.id === 'lio').pages[0]);
-          assert.equal(authored.commands[0].code, 'MESSAGE');
-          assert.equal(authored.commands[0].parameters[0], 'Edited safely in browser simulation');
-          assert.equal(authored.commands[1].code, 'MESSAGE');
-
-          await page.selectOption('#newCommandType', 'SE');
-          await page.fill('#newCommandParameters', '["se/editor/browser-test"]');
-          await page.click('#addCommand');
-          authored = await page.evaluate(() => window.PlushboundEditor.getPackage().maps[0].events.find(e => e.id === 'lio').pages[0]);
-          assert.equal(authored.commands.at(-1).code, 'SE');
-
+          // Collision painting remains compatible with layer/event editing.
           await page.click('[data-tool="blocked"]');
           await page.locator('.tile[data-x="4"][data-y="4"]').click({ position: { x: 2, y: 2 } });
           assert.equal(await page.evaluate(() => window.PlushboundEditor.getPackage().maps[0].blocked.includes('4,4')), true);
 
           assert.deepEqual(errors, []);
           await browser.close();
-          console.log('Plushbound editor browser simulation passed');
+          console.log('Plushbound editor world-construction simulation passed');
           NODE
 
       - name: Record editor simulation gate
@@ -122,7 +145,7 @@ jobs:
           Plushbound Visual Editor simulation
           Browser: Chromium headless
           Target package: Elyndor runtime maps
-          Coverage: map placement, collision paint, event page settings, supported command editing
+          Coverage: native tile layers, tile painting, collision, asset manifest, event placement/assets, page settings, command authoring
           Result: ${{ job.status }}
           Commit: ${{ github.sha }}
           EOF

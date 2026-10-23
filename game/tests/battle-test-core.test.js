@@ -2,11 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { BattleEncounterTester } from '../../tools/editor/battle-test-core.js';
 
-const mapPackage={schemaVersion:1,maps:[{id:'test-field',name:'Test Field',width:4,height:4,layers:[],blocked:[],regions:new Array(16).fill(0),encounterTable:'field-table',events:[]}]};
+const mapPackage={schemaVersion:1,maps:[{id:'test-field',name:'Test Field',width:4,height:4,layers:[],blocked:[],regions:new Array(16).fill(0),encounterTable:'field-table',events:[]},{id:'sanctum',name:'Sanctum',width:2,height:2,layers:[],blocked:[],regions:new Array(4).fill(0),events:[]}]};
 const contentPackages=[{
   quests:[{id:'hunt-test',name:'Hunt Test',stage:1,objectives:[{id:'defeat-woolbeast',type:'battle',targetTag:'woolbeast',count:2}]}],
   encounterTables:[{id:'field-table',entries:[{enemyId:'woolbeast-a',weight:3,regions:[0]},{enemyId:'woolbeast-b',weight:1,regions:[1]}]}],
-  enemies:[{id:'woolbeast-a',name:'Woolbeast A',tags:['woolbeast']},{id:'woolbeast-b',name:'Woolbeast B',tags:['woolbeast']}]
+  bossEncounters:[{id:'warden-boss',mapId:'sanctum',enemyId:'warden',oneTime:true,completionSwitch:'warden:defeated'}],
+  enemies:[{id:'woolbeast-a',name:'Woolbeast A',tags:['woolbeast']},{id:'woolbeast-b',name:'Woolbeast B',tags:['woolbeast']},{id:'warden',name:'Warden',tags:['boss']}]
 }];
 
 test('battle tester exposes runtime maps and region-filtered encounter previews',()=>{
@@ -22,6 +23,17 @@ test('battle tester performs deterministic runtime weighted picks with enemy def
   assert.equal(encounter.enemyId,'woolbeast-a');
   assert.equal(encounter.enemy.name,'Woolbeast A');
   assert.equal(tester.snapshot().lastEncounter.enemyId,'woolbeast-a');
+});
+
+test('battle tester exposes and loads boss definitions without inventing completion semantics',()=>{
+  const tester=new BattleEncounterTester({mapPackage,contentPackages,rng:()=>0});
+  assert.equal(tester.bosses()[0].enemy.name,'Warden');
+  const encounter=tester.loadBoss('warden-boss');
+  assert.equal(encounter.bossId,'warden-boss');
+  assert.equal(encounter.bossDefinition.completionSwitch,'warden:defeated');
+  tester.resolveEncounter('victory');
+  assert.equal(tester.snapshot().lastEncounter,null);
+  assert.equal(tester.session.state.sw('warden:defeated'),false);
 });
 
 test('victory resolves through PlushboundGameSession and progresses battle objectives',()=>{

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Plushbound Visual Editor</title>
+  <link rel="stylesheet" href="./editor.css">
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div>
+        <strong>Plushbound Visual Editor</strong>
+        <span class="sub">MV-style world construction • game-layer only</span>
+      </div>
+      <div class="actions">
+        <label class="button file-button">Open JSON<input id="fileInput" type="file" accept="application/json,.json"></label>
+        <button id="loadElyndor">Load Elyndor</button>
+        <button id="exportJson">Export JSON</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="sidebar left">
+        <section>
+          <h2>Map</h2>
+          <select id="mapSelect"></select>
+          <div id="mapMeta" class="meta"></div>
+        </section>
+
+        <section>
+          <h2>Tools</h2>
+          <div class="tool-grid">
+            <button class="tool active" data-tool="select">Select / Move</button>
+            <button class="tool" data-tool="blocked">Paint Blocked</button>
+            <button class="tool" data-tool="erase-blocked">Erase Blocked</button>
+          </div>
+          <label class="check"><input id="showGrid" type="checkbox" checked> Show grid</label>
+          <label class="check"><input id="showBlocked" type="checkbox" checked> Show blocked cells</label>
+          <label class="check"><input id="showEvents" type="checkbox" checked> Show events</label>
+        </section>
+
+        <section>
+          <h2>Events</h2>
+          <div id="eventList" class="event-list"></div>
+        </section>
+      </aside>
+
+      <section class="canvas-wrap">
+        <div class="canvas-toolbar">
+          <span id="status">Load a runtime map package.</span>
+          <span id="cursorReadout">x —, y —</span>
+        </div>
+        <div id="mapScroller" class="map-scroller">
+          <div id="mapCanvas" class="map-canvas" aria-label="Map editor canvas"></div>
+        </div>
+      </section>
+
+      <aside class="sidebar right">
+        <section>
+          <h2>Inspector</h2>
+          <div id="inspectorEmpty" class="meta">Select an event on the map.</div>
+          <div id="inspector" hidden>
+            <label>Event ID<input id="eventId" readonly></label>
+            <label>Asset ID<input id="eventAsset" readonly></label>
+            <div class="two-col">
+              <label>X<input id="eventX" type="number" min="0"></label>
+              <label>Y<input id="eventY" type="number" min="0"></label>
+            </div>
+            <div id="eventPageSummary" class="page-summary"></div>
+            <button id="applyPosition">Apply Position</button>
+          </div>
+        </section>
+
+        <section>
+          <h2>Package</h2>
+          <div id="packageMeta" class="meta"></div>
+          <div class="note">Event page commands are preserved exactly in this first editor slice. Deeper page/command editing comes next.</div>
+        </section>
+      </aside>
+    </main>
+  </div>
+  <script type="module" src="./editor.js"></script>
+</body>
+</html>

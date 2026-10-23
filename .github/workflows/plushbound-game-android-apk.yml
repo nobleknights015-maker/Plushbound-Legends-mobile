@@ -11,6 +11,7 @@ on:
       - 'tools/editor/**'
       - 'gradle.properties'
       - '.github/workflows/plushbound-game-android-apk.yml'
+      - '.github/workflows/moto-g-production-gate.yml'
 
 jobs:
   build-game-debug-apk:

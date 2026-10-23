@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { normalizePackage, moveEvent, setBlocked, eventSummary, addEventPage, updatePageTrigger, updatePageConditions, replaceCommand, addCommand, addLayer, paintTile, tileAt, setLayerVisibility, setLayerZ, addEvent, removeEvent, setEventAsset, normalizeAssetManifest } from '../../tools/editor/editor-core.js';
+import { normalizePackage, moveEvent, setBlocked, eventSummary, addEventPage, updatePageTrigger, updatePageConditions, replaceCommand, addCommand, addLayer, paintTile, tileAt, setLayerVisibility, setLayerZ, addEvent, removeEvent, setEventAsset, normalizeAssetManifest, setRegion, regionAt, addTransferEvent, transferLinks, validateTransferLinks } from '../../tools/editor/editor-core.js';
 
 const source = JSON.parse(readFileSync(new URL('../runtime/elyndor-route-one.maps.json', import.meta.url), 'utf8'));
 const manifest = JSON.parse(readFileSync(new URL('../assets/asset-manifest.json', import.meta.url), 'utf8'));
@@ -14,6 +14,7 @@ test('editor accepts and clones the real Elyndor runtime package', () => {
   assert.equal(pkg.maps[0].id, 'elyndor-sunny-plains');
   assert.equal(pkg.maps[0].events.find(e => e.id === 'lio').x, 18);
   assert.deepEqual(pkg.maps[0].layers, []);
+  assert.equal(pkg.maps[0].regions.length, pkg.maps[0].width * pkg.maps[0].height);
 });
 
 test('event movement clamps to map bounds without touching page commands', () => {
@@ -32,6 +33,15 @@ test('blocked-cell painter adds, deduplicates and erases cells', () => {
   assert.equal(map.blocked.filter(v => v === '5,6').length, 1);
   setBlocked(map, 5, 6, false);
   assert.equal(map.blocked.includes('5,6'), false);
+});
+
+test('native region grid paints and erases Engine v1 region ids', () => {
+  const map = normalizePackage(source).maps[0];
+  assert.equal(regionAt(map, 7, 8), 0);
+  setRegion(map, 7, 8, 12);
+  assert.equal(regionAt(map, 7, 8), 12);
+  setRegion(map, 7, 8, 0);
+  assert.equal(regionAt(map, 7, 8), 0);
 });
 
 test('native engine map layers can be added, painted, erased and configured', () => {
@@ -58,6 +68,22 @@ test('event placement and asset assignment preserve valid engine event shape', (
   assert.equal(event.assetId, 'environment/chest/elyndor-small');
   assert.equal(removeEvent(map, event.id).id, 'editor-test-npc');
   assert.equal(map.events.some(e => e.id === 'editor-test-npc'), false);
+});
+
+test('transfer authoring creates native touch events and validates destinations', () => {
+  const pkg = normalizePackage(source);
+  const from = pkg.maps[0];
+  const target = pkg.maps[1];
+  const event = addTransferEvent(from,{id:'editor-link',x:2,y:3,targetMapId:target.id,targetX:4,targetY:5,direction:6});
+  assert.equal(event.through,true);
+  assert.equal(event.pages[0].trigger,'touch');
+  assert.deepEqual(event.pages[0].commands[0],{code:'TRANSFER',parameters:[target.id,4,5,6]});
+  assert.ok(transferLinks(pkg).some(link=>link.eventId==='editor-link'));
+  assert.deepEqual(validateTransferLinks(pkg),[]);
+  event.pages[0].commands[0].parameters=[target.id,999,5,6];
+  assert.equal(validateTransferLinks(pkg).at(-1).reason,'out-of-bounds');
+  event.pages[0].commands[0].parameters=['missing-map',1,1,2];
+  assert.equal(validateTransferLinks(pkg).at(-1).reason,'missing-map');
 });
 
 test('asset manifest exposes editor-safe logical assets', () => {

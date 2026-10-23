@@ -59,6 +59,7 @@ jobs:
           const browser=await chromium.launch({headless:true});
           const page=await browser.newPage({viewport:{width:412,height:915}});
           const errors=[];page.on('pageerror',error=>errors.push(String(error)));
+          const statRow=async key=>{const keys=page.locator('[data-stat-key]');for(let i=0;i<await keys.count();i++)if(await keys.nth(i).inputValue()===key)return keys.nth(i).locator('..');throw new Error(`Missing stat row ${key}`);};
           await page.goto('http://127.0.0.1:4173/tools/editor/items.html');
           await page.waitForSelector('#itemList [data-locator]');
           await page.fill('#itemSearch','Woven Charm');
@@ -66,13 +67,15 @@ jobs:
           await charm.click();
           assert.equal(await page.inputValue('#itemType'),'accessory');
           assert.ok((await page.textContent('#usageSummary')).includes('1 inbound reference'));
-          const defense=page.locator('.stat-row').filter({has:page.locator('[data-stat-key][value="defense"]')}).first();
+          let defense=await statRow('defense');
           assert.equal(await defense.locator('[data-stat-value]').inputValue(),'2');
           await defense.locator('[data-stat-value]').fill('4');
           await page.click('#applyItem');
-          assert.equal(await page.locator('.stat-row').filter({has:page.locator('[data-stat-key][value="defense"]')}).first().locator('[data-stat-value]').inputValue(),'4');
+          defense=await statRow('defense');
+          assert.equal(await defense.locator('[data-stat-value]').inputValue(),'4');
           await page.click('#undoItems');
-          assert.equal(await page.locator('.stat-row').filter({has:page.locator('[data-stat-key][value="defense"]')}).first().locator('[data-stat-value]').inputValue(),'2');
+          defense=await statRow('defense');
+          assert.equal(await defense.locator('[data-stat-value]').inputValue(),'2');
           await page.selectOption('#itemKind','consumable');
           await page.fill('#itemSearch','Threadmend Tonic');
           assert.ok(await page.locator('#itemList [data-locator]').filter({hasText:'Threadmend Tonic'}).count());

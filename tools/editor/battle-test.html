@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Plushbound Battle & Encounter Test</title>
+  <link rel="stylesheet" href="./editor.css">
+  <link rel="stylesheet" href="./battle-test.css">
+</head>
+<body>
+  <div id="battleApp">
+    <header class="topbar">
+      <div><strong>Battle & Encounter Test</strong><span class="sub">Runtime-backed encounter validation • frozen-engine compatible</span></div>
+      <div class="actions"><button type="button" onclick="location.href='./index.html'">Map Editor</button><button type="button" onclick="location.href='./database.html'">Database</button><button id="reloadBattle">Reload Project</button></div>
+    </header>
+    <main class="battle-workspace">
+      <section class="battle-card setup-card">
+        <h2>Runtime Source</h2>
+        <label>Map Package<select id="runtimePackage"></select></label>
+        <label>Map<select id="battleMap"></select></label>
+        <label>Region ID<input id="battleRegion" type="number" min="0" value="0"></label>
+        <div id="battleSourceMeta" class="meta"></div>
+        <div class="note">Uses the real runtime map package, encounter tables, enemy definitions, quest state and EncounterManager. No synthetic troop schema is introduced.</div>
+      </section>
+
+      <section class="battle-card encounter-card">
+        <div class="card-head"><h2>Encounter Candidates</h2><button id="rollEncounter">Weighted Pick</button></div>
+        <div id="encounterTableMeta" class="meta"></div>
+        <div id="encounterCandidates" class="candidate-list"></div>
+      </section>
+
+      <section class="battle-card enemy-card">
+        <h2>Active Encounter</h2>
+        <div id="activeEncounter" class="empty-state">Pick or select an encounter candidate.</div>
+        <div class="result-actions"><button id="resolveVictory" disabled>Victory</button><button id="resolveEscape" disabled>Escape</button><button id="resolveDefeat" disabled>Defeat</button></div>
+      </section>
+
+      <section class="battle-card quest-card">
+        <h2>Battle Quest Sandbox</h2>
+        <label>Quest<select id="battleQuest"><option value="">No quest selected</option></select></label>
+        <div class="two-col"><button id="prepareQuest">Prepare + Start Quest</button><button id="resetBattleSession">Reset Session</button></div>
+        <div class="note">Prepare is test-only: completed-quest prerequisites are seeded inside this isolated runtime session, then the selected real quest is started. Project JSON is never modified.</div>
+        <div id="questProgress" class="quest-progress"></div>
+      </section>
+
+      <section class="battle-card diagnostics-card">
+        <h2>Runtime Diagnostics</h2>
+        <div id="battleStatus" class="meta">Loading project…</div>
+        <pre id="battleDiagnostics"></pre>
+      </section>
+    </main>
+  </div>
+  <script type="module" src="./battle-test.js"></script>
+</body>
+</html>

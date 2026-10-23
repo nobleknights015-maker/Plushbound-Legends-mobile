@@ -34,15 +34,11 @@ export function gridStrokePoints(x0,y0,x1,y1){
   return points;
 }
 
-export function applyStrokePoint(state,{x,y,willChange=true,checkpoint,apply}={}){
-  if(!state?.active)return {applied:false,changed:0,checkpointed:!!state?.checkpointed};
-  const px=Math.floor(Number(x)),py=Math.floor(Number(y));
-  if(!Number.isFinite(px)||!Number.isFinite(py))return {applied:false,changed:0,checkpointed:state.checkpointed};
-  state.lastX=px;state.lastY=py;
-  const key=`${px},${py}`;
+function applySinglePoint(state,{x,y,willChange=true,checkpoint,apply}={}){
+  const key=`${x},${y}`;
   if(state.visited.has(key))return {applied:false,changed:0,checkpointed:state.checkpointed};
   state.visited.add(key);
-  const needed=typeof willChange==='function'?!!willChange(px,py):!!willChange;
+  const needed=typeof willChange==='function'?!!willChange(x,y):!!willChange;
   if(!needed)return {applied:false,changed:0,checkpointed:state.checkpointed};
   if(!state.checkpointed){
     if(typeof checkpoint!=='function')throw new Error('First stroke mutation requires a checkpoint callback');
@@ -50,24 +46,27 @@ export function applyStrokePoint(state,{x,y,willChange=true,checkpoint,apply}={}
     state.checkpointed=true;
   }
   if(typeof apply!=='function')throw new Error('Stroke mutation requires an apply callback');
-  const changed=Math.max(0,Number(apply(px,py))||0);
+  const changed=Math.max(0,Number(apply(x,y))||0);
   state.changed+=changed;
   return {applied:true,changed,checkpointed:true};
 }
 
-export function applyStrokePath(state,{x,y,willChange=true,checkpoint,apply}={}){
+export function applyStrokePoint(state,{x,y,willChange=true,checkpoint,apply}={}){
   if(!state?.active)return {applied:false,changed:0,checkpointed:!!state?.checkpointed,points:0};
   const tx=Math.floor(Number(x)),ty=Math.floor(Number(y));
   if(!Number.isFinite(tx)||!Number.isFinite(ty))return {applied:false,changed:0,checkpointed:state.checkpointed,points:0};
-  const hadAnchor=Number.isFinite(state.lastX)&&Number.isFinite(state.lastY);
-  const points=hadAnchor?gridStrokePoints(state.lastX,state.lastY,tx,ty).slice(1):[{x:tx,y:ty}];
+  const anchored=Number.isFinite(state.lastX)&&Number.isFinite(state.lastY);
+  const points=anchored?gridStrokePoints(state.lastX,state.lastY,tx,ty).slice(1):[{x:tx,y:ty}];
   let applied=false,changed=0;
   for(const point of points){
-    const result=applyStrokePoint(state,{x:point.x,y:point.y,willChange,checkpoint,apply});
+    const result=applySinglePoint(state,{x:point.x,y:point.y,willChange,checkpoint,apply});
     applied=applied||result.applied;changed+=result.changed;
   }
+  state.lastX=tx;state.lastY=ty;
   return {applied,changed,checkpointed:state.checkpointed,points:points.length};
 }
+
+export function applyStrokePath(state,options={}){return applyStrokePoint(state,options);}
 
 export function endStroke(state){
   if(!state)return {changed:0,checkpointed:false};

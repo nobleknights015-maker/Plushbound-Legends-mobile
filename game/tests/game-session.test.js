@@ -9,8 +9,8 @@ const opening = json(new URL('../content/opening-elyndor.json', import.meta.url)
 const route = json(new URL('../content/elyndor-route-one.json', import.meta.url));
 const mapPackage = json(new URL('../runtime/elyndor-route-one.maps.json', import.meta.url));
 
-function session() {
-  return new PlushboundGameSession({ mapPackage, contentPackages: [opening, route], logger: { error() {} } });
+function session(options = {}) {
+  return new PlushboundGameSession({ mapPackage, contentPackages: [opening, route], logger: { error() {} }, ...options });
 }
 
 test('session exposes one gameplay surface for maps, interactions, battles and shops', () => {
@@ -96,4 +96,63 @@ test('session snapshots expose resolved live actions and update with event-page 
   const unlocked = game.snapshot().actions.find(action => action.eventId === 'sunny-plains-to-crossing');
   assert.equal(unlocked.destinationMapId, 'elyndor-sunthread-crossing');
   assert.match(unlocked.label, /Sunthread Crossing/);
+});
+
+test('encounter victory automatically advances battle objectives while escape does not', () => {
+  const game = session();
+  game.enter('elyndor-sunny-plains', 12, 10, 2);
+  game.interact('lio');
+
+  game.lastEncounter = { enemyId: 'frayling-tuft', enemy: game.game.enemyDefinition('frayling-tuft') };
+  const escaped = game.resolveEncounter('escape');
+  assert.equal(escaped.result, 'escape');
+  assert.equal(game.snapshot().quests['a-thread-begins'].status, 'active');
+
+  game.lastEncounter = { enemyId: 'frayling-tuft', enemy: game.game.enemyDefinition('frayling-tuft') };
+  const won = game.resolveEncounter('victory');
+  assert.equal(won.result, 'victory');
+  assert.equal(won.encounter.enemy.name, 'Tuft Frayling');
+  assert.equal(game.snapshot().lastEncounter, null);
+  assert.equal(game.snapshot().quests['a-thread-begins'].status, 'ready');
+  assert.throws(() => game.resolveEncounter('victory'), /No encounter is active/);
+});
+
+test('save restore preserves map quest inventory switches and self switches across session recreation', () => {
+  const first = session();
+  first.enter('elyndor-sunny-plains', 12, 10, 6);
+  first.interact('tutorial-chest');
+  first.interact('lio');
+  first.recordBattle(['frayling']);
+  first.interact('lio');
+  first.triggerAt(31, 10, 'touch');
+  assert.equal(first.snapshot().currentMap, 'elyndor-sunthread-crossing');
+
+  const save = first.serializeSave();
+  assert.equal(save.schemaVersion, 1);
+  assert.doesNotThrow(() => JSON.stringify(save));
+
+  const restored = session();
+  const snapshot = restored.restoreSave(JSON.parse(JSON.stringify(save)));
+  assert.equal(snapshot.currentMap, 'elyndor-sunthread-crossing');
+  assert.equal(snapshot.map.x, 2);
+  assert.equal(snapshot.map.y, 12);
+  assert.equal(snapshot.map.direction, 6);
+  assert.equal(snapshot.gold, 100);
+  assert.equal(snapshot.inventory.items['threadmend-tonic'], 2);
+  assert.equal(snapshot.quests['a-thread-begins'].status, 'complete');
+  assert.equal(restored.state.selfSw('elyndor-sunny-plains', 'tutorial-chest', 'A'), true);
+
+  restored.enter('elyndor-sunny-plains', 25, 13, 2);
+  restored.interact('tutorial-chest');
+  assert.equal(restored.snapshot().inventory.items['threadmend-tonic'], 2);
+  assert.match(restored.snapshot().dialogue.current.text, /empty/);
+});
+
+test('save restore rejects unknown schema versions and unknown maps', () => {
+  const game = session();
+  game.enter('elyndor-sunny-plains');
+  const save = game.serializeSave();
+  assert.throws(() => game.restoreSave({ ...save, schemaVersion: 99 }), /Unsupported Plushbound save schema/);
+  save.state.map.id = 'missing-map';
+  assert.throws(() => game.restoreSave(save), /unknown map/i);
 });

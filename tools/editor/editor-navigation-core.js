@@ -31,10 +31,27 @@ export function editorDestination(record={}){
   return null;
 }
 
+export function diagnosticDestination(issue={}){
+  const mapId=String(issue.mapId||''),eventId=String(issue.eventId||'');
+  if(mapId&&eventId)return `./index.html?map=${enc(mapId)}&event=${enc(eventId)}`;
+  if(mapId)return `./map-manager.html?map=${enc(mapId)}`;
+  const owner=String(issue.owner||'');
+  const match=/^(quest|shop|encounter|waystitch|enemy|item|npc):(.+)$/.exec(owner);
+  const query=String(issue.id||match?.[2]||owner||issue.kind||'').trim();
+  if(query)return `./project-search.html?q=${enc(query)}&type=content`;
+  return null;
+}
+
 export function readEditorLink(search=''){
   const params=new URLSearchParams(String(search||'').replace(/^\?/,''));
   return {
     packageId:params.get('package')||'',collectionKey:params.get('collection')||'',recordId:params.get('record')||'',
     mapId:params.get('map')||'',eventId:params.get('event')||'',assetId:params.get('asset')||''
   };
+}
+
+export function readSearchLink(search=''){
+  const params=new URLSearchParams(String(search||'').replace(/^\?/,''));
+  const sourceType=params.get('type')||'';
+  return {query:params.get('q')||'',sourceType:['content','runtime','assets'].includes(sourceType)?sourceType:''};
 }

@@ -1,4 +1,4 @@
-import {clone,collectionDescriptors,collectionRecords,validateCollection,validatePackageCollections,replaceRecord,addRecord,removeRecord,labelFor,searchableRecordText,scalarFieldDescriptors,applyScalarFields} from './database-core.js';
+import {clone,collectionDescriptors,collectionRecords,validateCollection,validatePackageCollections,replaceRecord,addRecord,removeRecord,labelFor,searchableRecordText,recordFieldDescriptors,applyRecordFields,collectionProfile,newRecordTemplate} from './database-core.js';
 
 const state={index:null,packages:[],packageIndex:-1,collectionKey:null,selectedLocator:null,history:{undo:[],redo:[],limit:80}};
 const $=id=>document.getElementById(id);
@@ -34,8 +34,10 @@ function renderPackages(){
 }
 function renderCollections(){
   els.collectionList.innerHTML='';const entry=activePackage();if(!entry||!entry.data){els.packageMeta.textContent=entry?.loadError||'Load the project database.';return;}
-  const descriptors=collectionDescriptors(entry.data);els.packageMeta.textContent=`${entry.id} • schema ${entry.data.schemaVersion??'?'} • ${descriptors.length} editable collection(s)`;
+  const descriptors=collectionDescriptors(entry.data);
   if(!descriptors.some(d=>d.key===state.collectionKey))state.collectionKey=descriptors[0]?.key||null;
+  const profile=collectionProfile(state.collectionKey||'');
+  els.packageMeta.textContent=`${entry.id} • schema ${entry.data.schemaVersion??'?'} • ${descriptors.length} editable collection(s)${state.collectionKey?` • ${profile.description}`:''}`;
   for(const d of descriptors){const b=document.createElement('button');b.dataset.collectionKey=d.key;b.className=d.key===state.collectionKey?'selected':'';b.innerHTML=`<strong>${d.label}</strong><small>${d.count} record(s) • ${d.kind}</small>`;els.collectionList.append(b);}
 }
 function renderRecords(){
@@ -43,17 +45,19 @@ function renderRecords(){
   for(const row of rows){const b=document.createElement('button');b.dataset.locator=String(row.locator);b.className=`record-card${String(row.locator)===String(state.selectedLocator)?' selected':''}`;b.innerHTML=`<strong>${row.record.name||row.record.title||row.id||'(unnamed)'}</strong><small>${row.id}${row.record.role?` • ${row.record.role}`:''}${row.record.species?` • ${row.record.species}`:''}</small>`;els.recordList.append(b);}
   const hasCollection=!!state.collectionKey;els.newRecord.disabled=!hasCollection;const hasSelection=!!selectedRow();els.duplicateRecord.disabled=!hasSelection;els.deleteRecord.disabled=!hasSelection;els.exportPackage.disabled=!activePackage()?.data;
 }
+function makeFieldControl(field){
+  const label=document.createElement('label');label.dataset.fieldKey=field.key;const title=document.createElement('span');title.textContent=field.label;label.append(title);let input;
+  if(field.type==='boolean'){label.classList.add('check-field');input=document.createElement('input');input.type='checkbox';input.checked=!!field.value;label.prepend(input);}
+  else if(field.type==='number'){input=document.createElement('input');input.type='number';input.value=String(field.value);label.append(input);}
+  else if(field.type==='list'){label.classList.add('wide','list-field');input=document.createElement('textarea');input.rows=3;input.value=JSON.stringify(field.value);input.placeholder='["value-one", "value-two"]';label.append(input);}
+  else if(String(field.value).length>80||/description|summary|text|notes?/i.test(field.key)){label.classList.add('wide');input=document.createElement('textarea');input.value=String(field.value);label.append(input);}
+  else{input=document.createElement('input');input.type='text';input.value=String(field.value);label.append(input);}
+  input.dataset.fieldInput=field.key;return label;
+}
 function renderInspector(){
-  const row=selectedRow();els.recordEmpty.hidden=!!row;els.recordEditor.hidden=!row;els.fieldEditor.innerHTML='';if(!row)return;els.recordIdentity.textContent=`${labelFor(state.collectionKey)} • ${row.id}`;els.recordJson.value=JSON.stringify(row.record,null,2);
-  for(const field of scalarFieldDescriptors(row.record)){
-    const label=document.createElement('label');label.dataset.fieldKey=field.key;const title=document.createElement('span');title.textContent=field.label;label.append(title);
-    let input;
-    if(field.type==='boolean'){label.classList.add('check-field');input=document.createElement('input');input.type='checkbox';input.checked=!!field.value;label.prepend(input);}
-    else if(field.type==='number'){input=document.createElement('input');input.type='number';input.value=String(field.value);label.append(input);}
-    else if(String(field.value).length>80||/description|summary|text|notes?/i.test(field.key)){label.classList.add('wide');input=document.createElement('textarea');input.value=String(field.value);label.append(input);}
-    else{input=document.createElement('input');input.type='text';input.value=String(field.value);label.append(input);}
-    input.dataset.fieldInput=field.key;els.fieldEditor.append(label);
-  }
+  const row=selectedRow();els.recordEmpty.hidden=!!row;els.recordEditor.hidden=!row;els.fieldEditor.innerHTML='';if(!row)return;const profile=collectionProfile(state.collectionKey);els.recordIdentity.textContent=`${profile.title} • ${row.id}`;els.recordJson.value=JSON.stringify(row.record,null,2);
+  const fields=recordFieldDescriptors(row.record);const groups=new Map();for(const field of fields){if(!groups.has(field.group))groups.set(field.group,[]);groups.get(field.group).push(field);}
+  for(const [groupName,groupFields] of groups){const group=document.createElement('section');group.className='field-group';const heading=document.createElement('h3');heading.textContent=groupName;group.append(heading);const grid=document.createElement('div');grid.className='field-grid';for(const field of groupFields)grid.append(makeFieldControl(field));group.append(grid);els.fieldEditor.append(group);}
 }
 function renderValidation(){
   els.validationIssues.innerHTML='';if(!activePackage()?.data||!state.collectionKey){els.validationSummary.textContent='No collection selected.';return;}
@@ -64,10 +68,8 @@ function selectCollection(key){state.collectionKey=key;state.selectedLocator=nul
 function selectRecord(locator){state.selectedLocator=locator;renderRecords();renderInspector();renderValidation();}
 function applyFields(){
   const entry=activePackage(),row=selectedRow();if(!entry||!row)return;const label=`Edit ${row.id} fields`;
-  try{
-    const fields={};for(const input of els.fieldEditor.querySelectorAll('[data-field-input]'))fields[input.dataset.fieldInput]=input.type==='checkbox'?input.checked:input.value;
-    const next=applyScalarFields(row.record,fields);snapshot(label);replaceRecord(entry.data,state.collectionKey,row.locator,next);renderAll();selectRecord(row.locator);
-  }catch(error){discardSnapshot(label);alert(`Fields not changed: ${error.message}`);}
+  try{const fields={};for(const input of els.fieldEditor.querySelectorAll('[data-field-input]'))fields[input.dataset.fieldInput]=input.type==='checkbox'?input.checked:input.value;const next=applyRecordFields(row.record,fields);snapshot(label);replaceRecord(entry.data,state.collectionKey,row.locator,next);renderAll();selectRecord(row.locator);}
+  catch(error){discardSnapshot(label);alert(`Fields not changed: ${error.message}`);}
 }
 function applyRecord(){
   const entry=activePackage(),row=selectedRow();if(!entry||!row)return;const label=`Edit ${row.id} JSON`;
@@ -75,8 +77,8 @@ function applyRecord(){
   catch(error){discardSnapshot(label);alert(`Record not changed: ${error.message}`);}
 }
 function newRecord(){
-  const entry=activePackage();if(!entry||!state.collectionKey)return;const seed={id:`new-${state.collectionKey.replace(/[^a-z0-9]+/gi,'-').toLowerCase()}-${Date.now().toString(36)}`,name:'New Record'};const label=`Create ${seed.id}`;
-  try{snapshot(label);addRecord(entry.data,state.collectionKey,seed);const row=collectionRecords(entry.data,state.collectionKey).at(-1);state.selectedLocator=row.locator;renderAll();}
+  const entry=activePackage();if(!entry||!state.collectionKey)return;const seed=newRecordTemplate(state.collectionKey);const label=`Create ${seed.id}`;
+  try{snapshot(label);addRecord(entry.data,state.collectionKey,seed);const row=collectionRecords(entry.data,state.collectionKey).find(candidate=>candidate.id===seed.id)||collectionRecords(entry.data,state.collectionKey).at(-1);state.selectedLocator=row.locator;renderAll();}
   catch(error){discardSnapshot(label);alert(`Record not added: ${error.message}`);}
 }
 function duplicateRecord(){

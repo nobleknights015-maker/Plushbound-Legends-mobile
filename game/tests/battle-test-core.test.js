@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { BattleEncounterTester } from '../../tools/editor/battle-test-core.js';
+import { BattleEncounterTester,seededRng } from '../../tools/editor/battle-test-core.js';
 
 const mapPackage={schemaVersion:1,maps:[{id:'test-field',name:'Test Field',width:4,height:4,layers:[],blocked:[],regions:new Array(16).fill(0),encounterTable:'field-table',events:[]},{id:'sanctum',name:'Sanctum',width:2,height:2,layers:[],blocked:[],regions:new Array(4).fill(0),events:[]}]};
 const contentPackages=[{
@@ -23,6 +23,30 @@ test('battle tester performs deterministic runtime weighted picks with enemy def
   assert.equal(encounter.enemyId,'woolbeast-a');
   assert.equal(encounter.enemy.name,'Woolbeast A');
   assert.equal(tester.snapshot().lastEncounter.enemyId,'woolbeast-a');
+});
+
+test('seeded encounter RNG is repeatable and isolated from Math.random',()=>{
+  const a=seededRng(8675309),b=seededRng(8675309),c=seededRng(42);
+  const seqA=Array.from({length:6},()=>a());
+  const seqB=Array.from({length:6},()=>b());
+  const seqC=Array.from({length:6},()=>c());
+  assert.deepEqual(seqA,seqB);
+  assert.notDeepEqual(seqA,seqC);
+  assert.ok(seqA.every(value=>value>=0&&value<1));
+});
+
+test('battle tester seed reproduces weighted encounter sequences',()=>{
+  const seededContent=structuredClone(contentPackages);
+  seededContent[0].encounterTables[0].entries=[
+    {enemyId:'woolbeast-a',weight:1,regions:[0]},
+    {enemyId:'woolbeast-b',weight:1,regions:[0]}
+  ];
+  const first=new BattleEncounterTester({mapPackage,contentPackages:seededContent,seed:1337});
+  const second=new BattleEncounterTester({mapPackage,contentPackages:seededContent,seed:1337});
+  const firstPicks=Array.from({length:8},()=>first.pickEncounter({regionId:0}).enemyId);
+  const secondPicks=Array.from({length:8},()=>second.pickEncounter({regionId:0}).enemyId);
+  assert.deepEqual(firstPicks,secondPicks);
+  assert.equal(first.seed,1337);
 });
 
 test('battle tester loads declared bosses on their runtime map before resolving lifecycle',()=>{

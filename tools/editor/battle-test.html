@@ -19,8 +19,10 @@
         <label>Map Package<select id="runtimePackage"></select></label>
         <label>Map<select id="battleMap"></select></label>
         <label>Region ID<input id="battleRegion" type="number" min="0" value="0"></label>
+        <label>Encounter Seed<input id="battleSeed" type="number" step="1" value="1"></label>
+        <button id="applyBattleSeed" type="button">Reset With Seed</button>
         <div id="battleSourceMeta" class="meta"></div>
-        <div class="note">Uses the real runtime map package, encounter tables, enemy definitions, quest state and EncounterManager. No synthetic troop schema is introduced.</div>
+        <div class="note">Uses the real runtime map package, encounter tables, enemy definitions, quest state and EncounterManager. A fixed seed makes weighted encounter picks repeatable inside the isolated test session without changing project data.</div>
       </section>
 
       <section class="battle-card encounter-card">
@@ -33,7 +35,7 @@
         <h2>Boss Definitions</h2>
         <div id="bossMeta" class="meta"></div>
         <div id="bossList" class="candidate-list"></div>
-        <div class="note">Boss definitions are now queryable through the game content runtime. Loading one here tests its real enemy definition. Current runtime does not yet auto-apply one-time/completion-switch semantics after victory, so this workspace does not pretend otherwise.</div>
+        <div class="note">Boss definitions are queried through the game content runtime. One-time bosses use the real completion-switch lifecycle: victory marks them complete and disables replay, while escape or defeat leaves them available.</div>
       </section>
 
       <section class="battle-card enemy-card">

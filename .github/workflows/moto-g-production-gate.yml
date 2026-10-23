@@ -113,6 +113,34 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -memory 4096 -skin 720x1600
           script: |
+            set -euo pipefail
+
+            wait_for_editor_ready() {
+              PHASE="$1"
+              LOG_FILE="$2"
+              MAX_ATTEMPTS="${3:-30}"
+              for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
+                adb logcat -d > "$LOG_FILE"
+                if grep -q 'PLUSHBOUND_EDITOR_NOT_READY' "$LOG_FILE"; then
+                  echo "Editor reported NOT_READY during $PHASE."
+                  return 1
+                fi
+                if grep -q 'PLUSHBOUND_EDITOR_READY' "$LOG_FILE"; then
+                  echo "Editor ready during $PHASE (attempt $attempt/$MAX_ATTEMPTS)."
+                  return 0
+                fi
+                PID=$(adb shell pidof com.plushbound.legends 2>/dev/null | tr -d '\r' || true)
+                if [ "$attempt" -ge 5 ] && [ -z "$PID" ]; then
+                  echo "Plushbound process exited before readiness during $PHASE."
+                  return 1
+                fi
+                sleep 2
+              done
+              adb logcat -d > "$LOG_FILE"
+              echo "Timed out waiting for editor readiness during $PHASE."
+              return 1
+            }
+
             adb wait-for-device
             adb shell wm size 720x1600
             adb shell wm density 270
@@ -121,10 +149,9 @@ jobs:
             adb install -r plushbound-moto-g-test.apk
             echo "Cold launching Plushbound editor..."
             adb shell monkey -p com.plushbound.legends -c android.intent.category.LAUNCHER 1 >/dev/null
-            sleep 12
+            wait_for_editor_ready "cold launch" moto-g-editor-startup-logcat.txt 30
             test -n "$(adb shell pidof com.plushbound.legends | tr -d '\r')"
             echo "Capturing editor startup diagnostics..."
-            adb logcat -d > moto-g-editor-startup-logcat.txt
             grep -E 'PlushboundEditor|chromium|cr_' moto-g-editor-startup-logcat.txt | tee moto-g-editor-startup-diagnostics.txt || true
             echo "Proving real editor modules executed in Android WebView..."
             grep -q 'PLUSHBOUND_EDITOR_READY' moto-g-editor-startup-logcat.txt
@@ -141,6 +168,15 @@ jobs:
             adb shell monkey -p com.plushbound.legends -c android.intent.category.LAUNCHER 1 >/dev/null
             sleep 4
             test -n "$(adb shell pidof com.plushbound.legends | tr -d '\r')"
+            echo "Rotation lifecycle check..."
+            adb shell settings put system accelerometer_rotation 0 || true
+            adb shell settings put system user_rotation 1 || true
+            sleep 3
+            test -n "$(adb shell pidof com.plushbound.legends | tr -d '\r')"
+            adb shell settings put system user_rotation 0 || true
+            sleep 3
+            test -n "$(adb shell pidof com.plushbound.legends | tr -d '\r')"
+            adb shell settings put system accelerometer_rotation 1 || true
             echo "Memory pressure check..."
             adb shell am send-trim-memory com.plushbound.legends RUNNING_LOW || true
             sleep 2
@@ -150,10 +186,8 @@ jobs:
             sleep 1
             adb logcat -c
             adb shell monkey -p com.plushbound.legends -c android.intent.category.LAUNCHER 1 >/dev/null
-            sleep 8
+            wait_for_editor_ready "force-stop relaunch" moto-g-editor-relaunch-logcat.txt 30
             test -n "$(adb shell pidof com.plushbound.legends | tr -d '\r')"
-            adb logcat -d > moto-g-editor-relaunch-logcat.txt
-            grep -q 'PLUSHBOUND_EDITOR_READY' moto-g-editor-relaunch-logcat.txt
             adb shell dumpsys meminfo com.plushbound.legends | tee moto-g-meminfo-final.txt
             adb shell dumpsys gfxinfo com.plushbound.legends framestats | tee moto-g-gfxinfo.txt || true
             adb logcat -d > moto-g-logcat.txt
@@ -173,6 +207,8 @@ jobs:
           Emulator viewport: 720x1600
           Android API: 35
           Editor module readiness: required
+          Readiness policy: poll for explicit ready/not-ready signal, no fixed launch timer
+          Rotation lifecycle: required
           Result: ${{ job.status }}
           Source commit: ${{ steps.buildrun.outputs.source_sha }}
           Source Android workflow run: ${{ steps.buildrun.outputs.run_id }}

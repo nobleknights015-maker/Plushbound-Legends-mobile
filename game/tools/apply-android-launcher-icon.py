@@ -1,6 +1,5 @@
 from pathlib import Path
 import re
-import sys
 
 try:
     from PIL import Image
@@ -45,12 +44,13 @@ for folder, size in sizes.items():
 # Adaptive icon foreground. Android masks the final icon shape; the inset protects ears/sigil.
 drawable = RES / "drawable-nodpi"
 drawable.mkdir(parents=True, exist_ok=True)
-render(432).convert("RGB").save(drawable / "plushbound_launcher_foreground.webp", "WEBP", quality=96, method=6)
+render(432).convert("RGB").save(
+    drawable / "plushbound_launcher_foreground.webp", "WEBP", quality=96, method=6
+)
 
 values = RES / "values"
 values.mkdir(parents=True, exist_ok=True)
-colors = values / "plushbound_launcher_colors.xml"
-colors.write_text(
+(values / "plushbound_launcher_colors.xml").write_text(
     '<?xml version="1.0" encoding="utf-8"?>\n'
     '<resources>\n'
     '    <color name="plushbound_launcher_background">#050307</color>\n'
@@ -60,28 +60,37 @@ colors.write_text(
 
 adaptive = RES / "mipmap-anydpi-v26"
 adaptive.mkdir(parents=True, exist_ok=True)
-xml = (
+adaptive_xml = (
     '<?xml version="1.0" encoding="utf-8"?>\n'
     '<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n'
     '    <background android:drawable="@color/plushbound_launcher_background" />\n'
     '    <foreground android:drawable="@drawable/plushbound_launcher_foreground" />\n'
     '</adaptive-icon>\n'
 )
-(adaptive / "plushbound_launcher.xml").write_text(xml, encoding="utf-8")
-(adaptive / "plushbound_launcher_round.xml").write_text(xml, encoding="utf-8")
+(adaptive / "plushbound_launcher.xml").write_text(adaptive_xml, encoding="utf-8")
+(adaptive / "plushbound_launcher_round.xml").write_text(adaptive_xml, encoding="utf-8")
 
-text = MANIFEST.read_text(encoding="utf-8")n
+text = MANIFEST.read_text(encoding="utf-8")
+
 # Keep package/activity declarations untouched; only normalize application launcher resources.
-app_match = re.search(r"<application\\b[^>]*>", text, flags=re.DOTALL)
+app_match = re.search(r"<application\b[^>]*>", text, flags=re.DOTALL)
 if not app_match:
     raise SystemExit("AndroidManifest.xml has no <application> element")
 application = app_match.group(0)
 if re.search(r'android:icon="[^"]*"', application):
-    application = re.sub(r'android:icon="[^"]*"', 'android:icon="@mipmap/plushbound_launcher"', application)
+    application = re.sub(
+        r'android:icon="[^"]*"',
+        'android:icon="@mipmap/plushbound_launcher"',
+        application,
+    )
 else:
     application = application[:-1] + ' android:icon="@mipmap/plushbound_launcher">'
 if re.search(r'android:roundIcon="[^"]*"', application):
-    application = re.sub(r'android:roundIcon="[^"]*"', 'android:roundIcon="@mipmap/plushbound_launcher_round"', application)
+    application = re.sub(
+        r'android:roundIcon="[^"]*"',
+        'android:roundIcon="@mipmap/plushbound_launcher_round"',
+        application,
+    )
 else:
     application = application[:-1] + ' android:roundIcon="@mipmap/plushbound_launcher_round">'
 text = text[:app_match.start()] + application + text[app_match.end():]

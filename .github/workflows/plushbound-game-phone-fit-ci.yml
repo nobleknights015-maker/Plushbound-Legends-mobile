@@ -1,0 +1,84 @@
+name: Plushbound Game Phone Fit CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ plushbound-game-development ]
+    paths:
+      - 'game/runtime/**'
+      - 'game/tests/phone-viewport-contract.test.js'
+      - 'game/tests/game-phone-hud-contract.test.js'
+      - 'game/tests/phone-viewport-guard.test.js'
+      - 'game/tests/android-game-bootstrap.test.js'
+      - 'game/tests/game-dom-adapter.test.js'
+      - 'engine/src/platform/ScreenAdaptation.js'
+      - 'engine/src/render/Canvas2DRenderBackend.js'
+      - 'engine/src/runtime/BrowserRuntimeEntry.js'
+      - 'engine/src/ui/ClassicWindowSystem.js'
+      - 'engine/tests/screen_adaptation.test.js'
+      - 'engine/tests/native_viewport_ui.test.js'
+      - '.github/workflows/plushbound-game-phone-fit-ci.yml'
+  pull_request:
+    paths:
+      - 'game/runtime/**'
+      - 'game/tests/phone-viewport-contract.test.js'
+      - 'game/tests/game-phone-hud-contract.test.js'
+      - 'game/tests/phone-viewport-guard.test.js'
+      - 'engine/src/platform/ScreenAdaptation.js'
+      - 'engine/src/render/Canvas2DRenderBackend.js'
+      - 'engine/src/runtime/BrowserRuntimeEntry.js'
+      - 'engine/src/ui/ClassicWindowSystem.js'
+      - '.github/workflows/plushbound-game-phone-fit-ci.yml'
+
+jobs:
+  phone-fit-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out game development
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate phone-fit runtime syntax
+        run: |
+          node --check game/runtime/GameDomAdapter.js
+          node --check game/runtime/PhoneViewportGuard.js
+          node --check game/runtime/AndroidGameBootstrap.js
+
+      - name: Prove player UI and game frame fit supported phone matrix
+        run: |
+          node --test \
+            engine/tests/screen_adaptation.test.js \
+            engine/tests/native_viewport_ui.test.js \
+            game/tests/phone-viewport-contract.test.js \
+            game/tests/game-phone-hud-contract.test.js \
+            game/tests/phone-viewport-guard.test.js \
+            game/tests/game-dom-adapter.test.js \
+            game/tests/android-game-bootstrap.test.js
+
+      - name: Record phone-fit gate
+        if: always()
+        run: |
+          cat > plushbound-game-phone-fit-gate.txt <<EOF
+          Plushbound Legends player phone-fit contract
+          Logical game frame: 1604x720 contain-fit inside safe viewport
+          Phone matrix: 320x568 through 430x932 portrait plus landscape and ultrawide cases
+          Safe areas: notch/system-bar insets included
+          Variable UI: dialogue, actions and shop inventory locally scroll instead of clipping
+          Minimum DOM touch target: 44 CSS px
+          Engine v1 core: frozen / unmodified by this phone-fit patch
+          Result: ${{ job.status }}
+          Commit: ${{ github.sha }}
+          EOF
+
+      - name: Upload phone-fit diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: plushbound-game-phone-fit-gate
+          path: plushbound-game-phone-fit-gate.txt
+          if-no-files-found: error

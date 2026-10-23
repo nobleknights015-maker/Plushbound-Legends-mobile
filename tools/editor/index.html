@@ -10,7 +10,12 @@
   <div id="app">
     <header class="topbar">
       <div><strong>Plushbound Visual Editor</strong><span class="sub">MV-style world construction • frozen-engine compatible</span></div>
-      <div class="actions"><label class="button file-button">Open JSON<input id="fileInput" type="file" accept="application/json,.json"></label><button id="loadElyndor">Load Elyndor</button><button id="exportJson">Export JSON</button></div>
+      <div class="actions">
+        <button id="undoEdit" disabled>Undo</button><button id="redoEdit" disabled>Redo</button>
+        <button id="runValidation">Validate</button><button id="startPlaytest">Playtest</button>
+        <label class="button file-button">Open JSON<input id="fileInput" type="file" accept="application/json,.json"></label>
+        <button id="loadElyndor">Load Elyndor</button><button id="exportJson">Export JSON</button>
+      </div>
     </header>
     <main class="workspace">
       <aside class="sidebar left">
@@ -21,7 +26,8 @@
           <label class="check"><input id="showGrid" type="checkbox" checked> Show grid</label><label class="check"><input id="showRegions" type="checkbox" checked> Show regions</label><label class="check"><input id="showBlocked" type="checkbox" checked> Show blocked cells</label><label class="check"><input id="showEvents" type="checkbox" checked> Show events</label>
         </section>
         <section><h2>Tile Layers</h2><select id="layerSelect"></select><div class="two-col"><label>Tile ID<input id="tileId" type="number" min="0" value="1"></label><label>Z<input id="layerZ" type="number" value="0"></label></div><label class="check"><input id="layerVisible" type="checkbox" checked> Layer visible</label><button id="applyLayer">Apply Layer</button><button id="addLayer">+ Add Layer</button></section>
-        <section><h2>Regions</h2><label>Region ID<input id="regionId" type="number" min="0" value="1"></label><div class="note">Regions use Engine v1's native map.regions grid and can later drive encounter zones or other map logic.</div></section>
+        <section><h2>Regions</h2><label>Region ID<input id="regionId" type="number" min="0" value="1"></label><div class="note">Regions use Engine v1's native map.regions grid and feed runtime encounter selection.</div></section>
+        <section><h2>Encounter Preview</h2><div id="encounterPreview" class="meta">Load Elyndor to inspect the current map's encounter table.</div></section>
         <section><h2>Events</h2><div class="two-col"><input id="newEventId" placeholder="event-id"><button id="armNewEvent">Place</button></div><div id="eventList" class="event-list"></div></section>
         <section><h2>Map Transfer</h2><label>Event ID<input id="transferEventId" placeholder="to-next-map"></label><label>Target Map<select id="transferTargetMap"></select></label><div class="two-col"><label>Target X<input id="transferX" type="number" min="0" value="0"></label><label>Target Y<input id="transferY" type="number" min="0" value="0"></label></div><label>Facing<select id="transferDirection"><option value="2">Down</option><option value="4">Left</option><option value="6">Right</option><option value="8">Up</option></select></label><button id="armTransfer">Place Transfer</button></section>
       </aside>
@@ -31,10 +37,21 @@
         <section id="assetBrowser"><h2>Asset Library</h2><input id="assetSearch" placeholder="Filter assets"><select id="assetType"><option value="">All types</option></select><div id="assetList" class="asset-list"></div><div class="note">Uses game/assets/asset-manifest.json. Planned assets are selectable as logical IDs before their final art arrives.</div></section>
         <section id="pageEditor" hidden><h2>Event Pages</h2><div class="two-col"><label>Page<select id="pageSelect"></select></label><label>Trigger<select id="pageTrigger"><option value="action">Action</option><option value="touch">Touch</option><option value="autorun">Autorun</option><option value="parallel">Parallel</option></select></label></div><button id="addPage">+ Add Page</button><label>Conditions JSON<textarea id="pageConditions" rows="4" spellcheck="false"></textarea></label><button id="applyPage">Apply Page Settings</button><div id="eventPageSummary" class="page-summary"></div></section>
         <section id="commandEditor" hidden><h2>Commands</h2><div id="commandList" class="command-list"></div><label>Command Type<select id="newCommandType"><option>MESSAGE</option><option>SWITCH</option><option>TRANSFER</option><option>SHOP</option><option>SE</option><option>SCRIPT_HOOK</option></select></label><label>Parameters JSON<textarea id="newCommandParameters" rows="4" spellcheck="false">[]</textarea></label><button id="addCommand">+ Add Command</button><div class="note">Supported commands are editable. Unknown engine commands stay preserved and read-only.</div></section>
+        <section><h2>Validation</h2><div id="validationSummary" class="meta">Load a package to validate.</div><div id="validationIssues" class="page-summary"></div></section>
         <section><h2>Link Validation</h2><div id="linkSummary" class="meta">Load a package to validate transfers.</div><button id="validateLinks">Validate Map Links</button><div id="linkIssues" class="page-summary"></div></section>
-        <section><h2>Package</h2><div id="packageMeta" class="meta"></div><div class="note">Tiles, regions, transfers, events and collision all write Engine v1-compatible game-layer data. Frozen Engine v1 remains untouched.</div></section>
+        <section><h2>Package</h2><div id="packageMeta" class="meta"></div><div class="note">Tiles, regions, transfers, encounters, events and collision stay game-layer data. Frozen Engine v1 remains untouched.</div></section>
       </aside>
     </main>
+  </div>
+
+  <div id="playtestOverlay" class="playtest-overlay" hidden>
+    <div class="playtest-panel">
+      <div class="playtest-head"><strong>Plushbound Runtime Playtest</strong><button id="stopPlaytest">Stop</button></div>
+      <div id="playtestStatus" class="playtest-status"></div>
+      <div id="playtestMap" class="playtest-map"></div>
+      <div class="dpad"><span></span><button data-move="0,-1">▲</button><span></span><button data-move="-1,0">◀</button><button id="playtestInteract">A</button><button data-move="1,0">▶</button><span></span><button data-move="0,1">▼</button><span></span></div>
+      <div id="playtestEvents" class="playtest-events"></div>
+    </div>
   </div>
   <script type="module" src="./editor.js"></script>
 </body>

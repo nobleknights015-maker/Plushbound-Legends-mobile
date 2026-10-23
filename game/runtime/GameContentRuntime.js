@@ -4,6 +4,12 @@ function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+function records(value) {
+  if (Array.isArray(value)) return value;
+  if (value && typeof value === 'object') return Object.values(value);
+  return [];
+}
+
 export class GameContentRuntime {
   constructor({ state, contentPackages = [] } = {}) {
     if (!state) throw new Error('GameContentRuntime requires state');
@@ -19,12 +25,12 @@ export class GameContentRuntime {
   }
 
   register(content = {}) {
-    for (const quest of content.quests || []) this.quests.set(String(quest.id), clone(quest));
-    for (const item of content.items || []) this.items.set(String(item.id), clone(item));
-    for (const shop of content.shops || []) this.shops.set(String(shop.id), clone(shop));
-    for (const waystitch of content.waystitches || []) this.waystitches.set(String(waystitch.id), clone(waystitch));
-    for (const table of content.encounterTables || []) this.encounterTables.set(String(table.id), clone(table));
-    for (const enemy of content.enemies || []) this.enemies.set(String(enemy.id), clone(enemy));
+    for (const quest of records(content.quests)) this.quests.set(String(quest.id), clone(quest));
+    for (const item of records(content.items)) this.items.set(String(item.id), clone(item));
+    for (const shop of records(content.shops)) this.shops.set(String(shop.id), clone(shop));
+    for (const waystitch of records(content.waystitches)) this.waystitches.set(String(waystitch.id), clone(waystitch));
+    for (const table of records(content.encounterTables)) this.encounterTables.set(String(table.id), clone(table));
+    for (const enemy of records(content.enemies)) this.enemies.set(String(enemy.id), clone(enemy));
     return this;
   }
 

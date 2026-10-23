@@ -11,13 +11,14 @@ export function seededRng(seed=1){
 }
 
 export class BattleEncounterTester{
-  constructor({mapPackage,contentPackages=[],rng=null,seed=null}={}){
+  constructor({mapPackage,contentPackages=[],rng=null,seed=null,state=null}={}){
     if(!mapPackage?.maps?.length)throw new Error('BattleEncounterTester requires a runtime map package');
     this.mapPackage=clone(mapPackage);
     this.contentPackages=clone(contentPackages);
     this.seed=seed===null?null:((Number.isFinite(Number(seed))?Math.trunc(Number(seed)):1)>>>0);
     const encounterRng=typeof rng==='function'?rng:(this.seed===null?Math.random:seededRng(this.seed));
     this.session=new PlushboundGameSession({
+      state:state||undefined,
       mapPackage:this.mapPackage,
       contentPackages:this.contentPackages,
       encounter:{rng:encounterRng,base:1,variance:0,rate:1},

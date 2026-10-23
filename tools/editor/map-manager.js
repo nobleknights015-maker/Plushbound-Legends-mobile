@@ -1,4 +1,4 @@
-import {clone,normalizePackage,validatePackage,createHistory,checkpointHistory,undoHistory,redoHistory} from './editor-core.js';
+import {normalizePackage,validatePackage,createHistory,checkpointHistory,undoHistory,redoHistory} from './editor-core.js';
 import {createBlankMap,duplicateMap,renameMap,inboundTransfers,removeMap,mapManagementSummary} from './map-management-core.js';
 
 const $=id=>document.getElementById(id);
@@ -7,9 +7,10 @@ const state={pkg:null,selectedId:null,history:createHistory(80)};
 
 async function loadJson(url){const response=await fetch(url);if(!response.ok)throw new Error(`Could not load ${url} (${response.status})`);return response.json();}
 function selectedMap(){return state.pkg?.maps?.find(map=>String(map.id)===String(state.selectedId))||null;}
+function selectedIndex(){return Math.max(0,state.pkg?.maps?.findIndex(map=>String(map.id)===String(state.selectedId))??0);}
 function remember(label){checkpointHistory(state.history,state.pkg,label);renderHistory();}
 function renderHistory(){els.undoMaps.disabled=!state.history.undo.length;els.redoMaps.disabled=!state.history.redo.length;els.undoMaps.title=state.history.undo.at(-1)?.label||'Nothing to undo';els.redoMaps.title=state.history.redo.at(-1)?.label||'Nothing to redo';}
-function install(pkg,{resetHistory=false,preserveId=null}={}){state.pkg=normalizePackage(pkg);if(resetHistory)state.history=createHistory(80);state.selectedId=state.pkg.maps.some(map=>map.id===preserveId)?preserveId:(state.pkg.maps[0]?.id||null);renderAll();}
+function install(pkg,{resetHistory=false,preserveId=null,preserveIndex=null}={}){state.pkg=normalizePackage(pkg);if(resetHistory)state.history=createHistory(80);const byId=state.pkg.maps.find(map=>map.id===preserveId);const byIndex=preserveIndex==null?null:state.pkg.maps[Math.min(Math.max(0,Number(preserveIndex)||0),Math.max(0,state.pkg.maps.length-1))];state.selectedId=(byId||byIndex||state.pkg.maps[0])?.id||null;renderAll();}
 
 function renderList(){
   els.mapList.innerHTML='';const summary=mapManagementSummary(state.pkg);els.mapCount.textContent=`${summary.length} map(s)`;
@@ -30,8 +31,8 @@ function applyMap(){const map=selectedMap();if(!map)return;const oldId=map.id;tr
 function duplicateSelected(){const map=selectedMap();if(!map)return;try{remember(`Duplicate map ${map.id}`);const copy=duplicateMap(state.pkg,map.id);state.selectedId=copy.id;renderAll(`Duplicated ${map.id} → ${copy.id}`);}catch(error){renderAll(`Map not duplicated: ${error.message}`);}}
 function createMap(){try{remember('Create blank map');const map=createBlankMap(state.pkg,{id:els.newMapId.value,name:els.newMapName.value,width:els.newMapWidth.value,height:els.newMapHeight.value});state.selectedId=map.id;renderAll(`Created ${map.id}`);}catch(error){renderAll(`Map not created: ${error.message}`);}}
 function deleteSelected(){const map=selectedMap();if(!map)return;try{remember(`Delete map ${map.id}`);removeMap(state.pkg,map.id);state.selectedId=state.pkg.maps[0]?.id||null;renderAll(`Deleted ${map.id}`);}catch(error){renderAll(`Map not deleted: ${error.message}`);}}
-function undo(){const entry=undoHistory(state.history,state.pkg);if(!entry)return;const preserve=state.selectedId;install(entry.pkg,{preserveId:preserve});renderDiagnostics(`Restored: ${entry.label}`);}
-function redo(){const entry=redoHistory(state.history,state.pkg);if(!entry)return;const preserve=state.selectedId;install(entry.pkg,{preserveId:preserve});renderDiagnostics(`Restored: ${entry.label}`);}
+function undo(){const index=selectedIndex();const entry=undoHistory(state.history,state.pkg);if(!entry)return;install(entry.pkg,{preserveIndex:index});renderDiagnostics(`Restored: ${entry.label}`);}
+function redo(){const index=selectedIndex();const entry=redoHistory(state.history,state.pkg);if(!entry)return;install(entry.pkg,{preserveIndex:index});renderDiagnostics(`Restored: ${entry.label}`);}
 function exportMaps(){try{validatePackage(state.pkg);const blob=new Blob([`${JSON.stringify(state.pkg,null,2)}\n`],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='elyndor-route-one.maps.json';a.click();URL.revokeObjectURL(url);renderDiagnostics('Exported validated runtime map package');}catch(error){renderDiagnostics(`Export blocked: ${error.message}`);}}
 
 els.mapList.addEventListener('click',event=>{const button=event.target.closest('[data-map-id]');if(button){state.selectedId=button.dataset.mapId;renderAll(`Selected ${state.selectedId}`);}});

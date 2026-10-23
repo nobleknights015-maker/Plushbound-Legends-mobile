@@ -3,6 +3,7 @@ export function clone(value){return typeof structuredClone==='function'?structur
 function isRecord(value){return !!value&&typeof value==='object'&&!Array.isArray(value);}
 function isScalar(value){return value===null||['string','number','boolean'].includes(typeof value);}
 function isPrimitiveList(value){return Array.isArray(value)&&value.every(isScalar);}
+function isRecordList(value){return Array.isArray(value)&&value.every(isRecord);}
 function recordId(record,fallback=''){return String(record?.id??fallback??'').trim();}
 
 const COLLECTION_PROFILES={
@@ -14,6 +15,11 @@ const COLLECTION_PROFILES={
   shops:{title:'Shops',description:'Merchant inventories and economy-facing shop definitions.',template:{id:'new-shop',name:'New Shop'}},
   items:{title:'Items',description:'Consumables and inventory-facing item definitions.',template:{id:'new-item',name:'New Item'}},
   waystitches:{title:'Waystitches',description:'Travel and world-link definitions.',template:{id:'new-waystitch',name:'New Waystitch'}}
+};
+
+const NESTED_RECORD_TEMPLATES={
+  entries:{enemyId:'',weight:1},
+  'rewards.drops':{itemId:'',chance:0}
 };
 
 export function collectionProfile(key=''){
@@ -103,6 +109,53 @@ function getPath(record,path){
   return {exists:true,value:current,parts};
 }
 
+function setPath(record,path,value){
+  const parts=String(path).split('.');let target=record;
+  for(const part of parts.slice(0,-1)){if(!isRecord(target?.[part]))throw new Error(`Unknown nested path: ${path}`);target=target[part];}
+  target[parts.at(-1)]=value;
+}
+
+export function nestedRecordListDescriptors(record={}){
+  if(!isRecord(record)) return [];
+  const out=[];
+  const consider=(path,value)=>{
+    if(!isRecordList(value))return;
+    if(value.length||NESTED_RECORD_TEMPLATES[path])out.push({key:path,label:path.split('.').map(labelFor).join(' · '),group:fieldGroup(path),rows:clone(value),template:clone(NESTED_RECORD_TEMPLATES[path]||{})});
+  };
+  for(const [key,value] of Object.entries(record)){
+    consider(key,value);
+    if(isRecord(value))for(const [childKey,childValue] of Object.entries(value))consider(`${key}.${childKey}`,childValue);
+  }
+  return out;
+}
+
+export function nestedRecordTemplate(path=''){return clone(NESTED_RECORD_TEMPLATES[path]||{});}
+
+export function replaceNestedRecord(record,path,index,nextRow){
+  if(!isRecord(record)||!isRecord(nextRow))throw new Error('Nested row must be a JSON object');
+  const next=clone(record);const found=getPath(next,path);
+  if(!found.exists||!isRecordList(found.value))throw new Error(`Unknown nested record list: ${path}`);
+  if(!Number.isInteger(index)||index<0||index>=found.value.length)throw new Error(`Unknown ${path} row`);
+  found.value[index]=clone(nextRow);return next;
+}
+
+export function addNestedRecord(record,path,row){
+  if(!isRecord(record))throw new Error('Record must be a JSON object');
+  const next=clone(record);const found=getPath(next,path);
+  if(!found.exists||!isRecordList(found.value))throw new Error(`Unknown nested record list: ${path}`);
+  const value=row===undefined?nestedRecordTemplate(path):row;
+  if(!isRecord(value))throw new Error('Nested row must be a JSON object');
+  found.value.push(clone(value));return next;
+}
+
+export function removeNestedRecord(record,path,index){
+  if(!isRecord(record))throw new Error('Record must be a JSON object');
+  const next=clone(record);const found=getPath(next,path);
+  if(!found.exists||!isRecordList(found.value))throw new Error(`Unknown nested record list: ${path}`);
+  if(!Number.isInteger(index)||index<0||index>=found.value.length)throw new Error(`Unknown ${path} row`);
+  found.value.splice(index,1);return next;
+}
+
 function parsePrimitiveList(input,current,pathLabel){
   if(Array.isArray(input)) return clone(input);
   const text=String(input??'').trim();
@@ -127,7 +180,7 @@ export function applyRecordFields(record,fields={}){
     else if(typeof current==='number'){
       value=Number(input);if(!Number.isFinite(value)) throw new Error(`${pathLabel} must be a number`);
     }else value=String(input??'');
-    let target=next;for(const part of found.parts.slice(0,-1))target=target[part];target[found.parts.at(-1)]=value;
+    setPath(next,path,value);
   }
   return next;
 }

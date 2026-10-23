@@ -2,6 +2,7 @@ import { GameState } from '../../engine/src/core/GameState.js';
 import { PlushboundGameSession } from './PlushboundGameSession.js';
 import { GameShellBridge } from './GameShellBridge.js';
 import { GameDomAdapter } from './GameDomAdapter.js';
+import { attachPhoneViewportGuard } from './PhoneViewportGuard.js';
 
 async function loadJson(url) {
   const response = await fetch(url, { cache: 'no-store' });
@@ -88,6 +89,9 @@ export async function bootPlushboundGame({ scope = globalThis, baseUrl } = {}) {
   });
   session.enter(index.start.mapId);
 
+  const viewportGuard = scope.PlushboundPhoneViewportGuard || attachPhoneViewportGuard(scope);
+  scope.PlushboundPhoneViewportGuard = viewportGuard;
+
   const runtime = {
     version: 1,
     engineBaseline: index.engineBaseline,
@@ -97,6 +101,7 @@ export async function bootPlushboundGame({ scope = globalThis, baseUrl } = {}) {
     loadedMapIds: mapPackage.maps.map(map => map.id),
     state,
     session,
+    viewportGuard,
     snapshot: () => session.snapshot()
   };
 
@@ -115,6 +120,7 @@ export async function bootPlushboundGame({ scope = globalThis, baseUrl } = {}) {
       loadedMaps: mapPackage.maps.length
     }
   }));
+  viewportGuard.refresh?.();
   shellBridge.publish?.('ready');
   return runtime;
 }

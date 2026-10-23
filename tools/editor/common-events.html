@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Plushbound Common Events</title>
+  <link rel="stylesheet" href="./editor.css">
+  <link rel="stylesheet" href="./common-events.css">
+</head>
+<body>
+  <div id="commonEventsApp">
+    <header class="topbar">
+      <div><strong>Plushbound Common Events</strong><span class="sub">Reusable MV-style event logic • Engine v1 command-compatible</span></div>
+      <div class="actions">
+        <a class="button" href="./index.html">Map Editor</a>
+        <a class="button" href="./database.html">Database</a>
+        <button id="undoCommon" disabled>Undo</button><button id="redoCommon" disabled>Redo</button>
+        <label class="button file-button">Open Library<input id="commonFile" type="file" accept="application/json,.json"></label>
+        <button id="newLibrary">New Library</button><button id="exportLibrary">Export Library</button>
+      </div>
+    </header>
+    <main class="common-workspace">
+      <aside class="common-list-pane">
+        <section>
+          <div class="common-toolbar"><input id="eventSearch" placeholder="Search common events"><button id="addCommon">+ New</button></div>
+          <div id="libraryMeta" class="meta"></div>
+          <div id="commonList" class="common-list"></div>
+        </section>
+      </aside>
+      <section class="common-editor-pane">
+        <div id="commonEmpty" class="meta">Select or create a common event.</div>
+        <div id="commonEditor" hidden>
+          <section>
+            <h2>Common Event</h2>
+            <div class="two-col"><label>ID<input id="commonId"></label><label>Name<input id="commonName"></label></div>
+            <div class="two-col"><button id="applyCommon">Apply Identity</button><button id="deleteCommon">Delete Event</button></div>
+          </section>
+          <section>
+            <h2>Commands</h2>
+            <div id="commonCommands" class="common-commands"></div>
+            <div class="command-builder">
+              <label>Command Type<select id="commonCommandType"></select></label>
+              <label>Parameters JSON<textarea id="commonCommandParameters" rows="4" spellcheck="false"></textarea></label>
+              <div id="commandHelp" class="note"></div>
+              <button id="addCommonCommand">+ Add Command</button>
+            </div>
+          </section>
+        </div>
+      </section>
+      <aside class="common-help-pane">
+        <section><h2>Runtime Contract</h2><div class="note">Common events are reusable authoring libraries. When inserted into map events, their commands are cloned into the map package, so current Plushbound runtime compatibility is preserved and frozen Engine v1 is unchanged.</div></section>
+        <section><h2>Supported Commands</h2><div id="supportedCommands" class="command-chip-list"></div></section>
+        <section><h2>Validation</h2><div id="commonValidation" class="meta">Library valid.</div></section>
+      </aside>
+    </main>
+  </div>
+  <script type="module" src="./common-events.js"></script>
+</body>
+</html>

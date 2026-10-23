@@ -13,6 +13,7 @@ on:
       - '.github/scripts/moto-g-smoke.sh'
       - '.github/workflows/plushbound-game-android-apk.yml'
       - '.github/workflows/moto-g-production-gate.yml'
+      - '.github/workflows/plushbound-plugin-ci.yml'
 
 jobs:
   build-game-debug-apk:
@@ -35,7 +36,7 @@ jobs:
           node --test engine/tests/freeze_readiness_gate.test.js
           node --test game/tests/*.test.js
           find tools/editor game/runtime engine/src -name '*.js' -print0 | xargs -0 -r -n1 node --check
-          find game/content game/runtime game/assets -name '*.json' -print0 | xargs -0 -r -n1 node -e "JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8'))"
+          find game/content game/runtime game/assets game/plugins -name '*.json' -print0 | xargs -0 -r -n1 node -e "JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8'))"
           bash -n .github/scripts/moto-g-smoke.sh
 
       - name: Assert obsolete demo reconstruction is gone
@@ -56,6 +57,7 @@ jobs:
           cp -R game/content app/src/main/assets/game/content
           cp -R game/runtime app/src/main/assets/game/runtime
           cp -R game/assets app/src/main/assets/game/assets
+          cp -R game/plugins app/src/main/assets/game/plugins
           cp -R engine/src app/src/main/assets/engine/src
           mkdir -p app/src/main/assets/engine/content
           cp engine/content/asset-manifest.json app/src/main/assets/engine/content/asset-manifest.json
@@ -64,7 +66,11 @@ jobs:
           test -f app/src/main/assets/tools/editor/editor-entry.js
           test -f app/src/main/assets/tools/editor/editor.js
           test -f app/src/main/assets/tools/editor/editor.css
+          test -f app/src/main/assets/tools/editor/plugin-manager.html
+          test -f app/src/main/assets/tools/editor/plugin-manager.js
           test -f app/src/main/assets/game/runtime/PlushboundGameSession.js
+          test -f app/src/main/assets/game/runtime/MVPluginRuntime.js
+          test -f app/src/main/assets/game/plugins/plugins.json
           test -f app/src/main/assets/engine/src/core/GameState.js
           test ! -f app/src/main/assets/index.html
           test ! -f app/src/main/assets/game.js
@@ -89,8 +95,10 @@ jobs:
           test -f app/src/main/assets/tools/editor/battle-test.html
           test -f app/src/main/assets/tools/editor/database.html
           test -f app/src/main/assets/tools/editor/common-events.html
+          test -f app/src/main/assets/tools/editor/plugin-manager.html
           test -f app/src/main/assets/game/content/content-index.json
           test -f app/src/main/assets/game/assets/asset-manifest.json
+          test -f app/src/main/assets/game/plugins/plugins.json
           test -f app/src/main/assets/engine/content/asset-manifest.json
           echo 'Clean engine/editor package surface verified'
 
@@ -116,7 +124,7 @@ jobs:
       - name: Build clean editor debug APK
         run: gradle :app:assembleDebug --stacktrace
 
-      - name: Validate APK contains editor, engine and game payload
+      - name: Validate APK contains editor, engine, game and plugin payload
         run: |
           set -euo pipefail
           APK=app/build/outputs/apk/debug/app-debug.apk
@@ -126,7 +134,10 @@ jobs:
           unzip -l "$APK" | grep -q 'assets/tools/editor/index.html'
           unzip -l "$APK" | grep -q 'assets/tools/editor/editor-entry.js'
           unzip -l "$APK" | grep -q 'assets/tools/editor/editor.js'
+          unzip -l "$APK" | grep -q 'assets/tools/editor/plugin-manager.html'
           unzip -l "$APK" | grep -q 'assets/game/runtime/PlushboundGameSession.js'
+          unzip -l "$APK" | grep -q 'assets/game/runtime/MVPluginRuntime.js'
+          unzip -l "$APK" | grep -q 'assets/game/plugins/plugins.json'
           unzip -l "$APK" | grep -q 'assets/engine/src/core/GameState.js'
           sha256sum "$APK" | tee plushbound-editor-apk.sha256
 

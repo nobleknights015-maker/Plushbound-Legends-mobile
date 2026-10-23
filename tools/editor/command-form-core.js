@@ -1,3 +1,7 @@
+import { EDITABLE_COMMANDS } from './editor-core.js';
+
+EDITABLE_COMMANDS.add('PLUGIN_COMMAND');
+
 export const VISUAL_COMMAND_FORMS={
   MESSAGE:{label:'Message',fields:[['text','textarea','Text'],['speaker','text','Speaker'],['portrait','text','Portrait asset']]},
   WAIT:{label:'Wait',fields:[['seconds','number','Seconds']]},
@@ -25,7 +29,8 @@ export const VISUAL_COMMAND_FORMS={
   BGS_FADE:{label:'Fade BGS',fields:[['seconds','number','Seconds']]},
   BATTLE:{label:'Battle',fields:[['encounterId','text','Encounter ID']]},
   SHOP:{label:'Shop',fields:[['shopId','text','Shop ID']]},
-  SCRIPT_HOOK:{label:'Game Hook',fields:[['name','text','Hook name'],['payload','json','Payload']]}
+  SCRIPT_HOOK:{label:'Game Hook',fields:[['name','text','Hook name'],['payload','json','Payload']]},
+  PLUGIN_COMMAND:{label:'MV Plugin Command',fields:[['line','text','Plugin command line']]}
 };
 
 function jsonValue(value,fallback=null){try{return JSON.parse(value);}catch{return fallback;}}
@@ -55,6 +60,7 @@ export function valuesFromParameters(code,parameters=[]){
     case 'SHOP': return {shopId:String(p[0]??'')};
     case 'BATTLE': return {encounterId:String(p[0]??'')};
     case 'SCRIPT_HOOK': return {name:String(p[0]??''),payload:JSON.stringify(p[1]??{})};
+    case 'PLUGIN_COMMAND': return {line:String(p[0]??'')};
     default:return {};
   }
 }
@@ -82,6 +88,24 @@ export function parametersFromValues(code,values={}){
     case 'SHOP': return [String(values.shopId??'')];
     case 'BATTLE': return [String(values.encounterId??'')];
     case 'SCRIPT_HOOK': return [String(values.name??''),jsonValue(String(values.payload??'{}'),{})];
+    case 'PLUGIN_COMMAND': return [String(values.line??'')];
     default:return null;
   }
 }
+
+function installMVEditorEntryPoints(){
+  if(typeof document==='undefined')return;
+  const actions=document.querySelector('.topbar .actions');
+  if(actions&&!actions.querySelector('[data-mv-plugin-manager]')){
+    const button=document.createElement('button');
+    button.type='button';button.dataset.mvPluginManager='true';button.textContent='Plugin Manager';
+    button.addEventListener('click',()=>{location.href='./plugin-manager.html';});
+    actions.append(button);
+  }
+  const select=document.getElementById('newCommandType');
+  if(select&&![...select.options].some(option=>option.value==='PLUGIN_COMMAND')){
+    const option=document.createElement('option');option.value='PLUGIN_COMMAND';option.textContent='PLUGIN_COMMAND';select.append(option);
+  }
+}
+
+if(typeof document!=='undefined')queueMicrotask(installMVEditorEntryPoints);

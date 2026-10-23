@@ -4,11 +4,24 @@ import { GameShellBridge } from './GameShellBridge.js';
 import { GameDomAdapter } from './GameDomAdapter.js';
 import { attachPhoneViewportGuard } from './PhoneViewportGuard.js';
 import { GameSavePersistence } from './GameSavePersistence.js';
+import { createMVPluginRuntime, normalizeMVPluginManifest } from './MVPluginRuntime.js';
 
 async function loadJson(url) {
   const response = await fetch(url, { cache: 'no-store' });
   if (!response.ok) throw new Error(`Failed to load ${url}: ${response.status}`);
   return response.json();
+}
+
+async function loadOptionalJson(url, fallback) {
+  try {
+    const response = await fetch(url, { cache: 'no-store' });
+    if (response.status === 404) return fallback;
+    if (!response.ok) throw new Error(`Failed to load ${url}: ${response.status}`);
+    return response.json();
+  } catch (error) {
+    if (String(error?.message || '').includes(': 404')) return fallback;
+    throw error;
+  }
 }
 
 function resolveBase(scope = globalThis) {
@@ -71,7 +84,12 @@ export async function bootPlushboundGame({ scope = globalThis, baseUrl } = {}) {
   const runtimeBase = baseUrl ? new URL(baseUrl, scope.location?.href) : resolveBase(scope);
   const root = new URL('../', runtimeBase);
   const contentBase = new URL('content/', root);
+  const pluginBase = new URL('plugins/', root);
   const index = await loadJson(new URL('content-index.json', contentBase));
+  const pluginManifest = normalizeMVPluginManifest(await loadOptionalJson(
+    new URL('plugins.json', pluginBase),
+    { schemaVersion: 1, target: 'RPG Maker MV 1.6.x', plugins: [] }
+  ));
 
   const expectedBaseline = '160d9fd95bc0d3db39224f8bb4c5e1e3a1f54425';
   if (index.engineBaseline !== expectedBaseline) {
@@ -83,11 +101,7 @@ export async function bootPlushboundGame({ scope = globalThis, baseUrl } = {}) {
   const contentPackages = loaded.contentPackages.map(packageRecord => packageRecord.data);
 
   const state = new GameState();
-  const session = new PlushboundGameSession({
-    state,
-    contentPackages,
-    mapPackage
-  });
+  const session = new PlushboundGameSession({ state, contentPackages, mapPackage });
   const autosave = new GameSavePersistence({ scope });
   const restoredSave = autosave.restore(session);
   if (!restoredSave) session.enter(index.start.mapId);
@@ -99,14 +113,13 @@ export async function bootPlushboundGame({ scope = globalThis, baseUrl } = {}) {
     version: 1,
     engineBaseline: index.engineBaseline,
     contentIndex: index,
-    loadedPackageIds: loaded.contentPackages.map(packageRecord => packageRecord.entry.id),
-    loadedRuntimePackageIds: loaded.runtimePackages.map(packageRecord => packageRecord.entry.id),
+    runtimeBaseUrl: runtimeBase.href,
+    pluginManifest,
+    mvPlugins: null,
+    loadedPackageIds: loaded.contentPackages.map(record => record.entry.id),
+    loadedRuntimePackageIds: loaded.runtimePackages.map(record => record.entry.id),
     loadedMapIds: mapPackage.maps.map(map => map.id),
-    state,
-    session,
-    viewportGuard,
-    autosave,
-    restoredSave,
+    state, session, viewportGuard, autosave, restoredSave,
     snapshot: () => session.snapshot(),
     saveNow: (reason = 'manual') => autosave.save(session, reason),
     clearAutosave: () => autosave.clear()
@@ -117,16 +130,21 @@ export async function bootPlushboundGame({ scope = globalThis, baseUrl } = {}) {
 
   const shellBridge = scope.PlushboundGameShell || new GameShellBridge({ scope }).attach();
   scope.PlushboundGameShell = shellBridge;
-  if (scope.document && !scope.PlushboundGameDomAdapter) {
-    scope.PlushboundGameDomAdapter = new GameDomAdapter({ scope, bridge: shellBridge }).attach();
-  }
+  if (scope.document && !scope.PlushboundGameDomAdapter) scope.PlushboundGameDomAdapter = new GameDomAdapter({ scope, bridge: shellBridge }).attach();
+
+  const mvPlugins = createMVPluginRuntime({ scope, runtime, manifest: pluginManifest, baseUrl: pluginBase });
+  runtime.mvPlugins = mvPlugins;
+  const pluginStatus = await mvPlugins.loadEnabledPlugins();
 
   scope.dispatchEvent?.(new CustomEvent('plushbound-game-ready', {
     detail: {
       engineBaseline: index.engineBaseline,
       startMapId: index.start.mapId,
       loadedMaps: mapPackage.maps.length,
-      restoredSave
+      restoredSave,
+      mvPluginTarget: pluginStatus.target,
+      configuredPlugins: pluginStatus.configured,
+      loadedPlugins: pluginStatus.loaded.length
     }
   }));
   viewportGuard.refresh?.();

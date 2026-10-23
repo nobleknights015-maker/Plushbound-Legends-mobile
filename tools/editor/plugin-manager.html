@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Plushbound Plugin Manager</title>
+  <link rel="stylesheet" href="./editor.css">
+  <link rel="stylesheet" href="./plugin-manager.css">
+</head>
+<body>
+  <div id="pluginApp">
+    <header class="topbar">
+      <div><strong>Plushbound Plugin Manager</strong><span class="sub">RPG Maker MV-compatible plugin order, status and parameters • game-layer adapter</span></div>
+      <div class="actions">
+        <a class="button" href="./index.html">Map Editor</a>
+        <a class="button" href="./database.html">Database</a>
+        <button id="loadBundled">Load Bundled</button>
+        <label class="button file-button">Open Manifest<input id="manifestFile" type="file" accept="application/json,.json"></label>
+        <label class="button file-button">Inspect Plugin JS<input id="pluginFile" type="file" accept=".js,text/javascript,application/javascript"></label>
+        <button id="exportManifest">Export Manifest</button>
+      </div>
+    </header>
+    <main class="plugin-workspace">
+      <aside class="plugin-list-pane">
+        <section>
+          <div class="plugin-toolbar"><input id="pluginSearch" placeholder="Search plugins"><button id="addBlank">+ Plugin</button></div>
+          <div id="manifestMeta" class="meta"></div>
+          <div id="pluginList" class="plugin-list"></div>
+        </section>
+      </aside>
+      <section class="plugin-editor-pane">
+        <div id="pluginEmpty" class="meta">Select a plugin or import a JavaScript plugin file.</div>
+        <div id="pluginEditor" hidden>
+          <section>
+            <h2>Plugin</h2>
+            <label class="check"><input id="pluginStatus" type="checkbox"> Enabled</label>
+            <div class="two-col"><label>Name<input id="pluginName"></label><label>Packaged Path<input id="pluginPath" placeholder="MyPlugin.js"></label></div>
+            <label>Description<textarea id="pluginDescription" rows="3"></textarea></label>
+            <div class="plugin-row-actions">
+              <button id="moveUp">↑ Earlier</button><button id="moveDown">↓ Later</button>
+              <button id="applyPlugin">Apply</button><button id="deletePlugin">Delete</button>
+            </div>
+          </section>
+          <section>
+            <h2>MV Parameters</h2>
+            <div id="parameterHelp" class="note">Parameters are stored as strings, matching RPG Maker MV's PluginManager contract.</div>
+            <div id="parameterList" class="parameter-list"></div>
+            <div class="two-col"><input id="newParamName" placeholder="Parameter name"><input id="newParamValue" placeholder="Value"></div>
+            <button id="addParameter">+ Parameter</button>
+          </section>
+          <section>
+            <h2>Plugin Help</h2>
+            <pre id="pluginHelp" class="plugin-help">No parsed help metadata.</pre>
+          </section>
+        </div>
+      </section>
+      <aside class="plugin-info-pane">
+        <section><h2>Compatibility</h2><div class="note">MV-style plugins are loaded in manifest order as classic scripts. The compatibility bridge exposes PluginManager, Game_Interpreter plugin commands, MV JavaScript helpers, switches, variables, self switches, party/inventory, player/map facades and core data globals. Deep scene/window/sprite overrides remain tracked by the parity audit until their facades are complete.</div></section>
+        <section><h2>Validation</h2><div id="validationMeta" class="meta"></div><div id="validationIssues" class="page-summary"></div></section>
+        <section><h2>Source Metadata</h2><div id="sourceMeta" class="meta">Select a packaged plugin to inspect its /*: ... */ MV metadata.</div></section>
+      </aside>
+    </main>
+  </div>
+  <script type="module" src="./plugin-manager.js"></script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+.plugin-workspace{display:grid;grid-template-columns:minmax(240px,0.8fr) minmax(360px,1.5fr) minmax(260px,0.9fr);gap:12px;padding:12px;min-height:calc(100dvh - 76px);box-sizing:border-box}
+.plugin-list-pane,.plugin-editor-pane,.plugin-info-pane{min-width:0}
+.plugin-list-pane section,.plugin-editor-pane section,.plugin-info-pane section{margin-bottom:12px}
+.plugin-toolbar{display:flex;gap:8px;align-items:center}
+.plugin-toolbar input{min-width:0;flex:1}
+.plugin-list{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.plugin-card{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;width:100%;text-align:left}
+.plugin-card strong,.plugin-card span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.plugin-card .status-dot{width:10px;height:10px;border-radius:50%;background:#777}
+.plugin-card.enabled .status-dot{background:#6fd18b}
+.plugin-card.selected{outline:2px solid currentColor}
+.plugin-order{font-variant-numeric:tabular-nums;opacity:.75}
+.plugin-row-actions{display:flex;gap:8px;flex-wrap:wrap}
+.parameter-list{display:flex;flex-direction:column;gap:10px;margin:10px 0}
+.parameter-row{border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:10px}
+.parameter-row label{margin:0}
+.parameter-row .parameter-meta{font-size:.86rem;opacity:.75;margin:4px 0 6px}
+.parameter-row input,.parameter-row textarea,.parameter-row select{width:100%;box-sizing:border-box}
+.plugin-help{white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow:auto;margin:0}
+.issue-row{padding:6px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.issue-row.error{font-weight:700}
+@media(max-width:900px){.plugin-workspace{grid-template-columns:1fr 1.25fr}.plugin-info-pane{grid-column:1/-1}}
+@media(max-width:640px){.plugin-workspace{display:flex;flex-direction:column;padding:8px;min-height:auto}.plugin-list-pane,.plugin-editor-pane,.plugin-info-pane{width:100%}.plugin-card,.plugin-row-actions button,.plugin-toolbar button{min-height:44px}.plugin-toolbar{align-items:stretch}.plugin-row-actions{display:grid;grid-template-columns:1fr 1fr}.parameter-row input,.parameter-row textarea,.parameter-row select,#pluginName,#pluginPath,#pluginDescription,#newParamName,#newParamValue{font-size:16px;min-height:44px}}

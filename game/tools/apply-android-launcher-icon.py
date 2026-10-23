@@ -16,9 +16,52 @@ EXPECTED_SOURCE_SHA256 = "ae1ba97e7df969d0451fce2413edc2b50a7b95bbc55e5f9f5cc849
 APP = ROOT / "app/src/main"
 MANIFEST = APP / "AndroidManifest.xml"
 RES = APP / "res"
+BASE64_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 
 if not MANIFEST.is_file():
     raise SystemExit(f"Missing reconstructed Android manifest: {MANIFEST}")
+
+
+def normalized_chunk(part: Path) -> str:
+    return "".join(part.read_text(encoding="ascii").split())
+
+
+def verified_decode(encoded: str):
+    try:
+        decoded = base64.b64decode(encoded, validate=True)
+    except Exception:
+        return None
+    return decoded if hashlib.sha256(decoded).hexdigest() == EXPECTED_SOURCE_SHA256 else None
+
+
+def decode_verified_chunks(parts):
+    chunks = [normalized_chunk(part) for part in parts]
+    encoded = "".join(chunks)
+    decoded = verified_decode(encoded)
+    if decoded is not None:
+        return decoded, "direct"
+
+    # The launcher source is checksum-pinned, so a one-character transport loss can
+    # be repaired without guessing the artwork. Try only legal Base64 characters
+    # at original chunk boundaries and accept exclusively the byte stream whose
+    # SHA-256 equals the committed source checksum.
+    boundaries = []
+    offset = 0
+    for chunk in chunks[:-1]:
+        offset += len(chunk)
+        boundaries.append(offset)
+
+    for boundary in boundaries:
+        for character in BASE64_ALPHABET:
+            candidate = encoded[:boundary] + character + encoded[boundary:]
+            decoded = verified_decode(candidate)
+            if decoded is not None:
+                return decoded, f"repaired missing Base64 character at chunk boundary {boundary}"
+
+    raise SystemExit(
+        "Launcher source chunks cannot be reconstructed to the pinned SHA-256; "
+        "refusing to generate launcher resources from unverified artwork"
+    )
 
 
 def load_source() -> Image.Image:
@@ -30,33 +73,20 @@ def load_source() -> Image.Image:
             raise SystemExit(
                 f"Launcher source chunks are incomplete or misnumbered: {actual_names}"
             )
-        # Chunk files are intentionally line-wrapped for repository readability.
-        # Strict base64 validation rejects whitespace, so normalize every chunk first.
-        encoded = "".join(
-            "".join(part.read_text(encoding="ascii").split())
-            for part in parts
-        )
-        try:
-            source_bytes = base64.b64decode(encoded, validate=True)
-        except Exception as exc:
-            raise SystemExit("Launcher source chunks are not valid base64") from exc
+        source_bytes, mode = decode_verified_chunks(parts)
         digest = hashlib.sha256(source_bytes).hexdigest()
-        if digest != EXPECTED_SOURCE_SHA256:
-            raise SystemExit(
-                f"Launcher source checksum mismatch: expected {EXPECTED_SOURCE_SHA256}, got {digest}"
-            )
         try:
             image = Image.open(BytesIO(source_bytes))
             image.load()
         except Exception as exc:
-            raise SystemExit("Decoded launcher source is not a valid image") from exc
+            raise SystemExit("Verified launcher source bytes are not a valid image") from exc
         if image.width < 128 or image.height < 128:
             raise SystemExit(
                 f"Launcher source is too small: {image.width}x{image.height}"
             )
         print(
             f"Loaded verified launcher source from {len(parts)} text chunk(s): "
-            f"{image.width}x{image.height}, sha256={digest}"
+            f"{image.width}x{image.height}, sha256={digest}, mode={mode}"
         )
         return image.convert("RGBA")
 
@@ -76,8 +106,15 @@ source = load_source()
 def render(size: int) -> Image.Image:
     canvas = Image.new("RGBA", (size, size), (5, 3, 7, 255))
     inset = max(1, round(size * 0.06))
-    target = source.resize((size - inset * 2, size - inset * 2), Image.Resampling.LANCZOS)
-    canvas.alpha_composite(target, (inset, inset))
+    available = size - inset * 2
+    scale = min(available / source.width, available / source.height)
+    target_size = (
+        max(1, round(source.width * scale)),
+        max(1, round(source.height * scale)),
+    )
+    target = source.resize(target_size, Image.Resampling.LANCZOS)
+    offset = ((size - target.width) // 2, (size - target.height) // 2)
+    canvas.alpha_composite(target, offset)
     return canvas
 
 

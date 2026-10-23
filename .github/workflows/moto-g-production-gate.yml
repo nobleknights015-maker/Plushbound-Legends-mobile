@@ -106,66 +106,43 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -memory 4096 -skin 720x1600
           script: |
-            set -euo pipefail
-            PACKAGE=com.plushbound.legends
-            APK=plushbound-moto-g-test.apk
-
             adb wait-for-device
             adb shell wm size 720x1600
             adb shell wm density 270
             adb logcat -c
-
             echo "Installing APK on Moto G class emulator..."
-            adb install -r "$APK"
-
+            adb install -r plushbound-moto-g-test.apk
             echo "Cold launching game..."
-            adb shell monkey -p "$PACKAGE" -c android.intent.category.LAUNCHER 1 >/dev/null
+            adb shell monkey -p com.plushbound.legends -c android.intent.category.LAUNCHER 1 >/dev/null
             sleep 8
-            PID=$(adb shell pidof "$PACKAGE" | tr -d '\r')
-            test -n "$PID"
-
+            test -n "$(adb shell pidof com.plushbound.legends | tr -d '\r')"
             echo "Recording initial memory footprint..."
-            adb shell dumpsys meminfo "$PACKAGE" | tee moto-g-meminfo-initial.txt
-
+            adb shell dumpsys meminfo com.plushbound.legends | tee moto-g-meminfo-initial.txt
             echo "Running constrained interaction smoke..."
-            adb shell monkey -p "$PACKAGE" --pct-touch 35 --pct-motion 20 --pct-nav 15 --pct-majornav 10 --pct-appswitch 5 --throttle 80 -s 20261022 180 >/dev/null || true
+            adb shell monkey -p com.plushbound.legends --pct-touch 35 --pct-motion 20 --pct-nav 15 --pct-majornav 10 --pct-appswitch 5 --throttle 80 -s 20261022 180 >/dev/null || true
             sleep 3
-            PID=$(adb shell pidof "$PACKAGE" | tr -d '\r')
-            test -n "$PID"
-
+            test -n "$(adb shell pidof com.plushbound.legends | tr -d '\r')"
             echo "Background / foreground lifecycle check..."
             adb shell input keyevent KEYCODE_HOME
             sleep 2
-            adb shell monkey -p "$PACKAGE" -c android.intent.category.LAUNCHER 1 >/dev/null
+            adb shell monkey -p com.plushbound.legends -c android.intent.category.LAUNCHER 1 >/dev/null
             sleep 4
-            PID=$(adb shell pidof "$PACKAGE" | tr -d '\r')
-            test -n "$PID"
-
+            test -n "$(adb shell pidof com.plushbound.legends | tr -d '\r')"
             echo "Memory pressure check..."
-            adb shell am send-trim-memory "$PACKAGE" RUNNING_LOW || true
+            adb shell am send-trim-memory com.plushbound.legends RUNNING_LOW || true
             sleep 2
-            PID=$(adb shell pidof "$PACKAGE" | tr -d '\r')
-            test -n "$PID"
-
+            test -n "$(adb shell pidof com.plushbound.legends | tr -d '\r')"
             echo "Force-stop / clean relaunch check..."
-            adb shell am force-stop "$PACKAGE"
+            adb shell am force-stop com.plushbound.legends
             sleep 1
-            adb shell monkey -p "$PACKAGE" -c android.intent.category.LAUNCHER 1 >/dev/null
+            adb shell monkey -p com.plushbound.legends -c android.intent.category.LAUNCHER 1 >/dev/null
             sleep 6
-            PID=$(adb shell pidof "$PACKAGE" | tr -d '\r')
-            test -n "$PID"
-
-            adb shell dumpsys meminfo "$PACKAGE" | tee moto-g-meminfo-final.txt
-            adb shell dumpsys gfxinfo "$PACKAGE" framestats | tee moto-g-gfxinfo.txt || true
+            test -n "$(adb shell pidof com.plushbound.legends | tr -d '\r')"
+            adb shell dumpsys meminfo com.plushbound.legends | tee moto-g-meminfo-final.txt
+            adb shell dumpsys gfxinfo com.plushbound.legends framestats | tee moto-g-gfxinfo.txt || true
             adb logcat -d > moto-g-logcat.txt
-
             echo "Checking for application crashes and ANRs..."
-            if grep -E -A12 -B5 'FATAL EXCEPTION|ANR in com\.plushbound\.legends|Process com\.plushbound\.legends .* has died' moto-g-logcat.txt | grep -q 'com.plushbound.legends'; then
-              echo "Moto G simulation detected a Plushbound crash/ANR"
-              grep -E -A12 -B5 'FATAL EXCEPTION|ANR in com\.plushbound\.legends|Process com\.plushbound\.legends .* has died' moto-g-logcat.txt || true
-              exit 1
-            fi
-
+            if grep -E -A12 -B5 'FATAL EXCEPTION|ANR in com\.plushbound\.legends|Process com\.plushbound\.legends .* has died' moto-g-logcat.txt | grep -q 'com.plushbound.legends'; then echo "Moto G simulation detected a Plushbound crash/ANR"; grep -E -A12 -B5 'FATAL EXCEPTION|ANR in com\.plushbound\.legends|Process com\.plushbound\.legends .* has died' moto-g-logcat.txt || true; exit 1; fi
             echo "Moto G class simulation gate passed."
 
       - name: Record Moto G production gate result

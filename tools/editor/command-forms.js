@@ -19,7 +19,24 @@ function renderForm(code,textarea,host){
 }
 function attachBuilder(select,textarea){if(!select||!textarea)return;let host=textarea.parentElement?.querySelector(':scope > .visual-command-form');if(!host){host=document.createElement('div');host.className='visual-command-form';textarea.parentElement?.insertBefore(host,textarea);}const refresh=()=>renderForm(select.value,textarea,host);select.addEventListener('change',()=>queueMicrotask(refresh));textarea.addEventListener('input',()=>{if(document.activeElement===textarea)queueMicrotask(refresh);});refresh();}
 function commandCode(card){const head=card.querySelector('.command-head,.common-command-head');const text=head?.textContent||'';const match=text.match(/\b([A-Z][A-Z0-9_]+)\b/);return match?.[1]||null;}
-function enhanceCards(root=document){for(const card of root.querySelectorAll('.command-card')){if(card.dataset.visualEnhanced==='1')continue;const code=commandCode(card),textarea=card.querySelector('textarea');if(!code||!textarea||!visualFormSupported(code))continue;card.dataset.visualEnhanced='1';const host=document.createElement('div');host.className='visual-command-form existing-command-form';textarea.before(host);renderForm(code,textarea,host);textarea.addEventListener('input',()=>{if(document.activeElement===textarea)queueMicrotask(()=>renderForm(code,textarea,host));});}}
+let refreshCommandPaste=()=>{};
+function installCommandCardActions(card,code){
+  const editor=window.PlushboundEditor;if(!editor||card.dataset.commandActions==='1'||card.dataset.commandIndex===undefined)return;
+  card.dataset.commandActions='1';const index=Number(card.dataset.commandIndex),head=card.querySelector('.command-head');const readOnly=head?.textContent?.includes('read-only');
+  const host=document.createElement('div');host.className='tool-grid command-structure-actions';host.style.marginTop='.45rem';
+  const duplicate=document.createElement('button');duplicate.type='button';duplicate.textContent='Duplicate';duplicate.dataset.commandAction='duplicate';
+  const copy=document.createElement('button');copy.type='button';copy.textContent='Copy';copy.dataset.commandAction='copy';
+  const up=document.createElement('button');up.type='button';up.textContent='↑';up.dataset.commandAction='up';up.disabled=index<=0;
+  const down=document.createElement('button');down.type='button';down.textContent='↓';down.dataset.commandAction='down';down.disabled=index>=Number(editor.getCommandCount?.()||0)-1;
+  const remove=document.createElement('button');remove.type='button';remove.textContent='Delete';remove.dataset.commandAction='delete';remove.disabled=!!readOnly;remove.title=readOnly?'Read-only commands are preserved and cannot be deleted here':'';
+  host.append(duplicate,copy,up,down,remove);card.append(host);
+  duplicate.addEventListener('click',()=>editor.duplicateCommand?.(index));
+  copy.addEventListener('click',()=>{editor.copyCommand?.(index);refreshCommandPaste();});
+  up.addEventListener('click',()=>editor.moveCommand?.(index,-1));
+  down.addEventListener('click',()=>editor.moveCommand?.(index,1));
+  remove.addEventListener('click',()=>{if(!readOnly&&confirm(`Delete ${code} command?`))editor.deleteCommand?.(index);});
+}
+function enhanceCards(root=document){for(const card of root.querySelectorAll('.command-card')){const code=commandCode(card),textarea=card.querySelector('textarea');installCommandCardActions(card,code);if(card.dataset.visualEnhanced==='1')continue;if(!code||!textarea||!visualFormSupported(code))continue;card.dataset.visualEnhanced='1';const host=document.createElement('div');host.className='visual-command-form existing-command-form';textarea.before(host);renderForm(code,textarea,host);textarea.addEventListener('input',()=>{if(document.activeElement===textarea)queueMicrotask(()=>renderForm(code,textarea,host));});}}
 
 function installEventCopyActions(){
   const editor=window.PlushboundEditor,eventList=document.getElementById('eventList');
@@ -54,10 +71,19 @@ function installPageActions(){
   refresh();return refresh;
 }
 
+function installCommandPaste(){
+  const editor=window.PlushboundEditor,addCommand=document.getElementById('addCommand');
+  if(!editor||!addCommand||document.getElementById('pasteCommand'))return ()=>{};
+  const paste=document.createElement('button');paste.id='pasteCommand';paste.type='button';paste.textContent='Paste Copied Command';paste.style.marginTop='.45rem';addCommand.after(paste);
+  const refresh=()=>{paste.disabled=!editor.getSelectedEventId?.()||!editor.hasCommandClipboard?.();};
+  paste.addEventListener('click',()=>{editor.pasteCommand?.();refresh();});refresh();return refresh;
+}
+
 attachBuilder(document.getElementById('newCommandType'),document.getElementById('newCommandParameters'));
 attachBuilder(document.getElementById('commonCommandType'),document.getElementById('commonCommandParameters'));
+refreshCommandPaste=installCommandPaste();
 enhanceCards();
 const refreshEventCopy=installEventCopyActions();
 const refreshPageActions=installPageActions();
-const observer=new MutationObserver(mutations=>{for(const mutation of mutations)for(const node of mutation.addedNodes)if(node.nodeType===1){if(node.matches?.('.command-card'))enhanceCards(node.parentElement||document);else if(node.querySelector?.('.command-card'))enhanceCards(node);}queueMicrotask(()=>{refreshEventCopy();refreshPageActions();});});observer.observe(document.body,{childList:true,subtree:true});
+const observer=new MutationObserver(mutations=>{for(const mutation of mutations)for(const node of mutation.addedNodes)if(node.nodeType===1){if(node.matches?.('.command-card'))enhanceCards(node.parentElement||document);else if(node.querySelector?.('.command-card'))enhanceCards(node);}queueMicrotask(()=>{refreshEventCopy();refreshPageActions();refreshCommandPaste();});});observer.observe(document.body,{childList:true,subtree:true});
 if(window.PlushboundEditor) import('./reference-audit.js');

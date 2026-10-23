@@ -26,7 +26,14 @@ jobs:
           node --test game/tests/*.test.js
           node - <<'NODE'
           const fs = require('fs');
-          const index = JSON.parse(fs.readFileSync('game/content/content-index.json','utf8'));
+          const path = require('path');
+          const indexPath = 'game/content/content-index.json';
+          const index = JSON.parse(fs.readFileSync(indexPath,'utf8'));
+          const contentDir = path.dirname(indexPath);
+          for (const pkg of [...(index.packages || []), ...(index.runtimePackages || [])]) {
+            const resolved = path.resolve(contentDir, pkg.path);
+            if (!fs.existsSync(resolved)) throw new Error(`Indexed package path does not exist: ${pkg.id} -> ${pkg.path}`);
+          }
           const required = ['verdancia-region','verdancia-population','verdancia-npcs','verdancia-quests-events','verdancia-asset-slots'];
           for (const id of required) if (!index.packages.some(p => p.id === id && p.required)) throw new Error(`Missing required Verdancia package: ${id}`);
           for (const id of ['verdancia-region-maps','verdancia-runtime-contract']) if (!index.runtimePackages.some(p => p.id === id && p.required)) throw new Error(`Missing required Verdancia runtime package: ${id}`);
@@ -185,7 +192,7 @@ jobs:
           check_file app/src/main/assets/game/runtime/elyndor-runtime-contract.json
           check_file app/src/main/assets/game/runtime/verdancia-region.maps.json
           check_file app/src/main/assets/game/runtime/verdancia-runtime-contract.json
-          check_file app/src/main/assets/game/content/verdancia-region.json
+          check_file app/src/main/assets/game/content/regions/verdancia.json
           check_file app/src/main/assets/game/content/verdancia-population.json
           check_file app/src/main/assets/game/content/verdancia-npcs.json
           check_file app/src/main/assets/game/content/verdancia-quests-events.json
@@ -198,6 +205,7 @@ jobs:
 
           check_text app/src/main/assets/game/content/content-index.json '160d9fd95bc0d3db39224f8bb4c5e1e3a1f54425'
           check_text app/src/main/assets/game/content/content-index.json 'plushbound-game-assets'
+          check_text app/src/main/assets/game/content/content-index.json 'regions/verdancia.json'
           check_text app/src/main/assets/game/content/content-index.json 'verdancia-region-maps'
           check_text app/src/main/assets/game/content/content-index.json 'verdancia-runtime-contract'
           check_text app/src/main/assets/game/runtime/AndroidGameBootstrap.js '../../engine-v1/core/GameState.js'
@@ -260,7 +268,7 @@ jobs:
           unzip -l "$APK" | grep -q 'assets/game/runtime/elyndor-route-one.maps.json'
           unzip -l "$APK" | grep -q 'assets/game/runtime/verdancia-region.maps.json'
           unzip -l "$APK" | grep -q 'assets/game/runtime/verdancia-runtime-contract.json'
-          unzip -l "$APK" | grep -q 'assets/game/content/verdancia-region.json'
+          unzip -l "$APK" | grep -q 'assets/game/content/regions/verdancia.json'
           unzip -l "$APK" | grep -q 'assets/game/content/verdancia-population.json'
           unzip -l "$APK" | grep -q 'assets/game/content/verdancia-npcs.json'
           unzip -l "$APK" | grep -q 'assets/game/content/verdancia-quests-events.json'

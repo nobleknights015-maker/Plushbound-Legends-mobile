@@ -21,6 +21,7 @@
     { "id": "environment/waystitch/elyndor-small", "type": "map-object", "requiredFor": ["waystitch-menders-rest"], "status": "planned" },
     { "id": "environment/elyndor/sunthread-bridge", "type": "map-overlay", "requiredFor": ["elyndor-sunthread-crossing"], "status": "planned" },
     { "id": "environment/elyndor/thread-anchor-damaged", "type": "map-object", "requiredFor": ["anchor-west", "anchor-east"], "status": "planned" },
+    { "id": "environment/elyndor/thread-anchor-stable", "type": "map-object", "requiredFor": ["anchor-west", "anchor-east"], "status": "planned" },
     { "id": "environment/elyndor/menders-rest-overlays", "type": "map-overlay", "requiredFor": ["elyndor-menders-rest"], "status": "planned" },
     { "id": "environment/elyndor/nessa-cart", "type": "map-object", "requiredFor": ["elyndor-menders-rest"], "status": "planned" },
     { "id": "environment/elyndor/bram-farmhouse", "type": "map-object", "requiredFor": ["elyndor-menders-rest"], "status": "planned" },

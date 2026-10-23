@@ -1,7 +1,7 @@
 import { BattleEncounterTester } from './battle-test-core.js';
 
 const $=id=>document.getElementById(id);
-const els=Object.fromEntries(['reloadBattle','runtimePackage','battleMap','battleRegion','battleSourceMeta','encounterTableMeta','encounterCandidates','rollEncounter','activeEncounter','resolveVictory','resolveEscape','resolveDefeat','battleQuest','prepareQuest','resetBattleSession','questProgress','battleStatus','battleDiagnostics'].map(id=>[id,$(id)]));
+const els=Object.fromEntries(['reloadBattle','runtimePackage','battleMap','battleRegion','battleSourceMeta','encounterTableMeta','encounterCandidates','rollEncounter','bossMeta','bossList','activeEncounter','resolveVictory','resolveEscape','resolveDefeat','battleQuest','prepareQuest','resetBattleSession','questProgress','battleStatus','battleDiagnostics'].map(id=>[id,$(id)]));
 const state={index:null,contentPackages:[],runtimePackages:[],tester:null,activeRuntimeIndex:-1};
 
 async function loadJson(url){const response=await fetch(url);if(!response.ok)throw new Error(`Could not load ${url} (${response.status})`);return response.json();}
@@ -49,10 +49,15 @@ function renderCandidates(){
   for(const entry of preview.entries){const enemy=state.tester.session.game.enemyDefinition(entry.enemyId);const card=document.createElement('div');card.className='candidate-card';const info=document.createElement('div');const strong=document.createElement('strong');strong.textContent=enemy?.name||entry.enemyId;const small=document.createElement('small');small.textContent=`${entry.enemyId} • weight ${entry.weight??1}${Array.isArray(entry.regions)&&entry.regions.length?` • regions ${entry.regions.join(', ')}`:''}`;info.append(strong,small);const button=document.createElement('button');button.type='button';button.textContent='Test';button.dataset.enemyId=entry.enemyId;card.append(info,button);els.encounterCandidates.append(card);}
 }
 
+function renderBosses(){
+  const bosses=state.tester.bosses();els.bossMeta.textContent=bosses.length?`${bosses.length} boss definition(s) in loaded content`:'No boss definitions in loaded content.';els.bossList.innerHTML='';
+  for(const boss of bosses){const card=document.createElement('div');card.className='candidate-card';const info=document.createElement('div');const strong=document.createElement('strong');strong.textContent=boss.enemy?.name||boss.enemyId;const small=document.createElement('small');small.textContent=`${boss.id} • map ${boss.mapId||'—'} • enemy ${boss.enemyId}${boss.oneTime?' • one-time':''}${boss.completionSwitch?` • switch ${boss.completionSwitch}`:''}`;info.append(strong,small);const button=document.createElement('button');button.type='button';button.textContent='Load Boss';button.dataset.bossId=boss.id;card.append(info,button);els.bossList.append(card);}
+}
+
 function renderActive(){
   const snap=state.tester.snapshot(),encounter=snap.lastEncounter;const active=!!encounter;els.resolveVictory.disabled=!active;els.resolveEscape.disabled=!active;els.resolveDefeat.disabled=!active;
   if(!encounter){els.activeEncounter.className='empty-state';els.activeEncounter.textContent='Pick or select an encounter candidate.';return;}
-  els.activeEncounter.className='active-enemy';const enemy=encounter.enemy||{};const stats=enemy.stats||{};const tags=(enemy.tags||[]).join(', ')||'none';els.activeEncounter.innerHTML=`<strong>${enemy.name||encounter.enemyId}</strong><span>${encounter.enemyId}</span><span>Tags: ${tags}</span><div class="enemy-stats">${Object.entries(stats).map(([key,value])=>`<span>${key}: ${value}</span>`).join('')}</div>`;
+  els.activeEncounter.className='active-enemy';const enemy=encounter.enemy||{};const stats=enemy.stats||{};const tags=(enemy.tags||[]).join(', ')||'none';const boss=encounter.bossDefinition;els.activeEncounter.innerHTML=`<strong>${enemy.name||encounter.enemyId}</strong><span>${encounter.enemyId}${encounter.bossId?` • boss ${encounter.bossId}`:''}</span><span>Tags: ${tags}</span>${boss?`<span>Boss metadata: map ${boss.mapId||'—'}${boss.oneTime?' • one-time':''}${boss.completionSwitch?` • completion switch ${boss.completionSwitch} (not auto-applied)` : ''}</span>`:''}<div class="enemy-stats">${Object.entries(stats).map(([key,value])=>`<span>${key}: ${value}</span>`).join('')}</div>`;
 }
 
 function renderQuestProgress(){
@@ -60,14 +65,14 @@ function renderQuestProgress(){
 }
 
 function renderDiagnostics(message='Ready'){
-  const preview=selectedPreview(),snap=state.tester.snapshot();els.battleStatus.textContent=message;els.battleSourceMeta.textContent=`${state.runtimePackages[state.activeRuntimeIndex]?.id||'runtime'} • ${state.tester.maps().length} map(s) • ${state.tester.battleQuests().length} battle quest(s)`;els.battleDiagnostics.textContent=JSON.stringify({map:els.battleMap.value,region:preview.regionId,table:preview.tableId,candidates:preview.entries.map(entry=>entry.enemyId),activeEncounter:snap.lastEncounter?.enemyId||null,quests:snap.quests},null,2);
+  const preview=selectedPreview(),snap=state.tester.snapshot();els.battleStatus.textContent=message;els.battleSourceMeta.textContent=`${state.runtimePackages[state.activeRuntimeIndex]?.id||'runtime'} • ${state.tester.maps().length} map(s) • ${state.tester.battleQuests().length} battle quest(s) • ${state.tester.bosses().length} boss definition(s)`;els.battleDiagnostics.textContent=JSON.stringify({map:els.battleMap.value,region:preview.regionId,table:preview.tableId,candidates:preview.entries.map(entry=>entry.enemyId),bosses:state.tester.bosses().map(boss=>({id:boss.id,mapId:boss.mapId,enemyId:boss.enemyId,oneTime:boss.oneTime,completionSwitch:boss.completionSwitch})),activeEncounter:snap.lastEncounter?.enemyId||null,quests:snap.quests},null,2);
 }
 
-function refreshAll(message='Ready'){renderCandidates();renderActive();renderQuestProgress();renderDiagnostics(message);}
+function refreshAll(message='Ready'){renderCandidates();renderBosses();renderActive();renderQuestProgress();renderDiagnostics(message);}
 
 function pick(enemyId=null){const encounter=state.tester.pickEncounter({mapId:els.battleMap.value,regionId:Number(els.battleRegion.value)||0,enemyId});refreshAll(encounter?`Encounter loaded: ${encounter.enemy?.name||encounter.enemyId}`:'No eligible encounter candidate');}
-
-function resolve(result){try{const resolved=state.tester.resolveEncounter(result);refreshAll(`Resolved ${resolved.encounter.enemy?.name||resolved.encounter.enemyId}: ${result}`);}catch(error){refreshAll(error.message);}}
+function loadBoss(id){try{const encounter=state.tester.loadBoss(id);refreshAll(`Boss definition loaded: ${encounter.enemy?.name||encounter.enemyId}`);}catch(error){refreshAll(error.message);}}
+function resolve(result){try{const resolved=state.tester.resolveEncounter(result);const bossNote=resolved.encounter.bossId&&result==='victory'?' • boss completion switch is not auto-applied by current runtime':'';refreshAll(`Resolved ${resolved.encounter.enemy?.name||resolved.encounter.enemyId}: ${result}${bossNote}`);}catch(error){refreshAll(error.message);}}
 
 function prepareQuest(){const id=els.battleQuest.value;if(!id)return;try{const definition=state.tester.session.game.questDefinition(id);for(const prerequisite of definition?.prerequisites||[])if(prerequisite.questComplete)state.tester.setQuestCompleteForTest(prerequisite.questComplete);state.tester.startQuest(id);refreshAll(`Started quest sandbox: ${definition?.name||id}`);}catch(error){refreshAll(`Quest could not start: ${error.message}`);}}
 
@@ -75,6 +80,7 @@ els.runtimePackage.addEventListener('change',()=>{state.activeRuntimeIndex=Numbe
 els.battleMap.addEventListener('change',()=>{state.tester.enterMap(els.battleMap.value,0,0);refreshAll(`Map selected: ${els.battleMap.value}`);});
 els.battleRegion.addEventListener('input',()=>refreshAll('Region preview updated'));
 els.encounterCandidates.addEventListener('click',event=>{const button=event.target.closest('[data-enemy-id]');if(button)pick(button.dataset.enemyId);});
+els.bossList.addEventListener('click',event=>{const button=event.target.closest('[data-boss-id]');if(button)loadBoss(button.dataset.bossId);});
 els.rollEncounter.addEventListener('click',()=>pick());
 els.resolveVictory.addEventListener('click',()=>resolve('victory'));els.resolveEscape.addEventListener('click',()=>resolve('escape'));els.resolveDefeat.addEventListener('click',()=>resolve('defeat'));
 els.battleQuest.addEventListener('change',()=>refreshAll('Quest selection updated'));els.prepareQuest.addEventListener('click',prepareQuest);els.resetBattleSession.addEventListener('click',()=>{createTester();renderQuests();refreshAll('Battle test session reset');});els.reloadBattle.addEventListener('click',()=>loadProject().catch(error=>{els.battleStatus.textContent=error.message;}));

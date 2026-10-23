@@ -68,3 +68,19 @@ test('common event removal returns a new valid library', () => {
 test('common events reject unknown extension commands', () => {
   assert.throws(()=>addCommonEvent(createCommonEventLibrary(),{id:'bad',commands:[{code:'UNKNOWN',parameters:[]}]}),/unsupported command/i);
 });
+
+test('common event libraries reject missing runtime targets', () => {
+  assert.throws(()=>validateCommonEventLibrary({schemaVersion:1,commonEvents:[
+    {id:'caller',commands:[{code:'COMMON_EVENT',parameters:['missing']}]}
+  ]}),/references unknown common event: missing/i);
+});
+
+test('common event libraries reject direct and indirect recursion', () => {
+  assert.throws(()=>validateCommonEventLibrary({schemaVersion:1,commonEvents:[
+    {id:'loop',commands:[{code:'COMMON_EVENT',parameters:['loop']}]}
+  ]}),/recursive common event cycle: loop -> loop/i);
+  assert.throws(()=>validateCommonEventLibrary({schemaVersion:1,commonEvents:[
+    {id:'a',commands:[{code:'COMMON_EVENT',parameters:['b']}]},
+    {id:'b',commands:[{code:'COMMON_EVENT',parameters:['a']}]}
+  ]}),/recursive common event cycle: a -> b -> a/i);
+});

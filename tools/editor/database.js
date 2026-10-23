@@ -9,6 +9,7 @@ function activePackage(){return state.packages[state.packageIndex]||null;}
 function activeRows(){const entry=activePackage();return entry&&state.collectionKey?collectionRecords(entry.data,state.collectionKey):[];}
 function selectedRow(){return activeRows().find(row=>String(row.locator)===String(state.selectedLocator))||null;}
 function snapshot(label){const entry=activePackage();if(!entry?.data)return;state.history.undo.push({label,data:clone(entry.data),packageIndex:state.packageIndex,collectionKey:state.collectionKey,selectedLocator:state.selectedLocator});if(state.history.undo.length>state.history.limit)state.history.undo.splice(0,state.history.undo.length-state.history.limit);state.history.redo=[];updateHistoryButtons();}
+function discardSnapshot(label){if(state.history.undo.at(-1)?.label===label)state.history.undo.pop();updateHistoryButtons();}
 function historyEntry(label){const entry=activePackage();return entry?.data?{label,data:clone(entry.data),packageIndex:state.packageIndex,collectionKey:state.collectionKey,selectedLocator:state.selectedLocator}:null;}
 function restoreHistory(entry){if(!entry)return false;state.packageIndex=entry.packageIndex;const active=activePackage();if(!active)return false;active.data=clone(entry.data);state.collectionKey=entry.collectionKey;state.selectedLocator=entry.selectedLocator;renderAll();return true;}
 function undo(){if(!state.history.undo.length)return false;const current=historyEntry(state.history.undo.at(-1).label);const previous=state.history.undo.pop();if(current)state.history.redo.push(current);const ok=restoreHistory(previous);updateHistoryButtons();return ok;}
@@ -51,7 +52,7 @@ function renderInspector(){
     else if(field.type==='number'){input=document.createElement('input');input.type='number';input.value=String(field.value);label.append(input);}
     else if(String(field.value).length>80||/description|summary|text|notes?/i.test(field.key)){label.classList.add('wide');input=document.createElement('textarea');input.value=String(field.value);label.append(input);}
     else{input=document.createElement('input');input.type='text';input.value=String(field.value);label.append(input);}
-    input.dataset.fieldInput=field.key;
+    input.dataset.fieldInput=field.key;els.fieldEditor.append(label);
   }
 }
 function renderValidation(){
@@ -62,31 +63,31 @@ function selectPackage(index){state.packageIndex=Number(index);state.collectionK
 function selectCollection(key){state.collectionKey=key;state.selectedLocator=null;renderAll();}
 function selectRecord(locator){state.selectedLocator=locator;renderRecords();renderInspector();renderValidation();}
 function applyFields(){
-  const entry=activePackage(),row=selectedRow();if(!entry||!row)return;
+  const entry=activePackage(),row=selectedRow();if(!entry||!row)return;const label=`Edit ${row.id} fields`;
   try{
     const fields={};for(const input of els.fieldEditor.querySelectorAll('[data-field-input]'))fields[input.dataset.fieldInput]=input.type==='checkbox'?input.checked:input.value;
-    const next=applyScalarFields(row.record,fields);snapshot(`Edit ${row.id} fields`);replaceRecord(entry.data,state.collectionKey,row.locator,next);renderAll();selectRecord(row.locator);
-  }catch(error){alert(`Fields not changed: ${error.message}`);}
+    const next=applyScalarFields(row.record,fields);snapshot(label);replaceRecord(entry.data,state.collectionKey,row.locator,next);renderAll();selectRecord(row.locator);
+  }catch(error){discardSnapshot(label);alert(`Fields not changed: ${error.message}`);}
 }
 function applyRecord(){
-  const entry=activePackage(),row=selectedRow();if(!entry||!row)return;
-  try{const next=JSON.parse(els.recordJson.value);snapshot(`Edit ${row.id} JSON`);replaceRecord(entry.data,state.collectionKey,row.locator,next);renderAll();selectRecord(row.locator);}
-  catch(error){if(state.history.undo.at(-1)?.label===`Edit ${row.id} JSON`)state.history.undo.pop();updateHistoryButtons();alert(`Record not changed: ${error.message}`);}
+  const entry=activePackage(),row=selectedRow();if(!entry||!row)return;const label=`Edit ${row.id} JSON`;
+  try{const next=JSON.parse(els.recordJson.value);snapshot(label);replaceRecord(entry.data,state.collectionKey,row.locator,next);renderAll();selectRecord(row.locator);}
+  catch(error){discardSnapshot(label);alert(`Record not changed: ${error.message}`);}
 }
 function newRecord(){
-  const entry=activePackage();if(!entry||!state.collectionKey)return;const seed={id:`new-${state.collectionKey.replace(/[^a-z0-9]+/gi,'-').toLowerCase()}-${Date.now().toString(36)}`,name:'New Record'};
-  try{snapshot(`Create ${seed.id}`);addRecord(entry.data,state.collectionKey,seed);const row=collectionRecords(entry.data,state.collectionKey).at(-1);state.selectedLocator=row.locator;renderAll();}
-  catch(error){alert(`Record not added: ${error.message}`);}
+  const entry=activePackage();if(!entry||!state.collectionKey)return;const seed={id:`new-${state.collectionKey.replace(/[^a-z0-9]+/gi,'-').toLowerCase()}-${Date.now().toString(36)}`,name:'New Record'};const label=`Create ${seed.id}`;
+  try{snapshot(label);addRecord(entry.data,state.collectionKey,seed);const row=collectionRecords(entry.data,state.collectionKey).at(-1);state.selectedLocator=row.locator;renderAll();}
+  catch(error){discardSnapshot(label);alert(`Record not added: ${error.message}`);}
 }
 function duplicateRecord(){
-  const entry=activePackage(),row=selectedRow();if(!entry||!row)return;const copy=clone(row.record);copy.id=`${row.id}-copy`;if(copy.name)copy.name=`${copy.name} Copy`;
-  try{snapshot(`Duplicate ${row.id}`);addRecord(entry.data,state.collectionKey,copy);const next=collectionRecords(entry.data,state.collectionKey).find(candidate=>candidate.id===copy.id);state.selectedLocator=next?.locator??null;renderAll();}
-  catch(error){alert(`Record not duplicated: ${error.message}`);}
+  const entry=activePackage(),row=selectedRow();if(!entry||!row)return;const copy=clone(row.record);copy.id=`${row.id}-copy`;if(copy.name)copy.name=`${copy.name} Copy`;const label=`Duplicate ${row.id}`;
+  try{snapshot(label);addRecord(entry.data,state.collectionKey,copy);const next=collectionRecords(entry.data,state.collectionKey).find(candidate=>candidate.id===copy.id);state.selectedLocator=next?.locator??null;renderAll();}
+  catch(error){discardSnapshot(label);alert(`Record not duplicated: ${error.message}`);}
 }
 function deleteRecord(){
-  const entry=activePackage(),row=selectedRow();if(!entry||!row)return;if(!confirm(`Delete ${row.id}?`))return;
-  try{snapshot(`Delete ${row.id}`);removeRecord(entry.data,state.collectionKey,row.locator);state.selectedLocator=null;renderAll();}
-  catch(error){alert(`Record not deleted: ${error.message}`);}
+  const entry=activePackage(),row=selectedRow();if(!entry||!row)return;if(!confirm(`Delete ${row.id}?`))return;const label=`Delete ${row.id}`;
+  try{snapshot(label);removeRecord(entry.data,state.collectionKey,row.locator);state.selectedLocator=null;renderAll();}
+  catch(error){discardSnapshot(label);alert(`Record not deleted: ${error.message}`);}
 }
 function exportPackage(){
   const entry=activePackage();if(!entry?.data)return;const issues=state.collectionKey?validateCollection(entry.data,state.collectionKey):[];if(issues.some(issue=>issue.severity==='error')){alert('Fix database validation errors before export.');return;}const blob=new Blob([`${JSON.stringify(entry.data,null,2)}\n`],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=entry.path.split('/').at(-1)||`${entry.id}.json`;a.click();URL.revokeObjectURL(url);

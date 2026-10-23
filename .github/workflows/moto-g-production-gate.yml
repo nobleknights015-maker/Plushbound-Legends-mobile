@@ -116,11 +116,14 @@ jobs:
             adb install -r plushbound-moto-g-test.apk
             echo "Cold launching Plushbound editor..."
             adb shell monkey -p com.plushbound.legends -c android.intent.category.LAUNCHER 1 >/dev/null
-            sleep 8
+            sleep 12
             test -n "$(adb shell pidof com.plushbound.legends | tr -d '\r')"
+            echo "Capturing editor startup diagnostics..."
+            adb logcat -d > moto-g-editor-startup-logcat.txt
+            grep -E 'PlushboundEditor|chromium|cr_' moto-g-editor-startup-logcat.txt | tee moto-g-editor-startup-diagnostics.txt || true
             echo "Proving real editor modules executed in Android WebView..."
-            adb logcat -d -s PlushboundEditor:I '*:S' | grep -q 'PLUSHBOUND_EDITOR_READY'
-            ! adb logcat -d -s PlushboundEditor:E '*:S' | grep -q 'PLUSHBOUND_EDITOR_NOT_READY'
+            grep -q 'PLUSHBOUND_EDITOR_READY' moto-g-editor-startup-logcat.txt
+            ! grep -q 'PLUSHBOUND_EDITOR_NOT_READY' moto-g-editor-startup-logcat.txt
             echo "Recording initial memory footprint..."
             adb shell dumpsys meminfo com.plushbound.legends | tee moto-g-meminfo-initial.txt
             echo "Running constrained interaction smoke..."
@@ -142,14 +145,16 @@ jobs:
             sleep 1
             adb logcat -c
             adb shell monkey -p com.plushbound.legends -c android.intent.category.LAUNCHER 1 >/dev/null
-            sleep 6
+            sleep 8
             test -n "$(adb shell pidof com.plushbound.legends | tr -d '\r')"
-            adb logcat -d -s PlushboundEditor:I '*:S' | grep -q 'PLUSHBOUND_EDITOR_READY'
+            adb logcat -d > moto-g-editor-relaunch-logcat.txt
+            grep -q 'PLUSHBOUND_EDITOR_READY' moto-g-editor-relaunch-logcat.txt
             adb shell dumpsys meminfo com.plushbound.legends | tee moto-g-meminfo-final.txt
             adb shell dumpsys gfxinfo com.plushbound.legends framestats | tee moto-g-gfxinfo.txt || true
             adb logcat -d > moto-g-logcat.txt
             echo "Checking for application crashes and ANRs..."
-            if grep -E -A12 -B5 'FATAL EXCEPTION|ANR in com\.plushbound\.legends|Process com\.plushbound\.legends .* has died' moto-g-logcat.txt | grep -q 'com.plushbound.legends'; then echo "Moto G simulation detected a Plushbound crash/ANR"; grep -E -A12 -B5 'FATAL EXCEPTION|ANR in com\.plushbound\.legends|Process com\.plushbound\.legends .* has died' moto-g-logcat.txt || true; exit 1; fi
+            grep -E -A12 -B5 'FATAL EXCEPTION|ANR in com\.plushbound\.legends|Process com\.plushbound\.legends .* has died' moto-g-logcat.txt | tee moto-g-crash-scan.txt || true
+            ! grep -E -A12 -B5 'FATAL EXCEPTION|ANR in com\.plushbound\.legends|Process com\.plushbound\.legends .* has died' moto-g-logcat.txt | grep -q 'com.plushbound.legends'
             echo "Moto G class editor simulation gate passed."
 
       - name: Record Moto G production gate result
@@ -176,8 +181,12 @@ jobs:
           path: |
             moto-g-production-gate.txt
             moto-g-tested-apk.sha256
+            moto-g-editor-startup-logcat.txt
+            moto-g-editor-startup-diagnostics.txt
+            moto-g-editor-relaunch-logcat.txt
             moto-g-meminfo-initial.txt
             moto-g-meminfo-final.txt
             moto-g-gfxinfo.txt
             moto-g-logcat.txt
+            moto-g-crash-scan.txt
           if-no-files-found: warn

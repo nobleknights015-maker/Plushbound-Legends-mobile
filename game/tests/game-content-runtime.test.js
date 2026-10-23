@@ -21,6 +21,16 @@ function completeFirstQuest(game) {
   game.completeQuest('a-thread-begins');
 }
 
+function completeSecondQuest(game) {
+  game.startQuest('threads-out-of-tune');
+  game.progressObjective('threads-out-of-tune', 'inspect-west-anchor', 1);
+  game.progressObjective('threads-out-of-tune', 'inspect-east-anchor', 1);
+  game.recordBattle(['crossing-frayling']);
+  game.recordBattle(['crossing-frayling']);
+  game.recordBattle(['crossing-frayling']);
+  game.completeQuest('threads-out-of-tune');
+}
+
 test('A Thread Begins progresses from first meeting through battle to turn-in rewards', () => {
   const { state, game } = setup();
   const started = game.startQuest('a-thread-begins');
@@ -71,7 +81,7 @@ test('Threads Out of Tune requires both anchors and three crossing battles', () 
   assert.equal(state.sw('waystitch:menders-rest:unlocked'), true);
 });
 
-test('item grants and Waystitch activation are game-layer hooks with saved state', () => {
+test('item grants and Waystitch activation are data-defined game-layer hooks with saved state', () => {
   const { state, game } = setup();
   game.emit('inventory.give', { itemId: 'threadmend-tonic', count: 1 });
   assert.equal(state.count('items', 'threadmend-tonic'), 1);
@@ -79,8 +89,12 @@ test('item grants and Waystitch activation are game-layer hooks with saved state
   game.emit('waystitch.activate', { waystitchId: 'elyndor-first-waystitch' });
   assert.equal(state.sw('waystitch:elyndor-first:active'), true);
 
+  assert.throws(() => game.emit('waystitch.activate', { waystitchId: 'waystitch-menders-rest' }), /locked by quest/);
+  completeFirstQuest(game);
+  completeSecondQuest(game);
   game.emit('waystitch.activate', { waystitchId: 'waystitch-menders-rest' });
   assert.equal(state.sw('waystitch:menders-rest:active'), true);
+  assert.throws(() => game.emit('waystitch.activate', { waystitchId: 'missing-waystitch' }), /Unknown Waystitch/);
 });
 
 test('quest completion is guarded against premature turn-in and duplicate rewards', () => {

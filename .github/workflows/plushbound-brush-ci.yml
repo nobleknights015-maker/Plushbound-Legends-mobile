@@ -122,8 +122,8 @@ jobs:
           await page.fill('#tileId','52');
           await page.click('[data-tool="tile"]');
           const leapHistoryBefore=await page.evaluate(()=>window.PlushboundEditor.getHistory().undo);
-          const leapStart=await page.locator('.tile[data-x="2"][data-y="6"]').boundingBox();
-          const leapFinish=await page.locator('.tile[data-x="8"][data-y="6"]').boundingBox();
+          const leapStart=await page.locator('.tile[data-x="10"][data-y="10"]').boundingBox();
+          const leapFinish=await page.locator('.tile[data-x="14"][data-y="10"]').boundingBox();
           assert.ok(leapStart&&leapFinish);
           await page.mouse.move(leapStart.x+leapStart.width/2,leapStart.y+leapStart.height/2);
           await page.mouse.down();
@@ -132,13 +132,13 @@ jobs:
           assert.equal(await page.evaluate(()=>window.PlushboundEditor.getHistory().undo),leapHistoryBefore+1);
           assert.deepEqual(await page.evaluate(()=>{
             const map=window.PlushboundEditor.getPackage().maps[0],layer=map.layers[0];
-            return Array.from({length:7},(_,i)=>layer.data[6*map.width+(i+2)]);
-          }),new Array(7).fill(52));
+            return Array.from({length:5},(_,i)=>layer.data[10*map.width+(i+10)]);
+          }),new Array(5).fill(52));
           await page.click('#undoEdit');
           assert.deepEqual(await page.evaluate(()=>{
             const map=window.PlushboundEditor.getPackage().maps[0],layer=map.layers[0];
-            return Array.from({length:7},(_,i)=>layer.data[6*map.width+(i+2)]);
-          }),new Array(7).fill(0));
+            return Array.from({length:5},(_,i)=>layer.data[10*map.width+(i+10)]);
+          }),new Array(5).fill(0));
 
           await page.selectOption('#brushSize','3');
           await page.click('[data-tool="region"]');

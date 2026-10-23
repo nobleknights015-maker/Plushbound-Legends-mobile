@@ -1,0 +1,98 @@
+name: Plushbound Map Manager CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [plushbound-game-development]
+    paths:
+      - 'tools/editor/map-manager.html'
+      - 'tools/editor/map-manager.css'
+      - 'tools/editor/map-manager.js'
+      - 'tools/editor/map-management-core.js'
+      - 'tools/editor/editor-core.js'
+      - 'game/tests/map-management-core.test.js'
+      - 'game/runtime/*.maps.json'
+      - '.github/workflows/plushbound-map-manager-ci.yml'
+  pull_request:
+    paths:
+      - 'tools/editor/map-manager.html'
+      - 'tools/editor/map-manager.css'
+      - 'tools/editor/map-manager.js'
+      - 'tools/editor/map-management-core.js'
+      - 'tools/editor/editor-core.js'
+      - 'game/tests/map-management-core.test.js'
+      - 'game/runtime/*.maps.json'
+      - '.github/workflows/plushbound-map-manager-ci.yml'
+
+jobs:
+  map-manager-simulation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run map management contracts
+        run: |
+          node --check tools/editor/map-management-core.js
+          node --check tools/editor/map-manager.js
+          node --test game/tests/map-management-core.test.js
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: Serve repository
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >map-manager-http.log 2>&1 &
+          for i in {1..20}; do
+            curl -fsS http://127.0.0.1:4173/tools/editor/map-manager.html >/dev/null && exit 0
+            sleep 1
+          done
+          cat map-manager-http.log
+          exit 1
+      - name: Simulate map management on Android viewport
+        run: |
+          node --input-type=module <<'NODE'
+          import {chromium} from 'playwright';
+          import assert from 'node:assert/strict';
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:412,height:915}});
+          const errors=[];page.on('pageerror',error=>errors.push(String(error)));
+          await page.goto('http://127.0.0.1:4173/tools/editor/map-manager.html');
+          await page.waitForSelector('#mapList [data-map-id]');
+          const initial=await page.locator('#mapList [data-map-id]').count();
+          assert.ok(initial>=2);
+
+          const first=page.locator('#mapList [data-map-id]').first();
+          await first.click();
+          const sourceId=await page.inputValue('#mapId');
+          await page.click('#duplicateMap');
+          assert.equal(await page.locator('#mapList [data-map-id]').count(),initial+1);
+          const copyId=await page.inputValue('#mapId');
+          assert.notEqual(copyId,sourceId);
+          assert.match(copyId,/copy/);
+
+          await page.fill('#mapId',`${copyId}-renamed`);
+          await page.fill('#mapName','Android Map Copy');
+          await page.click('#applyMap');
+          assert.equal(await page.inputValue('#mapName'),'Android Map Copy');
+          assert.match(await page.textContent('#mapStatus'),/Renamed/i);
+
+          await page.click('#undoMaps');
+          assert.equal(await page.inputValue('#mapId'),copyId);
+          await page.click('#redoMaps');
+          assert.equal(await page.inputValue('#mapName'),'Android Map Copy');
+
+          await page.fill('#newMapId','android-test-map');
+          await page.fill('#newMapName','Android Test Map');
+          await page.fill('#newMapWidth','8');
+          await page.fill('#newMapHeight','6');
+          await page.click('#createMap');
+          assert.equal(await page.inputValue('#mapId'),'android-test-map');
+          assert.equal(await page.inputValue('#mapWidth'),'8');
+          assert.equal(await page.inputValue('#mapHeight'),'6');
+          assert.deepEqual(errors,[]);
+          await browser.close();
+          console.log('Android map management simulation passed');
+          NODE

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {editorDestination,readEditorLink} from '../../tools/editor/editor-navigation-core.js';
+import {editorDestination,diagnosticDestination,readEditorLink,readSearchLink} from '../../tools/editor/editor-navigation-core.js';
 import {indexSource} from '../../tools/editor/project-search-core.js';
 
 test('content search records deep link to exact database record',()=>{
@@ -23,6 +23,15 @@ test('asset records route audio to Audio Browser and visual assets to Map Editor
   assert.equal(editorDestination(rows.find(row=>row.context?.assetId==='npc/lio/sprite')),'./index.html?asset=npc%2Flio%2Fsprite');
 });
 
-test('deep-link parser safely exposes supported editor targets',()=>{
+test('diagnostics route runtime issues to exact events and content issues to prefiltered search',()=>{
+  assert.equal(diagnosticDestination({mapId:'crossing',eventId:'anchor-west',id:'missing-shop'}),'./index.html?map=crossing&event=anchor-west');
+  assert.equal(diagnosticDestination({mapId:'crossing',id:'missing-map-ref'}),'./map-manager.html?map=crossing');
+  assert.equal(diagnosticDestination({owner:'quest:threads-out-of-tune',id:'missing-item'}),'./project-search.html?q=missing-item&type=content');
+  assert.equal(diagnosticDestination({owner:'shop:menders-rest-provisions'}),'./project-search.html?q=menders-rest-provisions&type=content');
+});
+
+test('deep-link parsers safely expose supported targets and reject unknown source filters',()=>{
   assert.deepEqual(readEditorLink('?package=route&collection=quests&record=q1&map=m1&event=e1&asset=a1'),{packageId:'route',collectionKey:'quests',recordId:'q1',mapId:'m1',eventId:'e1',assetId:'a1'});
+  assert.deepEqual(readSearchLink('?q=threads-out-of-tune&type=content'),{query:'threads-out-of-tune',sourceType:'content'});
+  assert.deepEqual(readSearchLink('?q=test&type=unknown'),{query:'test',sourceType:''});
 });

@@ -57,7 +57,7 @@ jobs:
           const errors=[];page.on('pageerror',error=>errors.push(String(error)));
           await page.goto('http://127.0.0.1:4173/tools/editor/database.html');
           await page.click('#loadDatabase');
-          await page.waitForFunction(()=>window.PlushboundDatabase?.getPackages?.()?.length>0);
+          await page.waitForSelector('#packageList [data-package-index]');
           const route=page.locator('#packageList [data-package-index]').filter({hasText:'elyndor-route-one'}).first();
           await route.click();
           await page.click('#collectionList [data-collection-key="quests"]');

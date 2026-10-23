@@ -1,0 +1,112 @@
+name: Plushbound Event Copy UI CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ plushbound-game-development ]
+    paths:
+      - 'tools/editor/editor.js'
+      - 'tools/editor/event-copy-core.js'
+      - 'tools/editor/command-forms.js'
+      - 'tools/editor/index.html'
+      - 'game/tests/event-copy-core.test.js'
+      - '.github/workflows/plushbound-event-copy-ui-ci.yml'
+  pull_request:
+    paths:
+      - 'tools/editor/editor.js'
+      - 'tools/editor/event-copy-core.js'
+      - 'tools/editor/command-forms.js'
+      - 'tools/editor/index.html'
+      - 'game/tests/event-copy-core.test.js'
+      - '.github/workflows/plushbound-event-copy-ui-ci.yml'
+
+jobs:
+  event-copy-ui-simulation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run event copy contracts
+        run: |
+          node --check tools/editor/event-copy-core.js
+          node --check tools/editor/editor.js
+          node --check tools/editor/command-forms.js
+          node --test game/tests/event-copy-core.test.js
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: Serve repository
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >event-copy-http.log 2>&1 &
+          for i in {1..20}; do
+            curl -fsS http://127.0.0.1:4173/tools/editor/index.html >/dev/null && exit 0
+            sleep 1
+          done
+          cat event-copy-http.log
+          exit 1
+      - name: Simulate event copy paste and undo on Android viewport
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+          import assert from 'node:assert/strict';
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:412,height:915}});
+          const errors=[];page.on('pageerror',error=>errors.push(String(error)));
+          await page.goto('http://127.0.0.1:4173/tools/editor/index.html');
+          await page.click('#loadElyndor');
+          await page.waitForFunction(()=>window.PlushboundEditor?.getPackage()?.maps?.length===3);
+          assert.ok(await page.locator('#eventCopyActions').count());
+          await page.click('[data-event-id="lio"]');
+          assert.equal(await page.isDisabled('#duplicateEvent'),false);
+          assert.equal(await page.isDisabled('#copyEvent'),false);
+          assert.equal(await page.isDisabled('#pasteEvent'),true);
+
+          await page.fill('#eventX','17');
+          await page.click('#applyEvent');
+          assert.equal(await page.evaluate(()=>window.PlushboundEditor.getHistory().undo),1);
+          assert.equal(await page.evaluate(()=>window.PlushboundEditor.getPackage().maps[0].events.find(e=>e.id==='lio').x),17);
+
+          await page.click('#copyEvent');
+          assert.equal(await page.isDisabled('#pasteEvent'),false);
+          await page.click('#pasteEvent');
+          let snapshot=await page.evaluate(()=>({pkg:window.PlushboundEditor.getPackage(),history:window.PlushboundEditor.getHistory(),selected:window.PlushboundEditor.getSelectedEventId()}));
+          const map=snapshot.pkg.maps[0],source=map.events.find(e=>e.id==='lio'),copy=map.events.find(e=>e.id==='lio-copy');
+          assert.ok(copy);
+          assert.equal(snapshot.selected,'lio-copy');
+          assert.equal(snapshot.history.undo,2);
+          assert.deepEqual(copy.pages,source.pages);
+          assert.notEqual(copy.pages,source.pages);
+
+          await page.click('#undoEdit');
+          snapshot=await page.evaluate(()=>({pkg:window.PlushboundEditor.getPackage(),history:window.PlushboundEditor.getHistory()}));
+          assert.equal(snapshot.pkg.maps[0].events.some(e=>e.id==='lio-copy'),false);
+          assert.equal(snapshot.history.undo,1);
+          assert.equal(snapshot.history.redo,1);
+          await page.click('#undoEdit');
+          assert.equal(await page.evaluate(()=>window.PlushboundEditor.getPackage().maps[0].events.find(e=>e.id==='lio').x),18);
+          await page.click('#redoEdit');
+          await page.click('#redoEdit');
+          assert.equal(await page.evaluate(()=>window.PlushboundEditor.getPackage().maps[0].events.some(e=>e.id==='lio-copy')),true);
+
+          await page.evaluate(()=>window.PlushboundEditor.selectEvent('lio'));
+          await page.click('#copyEvent');
+          await page.selectOption('#mapSelect','elyndor-sunthread-crossing');
+          const beforeTarget=await page.evaluate(()=>window.PlushboundEditor.getPackage().maps.find(m=>m.id==='elyndor-sunthread-crossing').events.length);
+          await page.click('#pasteEvent');
+          snapshot=await page.evaluate(()=>({pkg:window.PlushboundEditor.getPackage(),history:window.PlushboundEditor.getHistory(),selected:window.PlushboundEditor.getSelectedEventId()}));
+          const target=snapshot.pkg.maps.find(m=>m.id==='elyndor-sunthread-crossing');
+          const crossCopy=target.events.find(e=>e.id==='lio-copy');
+          assert.equal(target.events.length,beforeTarget+1);
+          assert.ok(crossCopy.x>=0&&crossCopy.x<target.width&&crossCopy.y>=0&&crossCopy.y<target.height);
+          assert.equal(snapshot.selected,'lio-copy');
+          await page.click('#undoEdit');
+          assert.equal(await page.evaluate(()=>window.PlushboundEditor.getPackage().maps.find(m=>m.id==='elyndor-sunthread-crossing').events.some(e=>e.id==='lio-copy')),false);
+          assert.equal(await page.inputValue('#mapSelect'),'elyndor-sunthread-crossing');
+          assert.deepEqual(errors,[]);
+          await browser.close();
+          console.log('Android event copy/paste simulation passed');
+          NODE

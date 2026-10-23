@@ -1,0 +1,97 @@
+name: Plushbound Brush CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [plushbound-game-development]
+    paths:
+      - 'tools/editor/brush-core.js'
+      - 'tools/editor/editor.js'
+      - 'tools/editor/index.html'
+      - 'game/tests/brush-core.test.js'
+      - '.github/workflows/plushbound-brush-ci.yml'
+  pull_request:
+    paths:
+      - 'tools/editor/brush-core.js'
+      - 'tools/editor/editor.js'
+      - 'tools/editor/index.html'
+      - 'game/tests/brush-core.test.js'
+      - '.github/workflows/plushbound-brush-ci.yml'
+
+jobs:
+  brush-simulation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run brush contracts
+        run: |
+          node --check tools/editor/brush-core.js
+          node --check tools/editor/editor.js
+          node --test game/tests/brush-core.test.js game/tests/editor-core.test.js
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: Serve repository
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >brush-http.log 2>&1 &
+          for i in {1..20}; do
+            curl -fsS http://127.0.0.1:4173/tools/editor/index.html >/dev/null && exit 0
+            sleep 1
+          done
+          cat brush-http.log
+          exit 1
+      - name: Simulate atomic brushes on Android viewport
+        run: |
+          node --input-type=module <<'NODE'
+          import {chromium} from 'playwright';
+          import assert from 'node:assert/strict';
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:412,height:915}});
+          const errors=[];page.on('pageerror',error=>errors.push(String(error)));
+          await page.goto('http://127.0.0.1:4173/tools/editor/index.html');
+          await page.click('#loadElyndor');
+          await page.waitForFunction(()=>window.PlushboundEditor?.getPackage()?.maps?.length===3);
+          assert.equal(await page.inputValue('#brushSize'),'1');
+          assert.ok((await page.locator('#tilePalette [data-tile-pick]').count())>=1);
+
+          await page.selectOption('#brushSize','3');
+          assert.equal(await page.evaluate(()=>window.PlushboundEditor.getBrushSize()),3);
+          await page.fill('#tileId','31');
+          await page.click('[data-tool="tile"]');
+          const historyBefore=await page.evaluate(()=>window.PlushboundEditor.getHistory().undo);
+          await page.locator('.tile[data-x="10"][data-y="10"]').click({position:{x:3,y:3}});
+          const painted=await page.evaluate(()=>{
+            const map=window.PlushboundEditor.getPackage().maps[0],layer=map.layers[0];let count=0;
+            for(let y=9;y<=11;y++)for(let x=9;x<=11;x++)if(layer.data[y*map.width+x]===31)count++;
+            return count;
+          });
+          assert.equal(painted,9);
+          assert.equal(await page.evaluate(()=>window.PlushboundEditor.getHistory().undo),historyBefore+1);
+          assert.ok((await page.locator('#tilePalette [data-tile-pick="31"]').count())===1);
+          await page.click('#undoEdit');
+          assert.equal(await page.evaluate(()=>{
+            const map=window.PlushboundEditor.getPackage().maps[0],layer=map.layers[0];let count=0;
+            for(let y=9;y<=11;y++)for(let x=9;x<=11;x++)if(layer.data[y*map.width+x]===31)count++;
+            return count;
+          }),0);
+
+          await page.click('[data-tool="region"]');
+          await page.fill('#regionId','7');
+          await page.locator('.tile[data-x="0"][data-y="0"]').click({position:{x:3,y:3}});
+          assert.equal(await page.evaluate(()=>window.PlushboundEditor.getPackage().maps[0].regions.filter(value=>value===7).length),4);
+          await page.click('[data-tool="blocked"]');
+          await page.locator('.tile[data-x="5"][data-y="5"]').click({position:{x:3,y:3}});
+          assert.equal(await page.evaluate(()=>{
+            const blocked=new Set(window.PlushboundEditor.getPackage().maps[0].blocked);let count=0;
+            for(let y=4;y<=6;y++)for(let x=4;x<=6;x++)if(blocked.has(`${x},${y}`))count++;
+            return count;
+          }),9);
+          assert.deepEqual(errors,[]);
+          await browser.close();
+          console.log('Android multi-cell brush simulation passed');
+          NODE

@@ -74,15 +74,37 @@ jobs:
           assert.equal(await page.inputValue('#eventId'), 'lio');
           assert.equal(await page.inputValue('#eventX'), '18');
           assert.equal(await page.inputValue('#eventY'), '9');
-          const before = await page.evaluate(() => JSON.stringify(window.PlushboundEditor.getPackage().maps[0].events.find(e => e.id === 'lio').pages));
+          const beforePages = await page.evaluate(() => JSON.stringify(window.PlushboundEditor.getPackage().maps[0].events.find(e => e.id === 'lio').pages));
 
           await page.fill('#eventX', '20');
           await page.fill('#eventY', '11');
           await page.click('#applyPosition');
           assert.equal(await page.inputValue('#eventX'), '20');
           assert.equal(await page.inputValue('#eventY'), '11');
-          const after = await page.evaluate(() => JSON.stringify(window.PlushboundEditor.getPackage().maps[0].events.find(e => e.id === 'lio').pages));
-          assert.equal(after, before);
+          const afterMovePages = await page.evaluate(() => JSON.stringify(window.PlushboundEditor.getPackage().maps[0].events.find(e => e.id === 'lio').pages));
+          assert.equal(afterMovePages, beforePages);
+
+          await page.selectOption('#pageSelect', '0');
+          await page.selectOption('#pageTrigger', 'touch');
+          await page.fill('#pageConditions', '{"switchId":"editor:browser-test","switchValue":true}');
+          await page.click('#applyPage');
+          let authored = await page.evaluate(() => window.PlushboundEditor.getPackage().maps[0].events.find(e => e.id === 'lio').pages[0]);
+          assert.equal(authored.trigger, 'touch');
+          assert.equal(authored.conditions.switchId, 'editor:browser-test');
+
+          const firstCommand = page.locator('.command-card').first();
+          await firstCommand.locator('textarea').fill('["Edited safely in browser simulation",{"speaker":"Lio"}]');
+          await firstCommand.locator('button').click();
+          authored = await page.evaluate(() => window.PlushboundEditor.getPackage().maps[0].events.find(e => e.id === 'lio').pages[0]);
+          assert.equal(authored.commands[0].code, 'MESSAGE');
+          assert.equal(authored.commands[0].parameters[0], 'Edited safely in browser simulation');
+          assert.equal(authored.commands[1].code, 'MESSAGE');
+
+          await page.selectOption('#newCommandType', 'SE');
+          await page.fill('#newCommandParameters', '["se/editor/browser-test"]');
+          await page.click('#addCommand');
+          authored = await page.evaluate(() => window.PlushboundEditor.getPackage().maps[0].events.find(e => e.id === 'lio').pages[0]);
+          assert.equal(authored.commands.at(-1).code, 'SE');
 
           await page.click('[data-tool="blocked"]');
           await page.locator('.tile[data-x="4"][data-y="4"]').click({ position: { x: 2, y: 2 } });
@@ -100,6 +122,7 @@ jobs:
           Plushbound Visual Editor simulation
           Browser: Chromium headless
           Target package: Elyndor runtime maps
+          Coverage: map placement, collision paint, event page settings, supported command editing
           Result: ${{ job.status }}
           Commit: ${{ github.sha }}
           EOF

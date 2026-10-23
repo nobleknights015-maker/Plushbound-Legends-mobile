@@ -6,7 +6,7 @@ async function loadContentPackages(){
   const index=await loadJson(new URL('../../game/content/content-index.json',location.href));
   const packages=[];
   for(const entry of index.packages||[]){
-    try{packages.push(await loadJson(new URL(`../../game/content/${entry.path}`,location.href)));}catch{}
+    try{packages.push({sourceId:String(entry.id),data:await loadJson(new URL(`../../game/content/${entry.path}`,location.href))});}catch{}
   }
   return packages;
 }
@@ -29,7 +29,7 @@ async function audit(){
     for(const issue of issues.slice(0,100)){
       const row=document.createElement('div');row.className='page-row error';
       const text=document.createElement('span');text.textContent=`${issue.location||`${issue.mapId||'content'}/${issue.eventId||issue.owner||'reference'}`} • ${issue.message}`;row.append(text);
-      const destination=diagnosticDestination(issue);if(destination){const link=document.createElement('a');link.className='diagnostic-link';link.href=destination;link.textContent=issue.mapId?'Open Issue':'Find Source';row.append(link);}
+      const destination=diagnosticDestination(issue);if(destination){const link=document.createElement('a');link.className='diagnostic-link';link.href=destination;link.textContent=issue.mapId?'Open Issue':issue.packageId?'Open Source':'Find Source';row.append(link);}
       issuesHost.append(row);
     }return issues;
   }catch(error){summary.textContent=`Reference audit unavailable: ${error.message}`;issuesHost.innerHTML='';return [];}

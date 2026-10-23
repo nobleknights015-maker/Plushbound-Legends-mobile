@@ -1,5 +1,6 @@
 import { GameState } from '../../engine/src/core/GameState.js';
 import { MapRuntime } from '../../engine/src/maps/MapRuntime.js';
+import { EncounterManager } from '../../engine/src/encounters/EncounterManager.js';
 import { EventInterpreter, EventCommandRegistry, registerCoreEventCommands } from '../../engine/src/events/EventInterpreter.js';
 import { GameContentRuntime } from './GameContentRuntime.js';
 
@@ -50,16 +51,22 @@ function actionDescriptor(raw, resolved) {
 }
 
 export class PlushboundGameSession {
-  constructor({ state = new GameState(), mapPackage, contentPackages = [], ui = {}, audio = {}, battle = {}, screen = {}, movement = {}, player = {}, logger = console } = {}) {
+  constructor({ state = new GameState(), mapPackage, contentPackages = [], ui = {}, audio = {}, battle = {}, screen = {}, movement = {}, player = {}, encounter = {}, logger = console } = {}) {
     if (!mapPackage?.maps?.length) throw new Error('PlushboundGameSession requires a runtime map package');
     this.state = state;
     this.messages = [];
     this.dialogueQueue = [];
     this.shopHistory = [];
     this.activeShop = null;
+    this.lastEncounter = null;
     this.game = new GameContentRuntime({ state, contentPackages });
     this.maps = new MapRuntime({ state, logger });
     for (const map of mapPackage.maps) this.maps.register(map);
+
+    this.encounterRate = Math.max(0, Number(encounter.rate ?? 1) || 0);
+    this.encounters = new EncounterManager({ state, rng: encounter.rng || Math.random });
+    for (const tableId of this.game.encounterTableIds()) this.encounters.registerTable(tableId, this.game.encounterTableEntries(tableId));
+    this.encounters.resetThreshold(encounter.base ?? 20, encounter.variance ?? 10);
 
     this.ui = {
       ...ui,
@@ -86,6 +93,7 @@ export class PlushboundGameSession {
     this.maps.load(mapId, x, y, direction);
     this.activeShop = null;
     this.dialogueQueue = [];
+    this.lastEncounter = null;
     return this.snapshot();
   }
 
@@ -119,6 +127,39 @@ export class PlushboundGameSession {
     this.dialogueQueue = [];
     for (const event of events) this.#runEvent(event);
     return events.map(event => event.id);
+  }
+
+  move(dx, dy, { encounters = true } = {}) {
+    const beforeMapId = this.maps.current?.id || null;
+    if (!this.maps.move(dx, dy)) return { moved: false, encounter: null, touchEvents: [], snapshot: this.snapshot() };
+
+    const stepped = { mapId: beforeMapId, x: this.state.map.x, y: this.state.map.y };
+    const touchEvents = this.triggerAt(stepped.x, stepped.y, 'touch');
+    const transferred = this.maps.current?.id !== beforeMapId;
+    let rolled = null;
+
+    if (encounters && !transferred) {
+      const table = this.maps.current?.encounterTable;
+      if (table) {
+        const regionId = this.maps.regionAt(this.state.map.x, this.state.map.y);
+        const picked = this.encounters.step({ regionId, table, rate: this.encounterRate });
+        if (picked) {
+          rolled = { ...picked, enemy: this.game.enemyDefinition(picked.enemyId) };
+          this.lastEncounter = clone(rolled);
+        }
+      }
+    }
+
+    return { moved: true, transferred, touchEvents, encounter: clone(rolled), snapshot: this.snapshot() };
+  }
+
+  encounterPreview({ mapId = this.maps.current?.id, x = this.state.map.x, y = this.state.map.y } = {}) {
+    const map = mapId === this.maps.current?.id ? this.maps.current : this.maps.maps.get(String(mapId));
+    if (!map?.encounterTable) return { mapId, regionId: 0, tableId: null, entries: [] };
+    const regionId = mapId === this.maps.current?.id ? this.maps.regionAt(x, y) : Number(map.regions?.[Number(y) * map.width + Number(x)] || 0);
+    const table = this.game.encounterTable(map.encounterTable);
+    const entries = (table?.entries || []).filter(entry => !Array.isArray(entry.regions) || !entry.regions.length || entry.regions.map(Number).includes(Number(regionId)));
+    return { mapId: map.id, regionId, tableId: map.encounterTable, entries: clone(entries) };
   }
 
   advanceDialogue() {
@@ -157,10 +198,14 @@ export class PlushboundGameSession {
   recordTalk(npcId) { this.game.recordTalk(npcId); return this.snapshot(); }
 
   snapshot() {
+    const regionId = this.maps.current ? this.maps.regionAt(this.state.map.x, this.state.map.y) : 0;
     return {
       map: clone(this.state.map),
       currentMap: this.maps.current?.id || null,
       mapName: this.maps.current?.name || this.maps.current?.id || null,
+      regionId,
+      encounterTable: this.maps.current?.encounterTable || null,
+      lastEncounter: clone(this.lastEncounter),
       actions: this.actions(),
       gold: Number(this.state.variable('gold')) || 0,
       quests: clone(Object.fromEntries(this.state.quests)),

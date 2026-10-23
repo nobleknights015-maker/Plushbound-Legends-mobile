@@ -8,8 +8,10 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.webkit.ConsoleMessage;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
@@ -21,8 +23,8 @@ import androidx.webkit.WebViewAssetLoader;
 public class MainActivity extends Activity {
     private static final String TAG = "PlushboundEditor";
     private static final int FILE_CHOOSER_REQUEST = 4201;
-    private static final int READY_RETRY_LIMIT = 20;
-    private static final long READY_RETRY_DELAY_MS = 250L;
+    private static final int READY_RETRY_LIMIT = 40;
+    private static final long READY_RETRY_DELAY_MS = 500L;
     private static final String EDITOR_URL =
             "https://appassets.androidplatform.net/assets/tools/editor/index.html";
 
@@ -56,18 +58,52 @@ public class MainActivity extends Activity {
             @Override
             public void onPageStarted(WebView view, String url, Bitmap favicon) {
                 readyChecks = 0;
+                Log.i(TAG, "PAGE_STARTED " + url);
                 super.onPageStarted(view, url, favicon);
             }
 
             @Override
             public void onPageFinished(WebView view, String url) {
+                Log.i(TAG, "PAGE_FINISHED " + url);
                 super.onPageFinished(view, url);
                 if (EDITOR_URL.equals(url)) {
                     verifyEditorReady();
                 }
             }
+
+            @Override
+            public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
+                Log.e(TAG, "RESOURCE_ERROR " + request.getUrl() + " code=" + error.getErrorCode()
+                        + " description=" + error.getDescription());
+                super.onReceivedError(view, request, error);
+            }
+
+            @Override
+            public void onReceivedHttpError(
+                    WebView view,
+                    WebResourceRequest request,
+                    WebResourceResponse errorResponse) {
+                Log.e(TAG, "HTTP_ERROR " + request.getUrl() + " status=" + errorResponse.getStatusCode()
+                        + " reason=" + errorResponse.getReasonPhrase());
+                super.onReceivedHttpError(view, request, errorResponse);
+            }
         });
         webView.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public boolean onConsoleMessage(ConsoleMessage consoleMessage) {
+                String message = "CONSOLE_" + consoleMessage.messageLevel()
+                        + " " + consoleMessage.sourceId() + ":" + consoleMessage.lineNumber()
+                        + " " + consoleMessage.message();
+                if (consoleMessage.messageLevel() == ConsoleMessage.MessageLevel.ERROR) {
+                    Log.e(TAG, message);
+                } else if (consoleMessage.messageLevel() == ConsoleMessage.MessageLevel.WARNING) {
+                    Log.w(TAG, message);
+                } else {
+                    Log.i(TAG, message);
+                }
+                return true;
+            }
+
             @Override
             public boolean onShowFileChooser(
                     WebView view,
@@ -120,7 +156,8 @@ public class MainActivity extends Activity {
                     if (readyChecks < READY_RETRY_LIMIT && webView != null) {
                         webView.postDelayed(this::verifyEditorReady, READY_RETRY_DELAY_MS);
                     } else {
-                        Log.e(TAG, "PLUSHBOUND_EDITOR_NOT_READY");
+                        Log.e(TAG, "PLUSHBOUND_EDITOR_NOT_READY checks=" + readyChecks
+                                + " url=" + (webView == null ? "destroyed" : webView.getUrl()));
                     }
                 });
     }

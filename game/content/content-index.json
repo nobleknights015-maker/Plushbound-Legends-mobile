@@ -4,6 +4,7 @@
   "packages": [
     { "id": "world", "path": "world.json", "required": true },
     { "id": "guardians", "path": "guardians.json", "required": true },
+    { "id": "mv-compat-database", "path": "mv-database.json", "required": true },
     { "id": "opening-elyndor", "path": "opening-elyndor.json", "required": true },
     { "id": "elyndor-route-one", "path": "elyndor-route-one.json", "required": true },
     { "id": "elyndor-map-layouts", "path": "elyndor-map-layouts.json", "required": true },

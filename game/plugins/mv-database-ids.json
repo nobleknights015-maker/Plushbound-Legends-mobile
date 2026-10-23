@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "target": "RPG Maker MV 1.6.x",
+  "ids": {
+    "maps": {
+      "elyndor-sunny-plains": 1,
+      "elyndor-sunthread-crossing": 2,
+      "elyndor-menders-rest": 3,
+      "verdancia-threadwood-verge": 4,
+      "verdancia-lanternbough": 5,
+      "verdancia-mossveil-hollow": 6,
+      "verdancia-elderstitch-grove": 7,
+      "verdancia-rootbound-depths": 8,
+      "verdancia-weavers-sanctum": 9
+    },
+    "actors": {},
+    "classes": {},
+    "skills": {},
+    "items": {
+      "threadmend-tonic": 1,
+      "waybread": 2,
+      "spool-salve": 3,
+      "woven-charm": 4
+    },
+    "weapons": {},
+    "armors": {},
+    "enemies": {
+      "frayling-tuft": 1,
+      "frayling-scritch": 2,
+      "frayling-knotling": 3,
+      "mossbit-frayling": 4,
+      "briar-tuft-frayling": 5,
+      "hollow-stitchling": 6,
+      "knotjaw-frayling": 7,
+      "rootbound-warden": 8,
+      "unraveled-hart": 9
+    },
+    "troops": {},
+    "states": {},
+    "animations": {},
+    "tilesets": {},
+    "commonEvents": {}
+  }
+}

@@ -5,6 +5,7 @@ import { GameDomAdapter } from './GameDomAdapter.js';
 import { attachPhoneViewportGuard } from './PhoneViewportGuard.js';
 import { GameSavePersistence } from './GameSavePersistence.js';
 import { createMVPluginRuntime, normalizeMVPluginManifest } from './MVPluginRuntime.js';
+import { createMVDatabaseBridge, normalizeMVDatabaseIdRegistry } from './MVDatabaseBridge.js';
 
 async function loadJson(url) {
   const response = await fetch(url, { cache: 'no-store' });
@@ -86,10 +87,10 @@ export async function bootPlushboundGame({ scope = globalThis, baseUrl } = {}) {
   const contentBase = new URL('content/', root);
   const pluginBase = new URL('plugins/', root);
   const index = await loadJson(new URL('content-index.json', contentBase));
-  const pluginManifest = normalizeMVPluginManifest(await loadOptionalJson(
-    new URL('plugins.json', pluginBase),
-    { schemaVersion: 1, target: 'RPG Maker MV 1.6.x', plugins: [] }
-  ));
+  const [pluginManifest, databaseIdRegistry] = await Promise.all([
+    loadOptionalJson(new URL('plugins.json', pluginBase), { schemaVersion: 1, target: 'RPG Maker MV 1.6.x', plugins: [] }).then(normalizeMVPluginManifest),
+    loadOptionalJson(new URL('mv-database-ids.json', pluginBase), { schemaVersion: 1, target: 'RPG Maker MV 1.6.x', ids: {} }).then(normalizeMVDatabaseIdRegistry)
+  ]);
 
   const expectedBaseline = '160d9fd95bc0d3db39224f8bb4c5e1e3a1f54425';
   if (index.engineBaseline !== expectedBaseline) {
@@ -113,9 +114,12 @@ export async function bootPlushboundGame({ scope = globalThis, baseUrl } = {}) {
     version: 1,
     engineBaseline: index.engineBaseline,
     contentIndex: index,
+    contentPackages,
     runtimeBaseUrl: runtimeBase.href,
     pluginManifest,
+    mvDatabaseIdRegistry: databaseIdRegistry,
     mvPlugins: null,
+    mvDatabase: null,
     loadedPackageIds: loaded.contentPackages.map(record => record.entry.id),
     loadedRuntimePackageIds: loaded.runtimePackages.map(record => record.entry.id),
     loadedMapIds: mapPackage.maps.map(map => map.id),
@@ -134,6 +138,9 @@ export async function bootPlushboundGame({ scope = globalThis, baseUrl } = {}) {
 
   const mvPlugins = createMVPluginRuntime({ scope, runtime, manifest: pluginManifest, baseUrl: pluginBase });
   runtime.mvPlugins = mvPlugins;
+  const mvDatabase = createMVDatabaseBridge({ scope, runtime, idRegistry: databaseIdRegistry }).install({ mvPlugins });
+  runtime.mvDatabase = mvDatabase;
+  const databaseStatus = mvDatabase.snapshot();
   const pluginStatus = await mvPlugins.loadEnabledPlugins();
 
   scope.dispatchEvent?.(new CustomEvent('plushbound-game-ready', {
@@ -144,7 +151,9 @@ export async function bootPlushboundGame({ scope = globalThis, baseUrl } = {}) {
       restoredSave,
       mvPluginTarget: pluginStatus.target,
       configuredPlugins: pluginStatus.configured,
-      loadedPlugins: pluginStatus.loaded.length
+      loadedPlugins: pluginStatus.loaded.length,
+      mvDatabaseCounts: databaseStatus.counts,
+      mvDatabaseMissingIds: databaseStatus.missingRegistryEntries.length
     }
   }));
   viewportGuard.refresh?.();

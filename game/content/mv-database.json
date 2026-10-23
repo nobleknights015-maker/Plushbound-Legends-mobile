@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "packageId": "mv-compat-database",
+  "description": "RPG Maker MV compatibility database records. Plushbound-native systems remain authoritative; these collections provide explicit MV-shaped records where a native equivalent exists or is intentionally authored.",
+  "actors": [],
+  "classes": [],
+  "skills": [],
+  "weapons": [],
+  "armors": [],
+  "states": [],
+  "troops": [],
+  "animations": [],
+  "tilesets": [],
+  "commonEvents": [],
+  "system": {
+    "gameTitle": "Plushbound Legends",
+    "currencyUnit": "G",
+    "locale": "en_US",
+    "elements": [""],
+    "skillTypes": [""],
+    "weaponTypes": [""],
+    "armorTypes": [""],
+    "equipTypes": ["", "Weapon", "Shield", "Head", "Body", "Accessory"]
+  }
+}

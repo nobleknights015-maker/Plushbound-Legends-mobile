@@ -6,9 +6,12 @@ on:
     branches: [ plushbound-game-development ]
     paths:
       - 'game/runtime/MVPluginRuntime.js'
+      - 'game/runtime/MVDatabaseBridge.js'
       - 'game/runtime/AndroidGameBootstrap.js'
+      - 'game/content/mv-database.json'
       - 'game/plugins/**'
       - 'game/tests/mv-plugin-runtime.test.js'
+      - 'game/tests/mv-database-bridge.test.js'
       - 'game/tests/plugin-manager-core.test.js'
       - 'tools/editor/plugin-manager*'
       - 'tools/editor/command-form-core.js'
@@ -16,9 +19,12 @@ on:
   pull_request:
     paths:
       - 'game/runtime/MVPluginRuntime.js'
+      - 'game/runtime/MVDatabaseBridge.js'
       - 'game/runtime/AndroidGameBootstrap.js'
+      - 'game/content/mv-database.json'
       - 'game/plugins/**'
       - 'game/tests/mv-plugin-runtime.test.js'
+      - 'game/tests/mv-database-bridge.test.js'
       - 'game/tests/plugin-manager-core.test.js'
       - 'tools/editor/plugin-manager*'
       - 'tools/editor/command-form-core.js'
@@ -36,16 +42,20 @@ jobs:
         run: |
           set -euo pipefail
           node --check game/runtime/MVPluginRuntime.js
+          node --check game/runtime/MVDatabaseBridge.js
           node --check tools/editor/plugin-manager-core.js
           node --check tools/editor/plugin-manager.js
           node --check tools/editor/command-form-core.js
           node -e "const m=require('./game/plugins/plugins.json'); if(m.schemaVersion!==1||!Array.isArray(m.plugins)||!String(m.target).includes('RPG Maker MV')) process.exit(1)"
+          node -e "const m=require('./game/plugins/mv-database-ids.json'); if(m.schemaVersion!==1||!m.ids||!String(m.target).includes('RPG Maker MV')) process.exit(1)"
+          node -e "const m=require('./game/content/mv-database.json'); for(const k of ['actors','classes','skills','weapons','armors','states','troops','animations','tilesets','commonEvents']) if(!Array.isArray(m[k])) process.exit(1)"
       - name: Run MV plugin compatibility contracts
         run: |
-          node --test game/tests/mv-plugin-runtime.test.js game/tests/plugin-manager-core.test.js game/tests/command-form-core.test.js
+          node --test game/tests/mv-plugin-runtime.test.js game/tests/mv-database-bridge.test.js game/tests/plugin-manager-core.test.js game/tests/command-form-core.test.js
       - name: Assert first-class editor and runtime surfaces
         run: |
           grep -q 'PluginManager' game/runtime/MVPluginRuntime.js
           grep -q 'Game_Interpreter' game/runtime/MVPluginRuntime.js
+          grep -q 'MVDatabaseBridge' game/runtime/MVDatabaseBridge.js
           grep -q 'PLUGIN_COMMAND' tools/editor/command-form-core.js
           grep -q 'Plushbound Plugin Manager' tools/editor/plugin-manager.html

@@ -1,4 +1,4 @@
-import {clone,collectionDescriptors,collectionRecords,validateCollection,validatePackageCollections,replaceRecord,addRecord,removeRecord,labelFor,searchableRecordText,recordFieldDescriptors,applyRecordFields,collectionProfile,newRecordTemplate} from './database-core.js';
+import {clone,collectionDescriptors,collectionRecords,validateCollection,validatePackageCollections,replaceRecord,addRecord,removeRecord,labelFor,searchableRecordText,recordFieldDescriptors,applyRecordFields,collectionProfile,newRecordTemplate,nestedRecordListDescriptors,replaceNestedRecord,addNestedRecord,removeNestedRecord} from './database-core.js';
 
 const state={index:null,packages:[],packageIndex:-1,collectionKey:null,selectedLocator:null,history:{undo:[],redo:[],limit:80}};
 const $=id=>document.getElementById(id);
@@ -54,10 +54,25 @@ function makeFieldControl(field){
   else{input=document.createElement('input');input.type='text';input.value=String(field.value);label.append(input);}
   input.dataset.fieldInput=field.key;return label;
 }
+function makeNestedFieldControl(path,index,key,value){
+  const label=document.createElement('label');const title=document.createElement('span');title.textContent=labelFor(key);label.append(title);let input;
+  if(typeof value==='boolean'){label.classList.add('check-field');input=document.createElement('input');input.type='checkbox';input.checked=value;label.prepend(input);}
+  else{input=document.createElement('input');input.type=typeof value==='number'?'number':'text';input.value=value??'';label.append(input);}
+  input.dataset.nestedPath=path;input.dataset.nestedIndex=String(index);input.dataset.nestedKey=key;return label;
+}
+function renderNestedLists(record){
+  for(const list of nestedRecordListDescriptors(record)){
+    const section=document.createElement('section');section.className='field-group nested-record-list';const heading=document.createElement('div');heading.className='nested-heading';const h3=document.createElement('h3');h3.textContent=list.label;const add=document.createElement('button');add.type='button';add.textContent='Add Row';add.dataset.addNested=list.key;heading.append(h3,add);section.append(heading);
+    if(!list.rows.length){const empty=document.createElement('small');empty.textContent='No rows yet.';section.append(empty);}
+    list.rows.forEach((row,index)=>{const card=document.createElement('div');card.className='nested-record-row';const rowHead=document.createElement('div');rowHead.className='nested-row-heading';const name=document.createElement('strong');name.textContent=`Row ${index+1}`;const remove=document.createElement('button');remove.type='button';remove.textContent='Remove';remove.dataset.removeNested=list.key;remove.dataset.nestedIndex=String(index);rowHead.append(name,remove);card.append(rowHead);const grid=document.createElement('div');grid.className='field-grid';for(const [key,value] of Object.entries(row))if(value===null||['string','number','boolean'].includes(typeof value))grid.append(makeNestedFieldControl(list.key,index,key,value));card.append(grid);section.append(card);});
+    els.fieldEditor.append(section);
+  }
+}
 function renderInspector(){
   const row=selectedRow();els.recordEmpty.hidden=!!row;els.recordEditor.hidden=!row;els.fieldEditor.innerHTML='';if(!row)return;const profile=collectionProfile(state.collectionKey);els.recordIdentity.textContent=`${profile.title} • ${row.id}`;els.recordJson.value=JSON.stringify(row.record,null,2);
   const fields=recordFieldDescriptors(row.record);const groups=new Map();for(const field of fields){if(!groups.has(field.group))groups.set(field.group,[]);groups.get(field.group).push(field);}
   for(const [groupName,groupFields] of groups){const group=document.createElement('section');group.className='field-group';const heading=document.createElement('h3');heading.textContent=groupName;group.append(heading);const grid=document.createElement('div');grid.className='field-grid';for(const field of groupFields)grid.append(makeFieldControl(field));group.append(grid);els.fieldEditor.append(group);}
+  renderNestedLists(row.record);
 }
 function renderValidation(){
   els.validationIssues.innerHTML='';if(!activePackage()?.data||!state.collectionKey){els.validationSummary.textContent='No collection selected.';return;}
@@ -68,8 +83,20 @@ function selectCollection(key){state.collectionKey=key;state.selectedLocator=nul
 function selectRecord(locator){state.selectedLocator=locator;renderRecords();renderInspector();renderValidation();}
 function applyFields(){
   const entry=activePackage(),row=selectedRow();if(!entry||!row)return;const label=`Edit ${row.id} fields`;
-  try{const fields={};for(const input of els.fieldEditor.querySelectorAll('[data-field-input]'))fields[input.dataset.fieldInput]=input.type==='checkbox'?input.checked:input.value;const next=applyRecordFields(row.record,fields);snapshot(label);replaceRecord(entry.data,state.collectionKey,row.locator,next);renderAll();selectRecord(row.locator);}
-  catch(error){discardSnapshot(label);alert(`Fields not changed: ${error.message}`);}
+  try{
+    const fields={};for(const input of els.fieldEditor.querySelectorAll('[data-field-input]'))fields[input.dataset.fieldInput]=input.type==='checkbox'?input.checked:input.value;
+    let next=applyRecordFields(row.record,fields);const nestedByRow=new Map();
+    for(const input of els.fieldEditor.querySelectorAll('[data-nested-path]')){const token=`${input.dataset.nestedPath}\u0000${input.dataset.nestedIndex}`;if(!nestedByRow.has(token))nestedByRow.set(token,{path:input.dataset.nestedPath,index:Number(input.dataset.nestedIndex),fields:{}});nestedByRow.get(token).fields[input.dataset.nestedKey]=input.type==='checkbox'?input.checked:input.value;}
+    for(const edit of nestedByRow.values()){
+      const descriptor=nestedRecordListDescriptors(next).find(item=>item.key===edit.path);const current=descriptor?.rows?.[edit.index];if(!current)continue;const updated=clone(current);for(const [key,input] of Object.entries(edit.fields)){const original=current[key];if(typeof original==='number'){const n=Number(input);if(!Number.isFinite(n))throw new Error(`${labelFor(key)} must be a number`);updated[key]=n;}else if(typeof original==='boolean')updated[key]=input===true||input==='true'||input===1||input==='1';else updated[key]=String(input??'');}next=replaceNestedRecord(next,edit.path,edit.index,updated);
+    }
+    snapshot(label);replaceRecord(entry.data,state.collectionKey,row.locator,next);renderAll();selectRecord(row.locator);
+  }catch(error){discardSnapshot(label);alert(`Fields not changed: ${error.message}`);}
+}
+function mutateNested(action,path,index){
+  const entry=activePackage(),row=selectedRow();if(!entry||!row)return;const label=`${action==='add'?'Add':'Remove'} ${path} row`;
+  try{const next=action==='add'?addNestedRecord(row.record,path):removeNestedRecord(row.record,path,index);snapshot(label);replaceRecord(entry.data,state.collectionKey,row.locator,next);renderAll();selectRecord(row.locator);}
+  catch(error){discardSnapshot(label);alert(`Nested row not changed: ${error.message}`);}
 }
 function applyRecord(){
   const entry=activePackage(),row=selectedRow();if(!entry||!row)return;const label=`Edit ${row.id} JSON`;
@@ -100,6 +127,7 @@ els.packageSearch.addEventListener('input',renderPackages);els.recordSearch.addE
 els.packageList.addEventListener('click',event=>{const b=event.target.closest('[data-package-index]');if(b)selectPackage(b.dataset.packageIndex);});
 els.collectionList.addEventListener('click',event=>{const b=event.target.closest('[data-collection-key]');if(b)selectCollection(b.dataset.collectionKey);});
 els.recordList.addEventListener('click',event=>{const b=event.target.closest('[data-locator]');if(b)selectRecord(b.dataset.locator);});
+els.fieldEditor.addEventListener('click',event=>{const add=event.target.closest('[data-add-nested]');if(add){mutateNested('add',add.dataset.addNested);return;}const remove=event.target.closest('[data-remove-nested]');if(remove)mutateNested('remove',remove.dataset.removeNested,Number(remove.dataset.nestedIndex));});
 els.applyFields.addEventListener('click',applyFields);els.applyRecord.addEventListener('click',applyRecord);els.newRecord.addEventListener('click',newRecord);els.duplicateRecord.addEventListener('click',duplicateRecord);els.deleteRecord.addEventListener('click',deleteRecord);els.exportPackage.addEventListener('click',exportPackage);els.undoDatabase.addEventListener('click',undo);els.redoDatabase.addEventListener('click',redo);
 
 document.addEventListener('keydown',event=>{if(!(event.ctrlKey||event.metaKey))return;if(event.key.toLowerCase()==='z'){event.preventDefault();event.shiftKey?redo():undo();}else if(event.key.toLowerCase()==='y'){event.preventDefault();redo();}});

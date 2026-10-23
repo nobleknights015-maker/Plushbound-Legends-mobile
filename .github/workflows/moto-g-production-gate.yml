@@ -4,6 +4,11 @@ on:
   workflow_run:
     workflows: ["Plushbound Game Android APK"]
     types: [completed]
+  push:
+    branches: [ plushbound-game-development ]
+    paths:
+      - '.github/workflows/moto-g-production-gate.yml'
+      - '.github/workflows/plushbound-game-android-apk.yml'
   workflow_dispatch:
 
 permissions:
@@ -12,7 +17,7 @@ permissions:
 
 jobs:
   moto-g-simulation:
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'push' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
@@ -28,17 +33,41 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
           EVENT_NAME: ${{ github.event_name }}
+          PUSH_SHA: ${{ github.sha }}
           TRIGGER_RUN_ID: ${{ github.event.workflow_run.id }}
+          TRIGGER_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
+          RUN_ID=""
+          SOURCE_SHA=""
+
           if [ "$EVENT_NAME" = "workflow_run" ]; then
             RUN_ID="$TRIGGER_RUN_ID"
+            SOURCE_SHA="$TRIGGER_HEAD_SHA"
+          elif [ "$EVENT_NAME" = "push" ]; then
+            SOURCE_SHA="$PUSH_SHA"
+            echo "Waiting for successful Android APK run for exact source $SOURCE_SHA..."
+            for attempt in $(seq 1 30); do
+              RUN_ID=$(gh api "/repos/$REPOSITORY/actions/workflows/plushbound-game-android-apk.yml/runs?branch=plushbound-game-development&head_sha=$SOURCE_SHA&status=success&per_page=1" --jq '.workflow_runs[0].id // empty')
+              if [ -n "$RUN_ID" ]; then
+                break
+              fi
+              echo "Android APK run not ready yet (attempt $attempt/30)."
+              sleep 10
+            done
           else
-            RUN_ID=$(gh api "/repos/$REPOSITORY/actions/workflows/plushbound-game-android-apk.yml/runs?branch=plushbound-game-development&status=success&per_page=1" --jq '.workflow_runs[0].id')
+            RUN_ID=$(gh api "/repos/$REPOSITORY/actions/workflows/plushbound-game-android-apk.yml/runs?branch=plushbound-game-development&status=success&per_page=1" --jq '.workflow_runs[0].id // empty')
+            test -n "$RUN_ID"
+            SOURCE_SHA=$(gh api "/repos/$REPOSITORY/actions/runs/$RUN_ID" --jq '.head_sha')
           fi
+
           test -n "$RUN_ID"
+          test -n "$SOURCE_SHA"
+          RUN_SHA=$(gh api "/repos/$REPOSITORY/actions/runs/$RUN_ID" --jq '.head_sha')
+          test "$RUN_SHA" = "$SOURCE_SHA"
           echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
-          echo "Using Plushbound Android build run $RUN_ID"
+          echo "source_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
+          echo "Using Plushbound Android build run $RUN_ID for exact source $SOURCE_SHA"
 
       - name: Download exact APK artifact
         uses: actions/download-artifact@v4
@@ -150,6 +179,7 @@ jobs:
           Emulator viewport: 720x1600
           Android API: 35
           Result: ${{ job.status }}
+          Source commit: ${{ steps.buildrun.outputs.source_sha }}
           Source Android workflow run: ${{ steps.buildrun.outputs.run_id }}
           EOF
 

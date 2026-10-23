@@ -4,6 +4,8 @@ import { EncounterManager } from '../../engine/src/encounters/EncounterManager.j
 import { EventInterpreter, EventCommandRegistry, registerCoreEventCommands } from '../../engine/src/events/EventInterpreter.js';
 import { GameContentRuntime } from './GameContentRuntime.js';
 
+const SAVE_SCHEMA_VERSION = 1;
+
 function clone(value) {
   if (value == null) return value;
   if (typeof structuredClone === 'function') return structuredClone(value);
@@ -91,8 +93,7 @@ export class PlushboundGameSession {
 
   enter(mapId, x = 0, y = 0, direction = 2) {
     this.maps.load(mapId, x, y, direction);
-    this.activeShop = null;
-    this.dialogueQueue = [];
+    this.#clearTransientUi();
     this.lastEncounter = null;
     return this.snapshot();
   }
@@ -162,6 +163,37 @@ export class PlushboundGameSession {
     return { mapId: map.id, regionId, tableId: map.encounterTable, entries: clone(entries) };
   }
 
+  resolveEncounter(result = 'victory') {
+    if (!this.lastEncounter) throw new Error('No encounter is active');
+    const normalized = String(result || '').toLowerCase();
+    if (!['victory', 'escape', 'defeat'].includes(normalized)) throw new Error(`Unknown encounter result ${result}`);
+    const encounter = clone(this.lastEncounter);
+    if (normalized === 'victory') this.game.recordBattle(encounter.enemy?.tags || []);
+    this.lastEncounter = null;
+    return { result: normalized, encounter, snapshot: this.snapshot() };
+  }
+
+  serializeSave() {
+    return {
+      schemaVersion: SAVE_SCHEMA_VERSION,
+      game: 'Plushbound Legends',
+      state: this.state.serialize()
+    };
+  }
+
+  restoreSave(save = {}) {
+    const schemaVersion = Number(save.schemaVersion ?? SAVE_SCHEMA_VERSION);
+    if (schemaVersion !== SAVE_SCHEMA_VERSION) throw new Error(`Unsupported Plushbound save schema ${schemaVersion}`);
+    const rawState = save.state || save.gameState || save;
+    this.state.restore(rawState);
+    const map = clone(this.state.map);
+    if (!map?.id || !this.maps.maps.has(String(map.id))) throw new Error(`Save references unknown map ${map?.id ?? 'null'}`);
+    this.maps.load(map.id, Number(map.x) || 0, Number(map.y) || 0, Number(map.direction) || 2);
+    this.#clearTransientUi();
+    this.lastEncounter = null;
+    return this.snapshot();
+  }
+
   advanceDialogue() {
     if (this.dialogueQueue.length) this.dialogueQueue.shift();
     return clone(this.dialogueQueue[0] || null);
@@ -223,6 +255,11 @@ export class PlushboundGameSession {
       activeShop: clone(this.activeShop),
       shopHistory: clone(this.shopHistory)
     };
+  }
+
+  #clearTransientUi() {
+    this.activeShop = null;
+    this.dialogueQueue = [];
   }
 
   #runEvent(event) {

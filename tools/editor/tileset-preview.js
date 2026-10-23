@@ -26,6 +26,8 @@ function render(){
 }
 
 async function init(){ensurePanel();try{await loadManifest();render();}catch(error){const meta=ensurePanel()?.querySelector('#tilesetPreviewMeta');if(meta)meta.textContent=`Tileset preview unavailable: ${error.message}`;}}
-$('mapSelect')?.addEventListener('change',()=>setTimeout(render,0));$('loadElyndor')?.addEventListener('click',()=>setTimeout(render,50));
+const mapSelect=$('mapSelect');mapSelect?.addEventListener('change',()=>queueMicrotask(render));
+if(mapSelect)new MutationObserver(()=>queueMicrotask(render)).observe(mapSelect,{childList:true,subtree:true});
+$('loadElyndor')?.addEventListener('click',()=>setTimeout(render,0));
 init();
 window.PlushboundTilesetPreview={render};

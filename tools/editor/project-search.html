@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Plushbound Project Search</title>
+  <link rel="stylesheet" href="./project-search.css">
+</head>
+<body>
+  <header class="topbar">
+    <div><strong>Plushbound Project Search</strong><div class="meta">Search maps, events, commands, content records and assets from the project manifest.</div></div>
+    <div class="actions"><button onclick="location.href='./index.html'">Map Editor</button><button onclick="location.href='./database.html'">Database</button><button onclick="location.href='./common-events.html'">Common Events</button></div>
+  </header>
+  <main class="wrap">
+    <div class="searchbar"><input id="projectQuery" type="search" placeholder="Search IDs, names, commands, paths…" autocomplete="off"><select id="projectType"><option value="">All sources</option><option value="content">Content</option><option value="runtime">Runtime maps/contracts</option><option value="assets">Assets</option></select></div>
+    <div id="projectStatus" class="meta">Loading project index…</div>
+    <div id="projectResults" class="results"></div>
+  </main>
+  <script type="module" src="./project-search.js"></script>
+</body>
+</html>

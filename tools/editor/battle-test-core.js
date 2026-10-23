@@ -24,7 +24,7 @@ export class BattleEncounterTester{
   bosses(){
     return this.session.game.bossEncounterIds().map(id=>{
       const definition=this.session.game.bossEncounter(id);
-      return {...definition,enemy:this.session.game.enemyDefinition(definition.enemyId)};
+      return {...definition,available:this.session.game.bossEncounterAvailable(id),enemy:this.session.game.enemyDefinition(definition.enemyId)};
     });
   }
 
@@ -64,13 +64,7 @@ export class BattleEncounterTester{
   }
 
   loadBoss(bossId){
-    const definition=this.session.game.bossEncounter(String(bossId));
-    if(!definition)throw new Error(`Unknown boss encounter ${bossId}`);
-    const enemy=this.session.game.enemyDefinition(definition.enemyId);
-    if(!enemy)throw new Error(`Boss encounter ${bossId} references unknown enemy ${definition.enemyId}`);
-    const encounter={enemyId:String(definition.enemyId),enemy,bossId:String(definition.id),bossDefinition:clone(definition)};
-    this.session.lastEncounter=clone(encounter);
-    return clone(encounter);
+    return this.session.startBossEncounter(String(bossId));
   }
 
   resolveEncounter(result='victory'){

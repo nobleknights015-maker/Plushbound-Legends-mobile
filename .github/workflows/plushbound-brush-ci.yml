@@ -7,14 +7,18 @@ on:
     paths:
       - 'tools/editor/brush-core.js'
       - 'tools/editor/editor.js'
+      - 'tools/editor/tileset-preview.js'
       - 'tools/editor/index.html'
+      - 'game/assets/asset-manifest.json'
       - 'game/tests/brush-core.test.js'
       - '.github/workflows/plushbound-brush-ci.yml'
   pull_request:
     paths:
       - 'tools/editor/brush-core.js'
       - 'tools/editor/editor.js'
+      - 'tools/editor/tileset-preview.js'
       - 'tools/editor/index.html'
+      - 'game/assets/asset-manifest.json'
       - 'game/tests/brush-core.test.js'
       - '.github/workflows/plushbound-brush-ci.yml'
 
@@ -31,6 +35,7 @@ jobs:
         run: |
           node --check tools/editor/brush-core.js
           node --check tools/editor/editor.js
+          node --check tools/editor/tileset-preview.js
           node --test game/tests/brush-core.test.js game/tests/editor-core.test.js
       - name: Install Chromium
         run: |
@@ -56,8 +61,11 @@ jobs:
           await page.goto('http://127.0.0.1:4173/tools/editor/index.html');
           await page.click('#loadElyndor');
           await page.waitForFunction(()=>window.PlushboundEditor?.getPackage()?.maps?.length===3);
+          await page.waitForFunction(()=>document.querySelector('#tilesetPreviewMeta')?.textContent?.includes('tileset/elyndor/sunny-plains'));
           assert.equal(await page.inputValue('#brushSize'),'1');
           assert.ok((await page.locator('#tilePalette [data-tile-pick]').count())>=1);
+          assert.match(await page.textContent('#tilesetPreviewMeta'),/tileset\/elyndor\/sunny-plains.*planned.*48px/i);
+          assert.match(await page.textContent('#tilesetPreviewVisual'),/slice metadata/i);
 
           await page.selectOption('#brushSize','3');
           assert.equal(await page.evaluate(()=>window.PlushboundEditor.getBrushSize()),3);
@@ -93,5 +101,5 @@ jobs:
           }),9);
           assert.deepEqual(errors,[]);
           await browser.close();
-          console.log('Android multi-cell brush simulation passed');
+          console.log('Android multi-cell brush + tileset contract simulation passed');
           NODE

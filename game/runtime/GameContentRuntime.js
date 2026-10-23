@@ -148,9 +148,17 @@ export class GameContentRuntime {
 
   activateWaystitch(id) {
     const key = String(id);
-    if (key !== 'elyndor-first-waystitch' && !this.waystitches.has(key)) throw new Error(`Unknown Waystitch ${id}`);
-    const suffix = key === 'elyndor-first-waystitch' ? 'elyndor-first' : key.replace(/^waystitch-/, '');
-    this.state.setSw(`waystitch:${suffix}:active`, true);
+    const definition = this.waystitches.get(key);
+    if (!definition) throw new Error(`Unknown Waystitch ${id}`);
+    const condition = definition.unlockCondition || {};
+    if (condition.questComplete && this.state.quests.get(String(condition.questComplete))?.status !== 'complete') {
+      throw new Error(`Waystitch ${id} is locked by quest ${condition.questComplete}`);
+    }
+    if (condition.switchId && this.state.sw(condition.switchId) !== (condition.switchValue ?? true)) {
+      throw new Error(`Waystitch ${id} is locked by switch ${condition.switchId}`);
+    }
+    const activationSwitch = definition.activationSwitch || `waystitch:${key.replace(/^waystitch-/, '')}:active`;
+    this.state.setSw(activationSwitch, true);
     return true;
   }
 

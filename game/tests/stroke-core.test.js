@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createStrokeState,beginStroke,applyStrokePoint,endStroke,isContinuousPaintTool} from '../../tools/editor/stroke-core.js';
+import {brushCells,paintTileBrush} from '../../tools/editor/brush-core.js';
 
 test('continuous tools are limited to map paint and erase modes',()=>{
   for(const tool of ['tile','erase-tile','region','erase-region','blocked','erase-blocked'])assert.equal(isContinuousPaintTool(tool),true);
@@ -44,4 +45,24 @@ test('non-paint tools refuse continuous strokes',()=>{
   const state=createStrokeState();
   assert.equal(beginStroke(state,{pointerId:9,tool:'select'}),false);
   assert.equal(applyStrokePoint(state,{x:1,y:1,checkpoint:()=>{throw new Error('unexpected checkpoint');},apply:()=>{throw new Error('unexpected apply');}}).applied,false);
+});
+
+test('multi-cell drag stroke preserves one pre-stroke snapshot across overlapping brush footprints',()=>{
+  const map={width:8,height:5,layers:[{id:'ground',data:new Array(40).fill(0)}],blocked:[],regions:new Array(40).fill(0),events:[]};
+  const initial=structuredClone(map),snapshots=[];
+  const state=createStrokeState();beginStroke(state,{pointerId:11,tool:'tile',label:'Paint 3x3 tile stroke'});
+  for(const [x,y] of [[2,2],[3,2],[4,2]]){
+    applyStrokePoint(state,{
+      x,y,
+      willChange:()=>brushCells(map,x,y,3).some(cell=>map.layers[0].data[cell.y*map.width+cell.x]!==31),
+      checkpoint:()=>snapshots.push(structuredClone(map)),
+      apply:()=>paintTileBrush(map,0,x,y,31,3).changed
+    });
+  }
+  const summary=endStroke(state);
+  assert.equal(snapshots.length,1);
+  assert.deepEqual(snapshots[0],initial);
+  assert.equal(summary.checkpointed,true);
+  assert.ok(summary.changed>9);
+  assert.equal(map.layers[0].data.filter(value=>value===31).length,15);
 });

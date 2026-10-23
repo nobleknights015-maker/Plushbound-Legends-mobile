@@ -11,23 +11,23 @@
   <div id="databaseApp">
     <header class="topbar">
       <div><strong>Plushbound Database</strong><span class="sub">MV-class content authoring • frozen-engine compatible</span></div>
-      <div class="actions"><a class="button" href="./index.html">Map Editor</a><button id="loadDatabase">Load Project Database</button><button id="exportPackage" disabled>Export Package</button></div>
+      <div class="actions"><a class="button" href="./index.html">Map Editor</a><button id="undoDatabase" disabled>Undo</button><button id="redoDatabase" disabled>Redo</button><button id="loadDatabase">Reload Project</button><button id="exportPackage" disabled>Export Package</button></div>
     </header>
     <main class="database-workspace">
       <aside class="database-sidebar">
         <section><h2>Packages</h2><input id="packageSearch" placeholder="Filter packages"><div id="packageList" class="database-list"></div></section>
       </aside>
       <aside class="database-sidebar">
-        <section><h2>Collections</h2><div id="packageMeta" class="meta">Load the project database.</div><div id="collectionList" class="database-list"></div></section>
+        <section><h2>Collections</h2><div id="packageMeta" class="meta">Loading project database…</div><div id="collectionList" class="database-list"></div></section>
       </aside>
       <section class="database-records">
         <div class="database-toolbar"><input id="recordSearch" placeholder="Search records"><button id="newRecord" disabled>+ New</button><button id="duplicateRecord" disabled>Duplicate</button><button id="deleteRecord" disabled>Delete</button></div>
         <div id="recordList" class="record-list"></div>
       </section>
       <aside class="database-inspector">
-        <section><h2>Record Inspector</h2><div id="recordEmpty" class="meta">Select a database record.</div><div id="recordEditor" hidden><div id="recordIdentity" class="meta"></div><textarea id="recordJson" rows="24" spellcheck="false"></textarea><button id="applyRecord">Apply Record</button></div></section>
+        <section><h2>Record Inspector</h2><div id="recordEmpty" class="meta">Select a database record.</div><div id="recordEditor" hidden><div id="recordIdentity" class="meta"></div><div id="fieldEditor" class="field-editor"></div><button id="applyFields">Apply Fields</button><details class="advanced-json"><summary>Advanced JSON</summary><textarea id="recordJson" rows="20" spellcheck="false"></textarea><button id="applyRecord">Apply JSON</button></details></div></section>
         <section><h2>Validation</h2><div id="validationSummary" class="meta">No collection selected.</div><div id="validationIssues" class="page-summary"></div></section>
-        <section><h2>Contract</h2><div class="note">This workspace edits game/content packages only. It does not mutate frozen Engine v1. Existing array and keyed-object registries are preserved in their native shape.</div></section>
+        <section><h2>Contract</h2><div class="note">Visual fields edit scalar properties without flattening nested Plushbound data. Advanced JSON remains available for arrays and nested objects. Existing array and keyed-object registries stay in their native shape, and frozen Engine v1 is never mutated.</div></section>
       </aside>
     </main>
   </div>

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createStrokeState,beginStroke,applyStrokePoint,endStroke,isContinuousPaintTool} from '../../tools/editor/stroke-core.js';
+import {createStrokeState,beginStroke,applyStrokePoint,endStroke,cancelStroke,isContinuousPaintTool} from '../../tools/editor/stroke-core.js';
 import {brushCells,paintTileBrush} from '../../tools/editor/brush-core.js';
 
 test('continuous tools are limited to map paint and erase modes',()=>{
@@ -65,4 +65,19 @@ test('multi-cell drag stroke preserves one pre-stroke snapshot across overlappin
   assert.equal(summary.checkpointed,true);
   assert.ok(summary.changed>9);
   assert.equal(map.layers[0].data.filter(value=>value===31).length,15);
+});
+
+test('cancelled or lost pointer finalizes the stroke and clears gesture state',()=>{
+  const state=createStrokeState();let checkpoints=0;
+  beginStroke(state,{pointerId:22,tool:'erase-region',label:'Erase region stroke'});
+  applyStrokePoint(state,{x:2,y:3,checkpoint:()=>checkpoints++,apply:()=>4});
+  const summary=cancelStroke(state);
+  assert.deepEqual(summary,{changed:4,checkpointed:true,tool:'erase-region',label:'Erase region stroke'});
+  assert.equal(checkpoints,1);
+  assert.equal(state.active,false);
+  assert.equal(state.pointerId,null);
+  assert.equal(state.tool,null);
+  assert.equal(state.changed,0);
+  assert.equal(state.checkpointed,false);
+  assert.equal(state.visited.size,0);
 });

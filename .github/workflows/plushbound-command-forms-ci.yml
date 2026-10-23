@@ -1,0 +1,95 @@
+name: Plushbound Command Forms CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ plushbound-game-development ]
+    paths:
+      - 'tools/editor/command-form-core.js'
+      - 'tools/editor/command-forms.js'
+      - 'tools/editor/command-forms.css'
+      - 'tools/editor/index.html'
+      - 'tools/editor/common-events.html'
+      - 'game/tests/command-form-core.test.js'
+      - '.github/workflows/plushbound-command-forms-ci.yml'
+  pull_request:
+    paths:
+      - 'tools/editor/command-form-core.js'
+      - 'tools/editor/command-forms.js'
+      - 'tools/editor/command-forms.css'
+      - 'tools/editor/index.html'
+      - 'tools/editor/common-events.html'
+      - 'game/tests/command-form-core.test.js'
+      - '.github/workflows/plushbound-command-forms-ci.yml'
+
+jobs:
+  command-form-simulation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run command form contracts
+        run: |
+          node --check tools/editor/command-form-core.js
+          node --check tools/editor/command-forms.js
+          node --test game/tests/command-form-core.test.js
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: Serve repository
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >command-forms-http.log 2>&1 &
+          for i in {1..20}; do
+            curl -fsS http://127.0.0.1:4173/tools/editor/index.html >/dev/null && exit 0
+            sleep 1
+          done
+          cat command-forms-http.log
+          exit 1
+      - name: Simulate visual command authoring on Android viewport
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+          import assert from 'node:assert/strict';
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:412,height:915}});
+          const errors=[];page.on('pageerror',error=>errors.push(String(error)));
+
+          await page.goto('http://127.0.0.1:4173/tools/editor/index.html');
+          await page.click('#loadElyndor');
+          await page.waitForFunction(()=>document.querySelectorAll('.event-marker').length>=4);
+          await page.click('[data-event-id="lio"]');
+          await page.selectOption('#newCommandType','MESSAGE');
+          await page.locator('.visual-command-form[data-code="MESSAGE"] [data-command-field="text"]').fill('Visual form message');
+          await page.locator('.visual-command-form[data-code="MESSAGE"] [data-command-field="speaker"]').fill('Lio');
+          await page.locator('.visual-command-form[data-code="MESSAGE"] [data-command-field="portrait"]').fill('npc/lio/portrait');
+          assert.deepEqual(JSON.parse(await page.inputValue('#newCommandParameters')),['Visual form message',{speaker:'Lio',portrait:'npc/lio/portrait'}]);
+          const before=await page.evaluate(()=>window.PlushboundEditor.getPackage().maps[0].events.find(e=>e.id==='lio').pages[0].commands.length);
+          await page.click('#addCommand');
+          const added=await page.evaluate(()=>window.PlushboundEditor.getPackage().maps[0].events.find(e=>e.id==='lio').pages[0].commands.at(-1));
+          assert.equal(added.code,'MESSAGE');
+          assert.deepEqual(added.parameters,['Visual form message',{speaker:'Lio',portrait:'npc/lio/portrait'}]);
+          assert.equal(await page.evaluate(()=>window.PlushboundEditor.getPackage().maps[0].events.find(e=>e.id==='lio').pages[0].commands.length),before+1);
+          assert.ok(await page.locator('.existing-command-form[data-code="MESSAGE"]').count()>0);
+
+          await page.goto('http://127.0.0.1:4173/tools/editor/common-events.html');
+          await page.click('#addCommon');
+          await page.selectOption('#commonCommandType','TRANSFER');
+          const transfer=page.locator('.visual-command-form[data-code="TRANSFER"]');
+          await transfer.locator('[data-command-field="mapId"]').fill('elyndor-sunthread-crossing');
+          await transfer.locator('[data-command-field="x"]').fill('2');
+          await transfer.locator('[data-command-field="y"]').fill('12');
+          await transfer.locator('[data-command-field="direction"]').selectOption('6');
+          assert.deepEqual(JSON.parse(await page.inputValue('#commonCommandParameters')),['elyndor-sunthread-crossing',2,12,6]);
+          await page.click('#addCommonCommand');
+          const library=await page.evaluate(()=>window.PlushboundCommonEvents.getLibrary());
+          assert.equal(library.commonEvents[0].commands[0].code,'TRANSFER');
+          assert.deepEqual(library.commonEvents[0].commands[0].parameters,['elyndor-sunthread-crossing',2,12,6]);
+          assert.ok(await page.locator('.existing-command-form[data-code="TRANSFER"]').count()>0);
+          assert.deepEqual(errors,[]);
+          await browser.close();
+          console.log('Android visual command form simulation passed');
+          NODE

@@ -1,5 +1,7 @@
 export function clone(value){return typeof structuredClone==='function'?structuredClone(value):JSON.parse(JSON.stringify(value));}
 
+export const EDITABLE_COMMANDS=new Set(['MESSAGE','SWITCH','TRANSFER','SHOP','SE','SCRIPT_HOOK']);
+
 export function validatePackage(pkg){
   if(!pkg||typeof pkg!=='object') throw new Error('Runtime package must be an object');
   if(!Array.isArray(pkg.maps)) throw new Error('Runtime package must contain maps[]');
@@ -57,4 +59,59 @@ export function eventSummary(event){
     commandCount:(page.commands||[]).length,
     conditions:page.conditions?clone(page.conditions):null
   }));
+}
+
+export function getPage(event,pageIndex){
+  if(!event||!Array.isArray(event.pages)) throw new Error('Event has no pages');
+  const page=event.pages[pageIndex];
+  if(!page) throw new Error(`Unknown page: ${pageIndex+1}`);
+  if(!Array.isArray(page.commands)) page.commands=[];
+  return page;
+}
+
+export function updatePageTrigger(event,pageIndex,trigger){
+  const allowed=new Set(['action','touch','autorun','parallel']);
+  if(!allowed.has(trigger)) throw new Error(`Unsupported trigger: ${trigger}`);
+  const page=getPage(event,pageIndex);
+  page.trigger=trigger;
+  return page;
+}
+
+export function updatePageConditions(event,pageIndex,conditions){
+  const page=getPage(event,pageIndex);
+  const clean={};
+  for(const [key,value] of Object.entries(conditions||{})){
+    if(value===undefined||value===null||value==='') continue;
+    clean[key]=value;
+  }
+  if(Object.keys(clean).length) page.conditions=clean;
+  else delete page.conditions;
+  return page;
+}
+
+export function addEventPage(event,{trigger='action',conditions}={}){
+  if(!Array.isArray(event.pages)) event.pages=[];
+  const page={trigger,commands:[]};
+  if(conditions&&Object.keys(conditions).length) page.conditions=clone(conditions);
+  event.pages.push(page);
+  return page;
+}
+
+export function commandEditable(command){return !!command&&EDITABLE_COMMANDS.has(command.code);}
+
+export function replaceCommand(event,pageIndex,commandIndex,nextCommand){
+  const page=getPage(event,pageIndex);
+  const current=page.commands[commandIndex];
+  if(!current) throw new Error(`Unknown command: ${commandIndex+1}`);
+  if(!commandEditable(current)) throw new Error(`Command ${current.code} is read-only in this editor version`);
+  if(!nextCommand||!EDITABLE_COMMANDS.has(nextCommand.code)) throw new Error('Replacement command is not supported');
+  page.commands[commandIndex]=clone(nextCommand);
+  return page.commands[commandIndex];
+}
+
+export function addCommand(event,pageIndex,command){
+  if(!command||!EDITABLE_COMMANDS.has(command.code)) throw new Error('Command type is not supported');
+  const page=getPage(event,pageIndex);
+  page.commands.push(clone(command));
+  return page.commands.at(-1);
 }

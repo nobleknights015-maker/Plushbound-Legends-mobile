@@ -2,15 +2,25 @@ import { PlushboundGameSession } from '../../game/runtime/PlushboundGameSession.
 
 function clone(value){return typeof structuredClone==='function'?structuredClone(value):JSON.parse(JSON.stringify(value));}
 
+export function seededRng(seed=1){
+  let state=(Number.isFinite(Number(seed))?Math.trunc(Number(seed)):1)>>>0;
+  return ()=>{
+    state=(Math.imul(1664525,state)+1013904223)>>>0;
+    return state/4294967296;
+  };
+}
+
 export class BattleEncounterTester{
-  constructor({mapPackage,contentPackages=[],rng=Math.random}={}){
+  constructor({mapPackage,contentPackages=[],rng=null,seed=null}={}){
     if(!mapPackage?.maps?.length)throw new Error('BattleEncounterTester requires a runtime map package');
     this.mapPackage=clone(mapPackage);
     this.contentPackages=clone(contentPackages);
+    this.seed=seed===null?null:((Number.isFinite(Number(seed))?Math.trunc(Number(seed)):1)>>>0);
+    const encounterRng=typeof rng==='function'?rng:(this.seed===null?Math.random:seededRng(this.seed));
     this.session=new PlushboundGameSession({
       mapPackage:this.mapPackage,
       contentPackages:this.contentPackages,
-      encounter:{rng,base:1,variance:0,rate:1},
+      encounter:{rng:encounterRng,base:1,variance:0,rate:1},
       logger:{error(){}}
     });
     const first=this.mapPackage.maps[0];

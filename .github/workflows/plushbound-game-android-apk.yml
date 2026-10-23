@@ -67,7 +67,7 @@ jobs:
         run: |
           set -euo pipefail
           grep -q 'file:///android_asset/tools/editor/index.html' app/src/main/java/com/plushbound/legends/MainActivity.java
-          grep -q 'com.plushbound.legends' app/src/main/AndroidManifest.xml
+          grep -q 'applicationId = "com.plushbound.legends"' app/build.gradle.kts
           test -f app/src/main/assets/tools/editor/battle-test.html
           test -f app/src/main/assets/tools/editor/database.html
           test -f app/src/main/assets/tools/editor/common-events.html

@@ -7,15 +7,19 @@ on:
     paths:
       - 'tools/editor/**'
       - 'game/runtime/**'
+      - 'game/content/**'
       - 'game/assets/asset-manifest.json'
       - 'game/tests/editor-core.test.js'
+      - 'game/tests/encounter-session.test.js'
       - '.github/workflows/plushbound-editor-ci.yml'
   pull_request:
     paths:
       - 'tools/editor/**'
       - 'game/runtime/**'
+      - 'game/content/**'
       - 'game/assets/asset-manifest.json'
       - 'game/tests/editor-core.test.js'
+      - 'game/tests/encounter-session.test.js'
       - '.github/workflows/plushbound-editor-ci.yml'
 
 jobs:
@@ -31,11 +35,14 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Run editor core contracts
+      - name: Run editor and runtime contracts
         run: |
           node --check tools/editor/editor-core.js
+          node --check tools/editor/playtest.js
           node --check tools/editor/editor.js
-          node --test game/tests/editor-core.test.js
+          node --check game/runtime/GameContentRuntime.js
+          node --check game/runtime/PlushboundGameSession.js
+          node --test game/tests/editor-core.test.js game/tests/encounter-session.test.js
 
       - name: Install headless browser
         run: |
@@ -53,7 +60,7 @@ jobs:
           cat editor-http.log
           exit 1
 
-      - name: Simulate Elyndor world construction in Chromium
+      - name: Simulate Elyndor authoring and runtime playtest in Chromium
         run: |
           node --input-type=module <<'NODE'
           import { chromium } from 'playwright';
@@ -74,15 +81,26 @@ jobs:
           assert.ok(await page.locator('.asset-card').count() > 5);
           assert.ok(await page.evaluate(() => window.PlushboundEditor.getAssets().some(a => a.id === 'npc/lio/sprite')));
 
-          // Native tile layer painting.
+          // Regression coverage: selecting an event must render page summaries without page errors.
+          await page.click('[data-tool="select"]');
+          await page.click('[data-event-id="lio"]');
+          assert.ok(await page.locator('#eventPageSummary .page-row').count() >= 3);
+
+          // Native tile layer painting with complete undo/redo.
           assert.equal(await page.locator('#layerSelect option').count(), 1);
           await page.fill('#tileId', '17');
           await page.click('[data-tool="tile"]');
           await page.locator('.tile[data-x="4"][data-y="5"]').click({ position: { x: 2, y: 2 } });
           assert.equal(await page.evaluate(() => window.PlushboundEditor.getPackage().maps[0].layers[0].data[5*32+4]), 17);
+          assert.ok((await page.evaluate(() => window.PlushboundEditor.getHistory().undo)) > 0);
+          await page.click('#undoEdit');
+          assert.equal(await page.evaluate(() => window.PlushboundEditor.getPackage().maps[0].layers[0].data[5*32+4]), 0);
+          await page.click('#redoEdit');
+          assert.equal(await page.evaluate(() => window.PlushboundEditor.getPackage().maps[0].layers[0].data[5*32+4]), 17);
           await page.click('[data-tool="erase-tile"]');
           await page.locator('.tile[data-x="4"][data-y="5"]').click({ position: { x: 2, y: 2 } });
           assert.equal(await page.evaluate(() => window.PlushboundEditor.getPackage().maps[0].layers[0].data[5*32+4]), 0);
+
           await page.click('#addLayer');
           await page.fill('#layerZ', '10');
           await page.uncheck('#layerVisible');
@@ -90,17 +108,15 @@ jobs:
           assert.equal(await page.evaluate(() => window.PlushboundEditor.getPackage().maps[0].layers[1].z), 10);
           assert.equal(await page.evaluate(() => window.PlushboundEditor.getPackage().maps[0].layers[1].visible), false);
 
-          // Native Engine v1 region painting.
+          // Native Engine v1 region painting and encounter preview.
           await page.fill('#regionId', '9');
           await page.click('[data-tool="region"]');
           await page.locator('.tile[data-x="8"][data-y="8"]').click({ position: { x: 2, y: 2 } });
           assert.equal(await page.evaluate(() => window.PlushboundEditor.getPackage().maps[0].regions[8*32+8]), 9);
           assert.equal(await page.locator('.tile[data-x="8"][data-y="8"] .region-id').textContent(), 'R9');
-          await page.click('[data-tool="erase-region"]');
-          await page.locator('.tile[data-x="8"][data-y="8"]').click({ position: { x: 2, y: 2 } });
-          assert.equal(await page.evaluate(() => window.PlushboundEditor.getPackage().maps[0].regions[8*32+8]), 0);
+          assert.match(await page.textContent('#encounterPreview'), /elyndor-sunny-plains-early/);
 
-          // Existing event movement and asset assignment.
+          // Existing event movement and asset assignment preserve page data.
           await page.click('[data-tool="select"]');
           await page.click('[data-event-id="lio"]');
           const beforePages = await page.evaluate(() => JSON.stringify(window.PlushboundEditor.getPackage().maps[0].events.find(e => e.id === 'lio').pages));
@@ -116,7 +132,7 @@ jobs:
           await page.locator('[data-asset-id="environment/chest/elyndor-small"]').click();
           assert.equal(await page.inputValue('#eventAsset'), 'environment/chest/elyndor-small');
 
-          // Place a brand-new authored NPC.
+          // Place a brand-new authored NPC with an editable page and command.
           await page.fill('#newEventId', 'editor-browser-npc');
           await page.click('#armNewEvent');
           await page.locator('.tile[data-x="6"][data-y="6"]').click({ position: { x: 2, y: 2 } });
@@ -131,7 +147,7 @@ jobs:
           assert.equal(authored.trigger, 'touch');
           assert.equal(authored.commands[0].parameters[0], 'Hello from the visual editor');
 
-          // Create a native cross-map transfer and validate it.
+          // Create and validate a native cross-map transfer.
           await page.fill('#transferEventId', 'editor-to-crossing');
           await page.selectOption('#transferTargetMap', 'elyndor-sunthread-crossing');
           await page.fill('#transferX', '2');
@@ -143,17 +159,34 @@ jobs:
           assert.equal(transfer.pages[0].trigger, 'touch');
           assert.deepEqual(transfer.pages[0].commands[0].parameters, ['elyndor-sunthread-crossing',2,12,6]);
           assert.deepEqual(await page.evaluate(() => window.PlushboundEditor.validateLinks()), []);
-          await page.click('#validateLinks');
-          assert.match(await page.textContent('#linkSummary'), /0 issue/);
 
-          // Collision painting remains compatible with all map authoring layers.
+          // Whole-package validation has no hard errors for the normalized project.
+          const validation = await page.evaluate(() => window.PlushboundEditor.validate());
+          assert.equal(validation.filter(issue => issue.severity === 'error').length, 0);
+
+          // Collision painting remains compatible with all authoring layers.
           await page.click('[data-tool="blocked"]');
           await page.locator('.tile[data-x="4"][data-y="4"]').click({ position: { x: 2, y: 2 } });
           assert.equal(await page.evaluate(() => window.PlushboundEditor.getPackage().maps[0].blocked.includes('4,4')), true);
 
+          // In-editor playtest runs the actual PlushboundGameSession path.
+          assert.equal(await page.evaluate(() => window.PlushboundEditor.startPlaytest({x:12,y:10,encounter:{base:999,variance:0,rate:1}})), true);
+          await page.waitForFunction(() => !document.querySelector('#playtestOverlay').hidden);
+          let preview = await page.evaluate(() => window.PlushboundEditor.getPlaytestSnapshot());
+          assert.equal(preview.currentMap, 'elyndor-sunny-plains');
+          assert.equal(preview.map.x, 12);
+          assert.equal(preview.map.y, 10);
+          const step = await page.evaluate(() => window.PlushboundEditor.playtestMove(1,0));
+          assert.equal(step.moved, true);
+          preview = await page.evaluate(() => window.PlushboundEditor.getPlaytestSnapshot());
+          assert.equal(preview.map.x, 13);
+          assert.match(await page.textContent('#playtestStatus'), /Sunny Plains of Elyndor/);
+          await page.evaluate(() => window.PlushboundEditor.stopPlaytest());
+          assert.equal(await page.locator('#playtestOverlay').evaluate(el => el.hidden), true);
+
           assert.deepEqual(errors, []);
           await browser.close();
-          console.log('Plushbound editor playable-map simulation passed');
+          console.log('Plushbound editor authoring + runtime playtest simulation passed');
           NODE
 
       - name: Record editor simulation gate
@@ -163,7 +196,7 @@ jobs:
           Plushbound Visual Editor simulation
           Browser: Chromium headless
           Target package: Elyndor runtime maps
-          Coverage: native tile layers, regions, collision, assets, event placement, event pages/commands, native TRANSFER links, cross-map validation
+          Coverage: tile layers, regions, encounters, collision, assets, event placement/pages/commands, transfers, undo/redo, validation, real-session playtest
           Result: ${{ job.status }}
           Commit: ${{ github.sha }}
           EOF

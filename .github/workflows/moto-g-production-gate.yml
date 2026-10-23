@@ -119,19 +119,8 @@ jobs:
             sleep 8
             test -n "$(adb shell pidof com.plushbound.legends | tr -d '\r')"
             echo "Proving real editor modules executed in Android WebView..."
-            EDITOR_READY=0
-            for attempt in $(seq 1 10); do
-              if adb logcat -d -s PlushboundEditor:I '*:S' | grep -q 'PLUSHBOUND_EDITOR_READY'; then
-                EDITOR_READY=1
-                break
-              fi
-              sleep 1
-            done
-            test "$EDITOR_READY" = "1"
-            if adb logcat -d -s PlushboundEditor:E '*:S' | grep -q 'PLUSHBOUND_EDITOR_NOT_READY'; then
-              echo "Editor module readiness check failed"
-              exit 1
-            fi
+            adb logcat -d -s PlushboundEditor:I '*:S' | grep -q 'PLUSHBOUND_EDITOR_READY'
+            ! adb logcat -d -s PlushboundEditor:E '*:S' | grep -q 'PLUSHBOUND_EDITOR_NOT_READY'
             echo "Recording initial memory footprint..."
             adb shell dumpsys meminfo com.plushbound.legends | tee moto-g-meminfo-initial.txt
             echo "Running constrained interaction smoke..."

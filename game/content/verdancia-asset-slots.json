@@ -1,1 +1,34 @@
-{"schemaVersion":1,"regionId":"verdancia","tileSize":48,"policy":"MV-Trinity-inspired presentation with original Plushbound identity; all gameplay references use stable logical IDs.","maps":{"verdancia-threadwood-verge":["tileset/verdancia/threadwood-verge","parallax/verdancia/canopy-day","weather/verdancia/clear"],"verdancia-lanternbough":["tileset/verdancia/lanternbough","parallax/verdancia/canopy-day","environment/verdancia/lanternbough-overlays"],"verdancia-mossveil-hollow":["tileset/verdancia/mossveil-hollow","parallax/verdancia/mist-canopy","weather/verdancia/mist"],"verdancia-elderstitch-grove":["tileset/verdancia/elderstitch-grove","parallax/verdancia/ancient-canopy","environment/verdancia/waystitch-glow"],"verdancia-rootbound-depths":["tileset/verdancia/rootbound-depths","parallax/verdancia/underground-roots","weather/verdancia/spore-drift"],"verdancia-weavers-sanctum":["tileset/verdancia/weavers-sanctum","parallax/verdancia/sanctum-threadspace","environment/verdancia/loom-overlays"]},"guardianPattern":"guardian/{id}/{sprite|portrait|silhouette|battle}","enemyPattern":"enemy/verdancia/{id}/{sprite|battle|portrait}","npcPattern":"npc/verdancia/{id}/{sprite|portrait}","audio":{"bgmTarget":10,"bgsTarget":12,"sfxTarget":48},"visualReserve":{"tilesets":12,"parallaxes":12,"battlebacks":16,"environmentProps":64,"characterCreationPieces":40,"npcSpriteVariants":80,"guardianAnimationSets":24,"enemyAnimationSets":40},"fallbackPolicy":"Missing development visuals resolve to explicit placeholders; unresolved logical IDs are validation errors."}
+{
+  "schemaVersion": 1,
+  "regionId": "verdancia",
+  "tileSize": 48,
+  "policy": "MV-Trinity-inspired presentation with original Plushbound identity; all gameplay references use stable logical IDs.",
+  "maps": {
+    "verdancia-threadwood-verge": ["tileset/verdancia/threadwood-verge", "parallax/verdancia/canopy-day", "weather/verdancia/clear"],
+    "verdancia-lanternbough": ["tileset/verdancia/lanternbough", "parallax/verdancia/canopy-day", "environment/verdancia/lanternbough-overlays"],
+    "verdancia-mossveil-hollow": ["tileset/verdancia/mossveil-hollow", "parallax/verdancia/mist-canopy", "weather/verdancia/mist"],
+    "verdancia-elderstitch-grove": ["tileset/verdancia/elderstitch-grove", "parallax/verdancia/ancient-canopy", "environment/verdancia/waystitch-glow"],
+    "verdancia-rootbound-depths": ["tileset/verdancia/rootbound-depths", "parallax/verdancia/underground-roots", "weather/verdancia/spore-drift"],
+    "verdancia-weavers-sanctum": ["tileset/verdancia/weavers-sanctum", "parallax/verdancia/sanctum-threadspace", "environment/verdancia/loom-overlays"]
+  },
+  "enemies": {
+    "mossbit-frayling": ["enemy/verdancia/mossbit-frayling/sprite", "enemy/verdancia/mossbit-frayling/battle", "enemy/verdancia/mossbit-frayling/portrait"],
+    "briar-tuft-frayling": ["enemy/verdancia/briar-tuft-frayling/sprite", "enemy/verdancia/briar-tuft-frayling/battle", "enemy/verdancia/briar-tuft-frayling/portrait"],
+    "hollow-stitchling": ["enemy/verdancia/hollow-stitchling/sprite", "enemy/verdancia/hollow-stitchling/battle", "enemy/verdancia/hollow-stitchling/portrait"],
+    "knotjaw-frayling": ["enemy/verdancia/knotjaw-frayling/sprite", "enemy/verdancia/knotjaw-frayling/battle", "enemy/verdancia/knotjaw-frayling/portrait"],
+    "rootbound-warden": ["enemy/verdancia/rootbound-warden/sprite", "enemy/verdancia/rootbound-warden/battle", "enemy/verdancia/rootbound-warden/portrait"],
+    "unraveled-hart": ["enemy/verdancia/unraveled-hart/sprite", "enemy/verdancia/unraveled-hart/battle", "enemy/verdancia/unraveled-hart/portrait"]
+  },
+  "audio": {
+    "bgm": ["bgm/verdancia/threadwood-verge", "bgm/verdancia/lanternbough", "bgm/verdancia/mossveil-hollow", "bgm/verdancia/elderstitch-grove", "bgm/verdancia/rootbound-depths", "bgm/verdancia/weavers-sanctum"],
+    "bgs": ["bgs/verdancia/forest-canopy", "bgs/verdancia/settlement-grove", "bgs/verdancia/mist-and-frogs", "bgs/verdancia/guardian-grove", "bgs/verdancia/deep-roots", "bgs/verdancia/ancient-thread-hum"],
+    "bgmTarget": 10,
+    "bgsTarget": 12,
+    "sfxTarget": 48
+  },
+  "guardianPattern": "guardian/{id}/{sprite|portrait|silhouette|battle}",
+  "enemyPattern": "enemy/verdancia/{id}/{sprite|battle|portrait}",
+  "npcPattern": "npc/verdancia/{id}/{sprite|portrait}",
+  "visualReserve": {"tilesets":12,"parallaxes":12,"battlebacks":16,"environmentProps":64,"characterCreationPieces":40,"npcSpriteVariants":80,"guardianAnimationSets":24,"enemyAnimationSets":40},
+  "fallbackPolicy": "Missing development visuals resolve to explicit placeholders; unresolved logical IDs are validation errors."
+}

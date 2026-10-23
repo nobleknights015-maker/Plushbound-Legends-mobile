@@ -66,6 +66,16 @@ jobs:
           assert.equal(await page.locator('#bossList [data-boss-id="verdancia-unraveled-hart"]').isDisabled(),true);
           assert.match(await page.textContent('#battleStatus'),/marked complete/i);
 
+          const runtimeValues=await page.locator('#runtimePackage option').evaluateAll(options=>options.map(option=>option.value));
+          let foundElyndor=false;
+          for(const value of runtimeValues){
+            await page.selectOption('#runtimePackage',value);
+            if(await page.locator('#battleMap option[value="elyndor-sunthread-crossing"]').count()){
+              foundElyndor=true;
+              break;
+            }
+          }
+          assert.equal(foundElyndor,true);
           await page.selectOption('#battleMap','elyndor-sunthread-crossing');
           await page.fill('#battleRegion','0');
           await page.waitForFunction(()=>document.querySelectorAll('#encounterCandidates [data-enemy-id]').length>0);

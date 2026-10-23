@@ -23,9 +23,13 @@ test('asset records route audio to Audio Browser and visual assets to Map Editor
   assert.equal(editorDestination(rows.find(row=>row.context?.assetId==='npc/lio/sprite')),'./index.html?asset=npc%2Flio%2Fsprite');
 });
 
-test('diagnostics route runtime issues to exact events and content issues to prefiltered search',()=>{
+test('diagnostics route runtime and source-aware content issues directly to editors',()=>{
   assert.equal(diagnosticDestination({mapId:'crossing',eventId:'anchor-west',id:'missing-shop'}),'./index.html?map=crossing&event=anchor-west');
   assert.equal(diagnosticDestination({mapId:'crossing',id:'missing-map-ref'}),'./map-manager.html?map=crossing');
+  assert.equal(diagnosticDestination({packageId:'route-one',collectionKey:'quests',recordId:'threads-out-of-tune',owner:'quest:threads-out-of-tune',id:'missing-item'}),'./database.html?package=route-one&collection=quests&record=threads-out-of-tune');
+});
+
+test('diagnostics retain filtered-search fallback when source identity is unavailable',()=>{
   assert.equal(diagnosticDestination({owner:'quest:threads-out-of-tune',id:'missing-item'}),'./project-search.html?q=missing-item&type=content');
   assert.equal(diagnosticDestination({owner:'shop:menders-rest-provisions'}),'./project-search.html?q=menders-rest-provisions&type=content');
 });

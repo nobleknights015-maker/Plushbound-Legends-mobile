@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { BattleEncounterTester,seededRng } from '../../tools/editor/battle-test-core.js';
 
 const mapPackage={schemaVersion:1,maps:[{id:'test-field',name:'Test Field',width:4,height:4,layers:[],blocked:[],regions:new Array(16).fill(0),encounterTable:'field-table',events:[]},{id:'sanctum',name:'Sanctum',width:2,height:2,layers:[],blocked:[],regions:new Array(4).fill(0),events:[]}]};
+const alternateMapPackage={schemaVersion:1,maps:[{id:'far-field',name:'Far Field',width:2,height:2,layers:[],blocked:[],regions:new Array(4).fill(0),events:[]}]};
 const contentPackages=[{
   quests:[{id:'hunt-test',name:'Hunt Test',stage:1,objectives:[{id:'defeat-woolbeast',type:'battle',targetTag:'woolbeast',count:2}]}],
   encounterTables:[{id:'field-table',entries:[{enemyId:'woolbeast-a',weight:3,regions:[0]},{enemyId:'woolbeast-b',weight:1,regions:[1]}]}],
@@ -98,4 +99,18 @@ test('escape does not progress battle objectives',()=>{
   tester.pickEncounter({regionId:0,enemyId:'woolbeast-a'});
   tester.resolveEncounter('escape');
   assert.equal(tester.snapshot().quests['hunt-test'].objectives['defeat-woolbeast'],0);
+});
+
+test('battle tester can reuse sandbox state across runtime map packages',()=>{
+  const first=new BattleEncounterTester({mapPackage,contentPackages,rng:()=>0});
+  first.startQuest('hunt-test');
+  first.pickEncounter({regionId:0,enemyId:'woolbeast-a'});
+  first.resolveEncounter('victory');
+  first.loadBoss('warden-boss');
+  first.resolveEncounter('victory');
+  const second=new BattleEncounterTester({mapPackage:alternateMapPackage,contentPackages,rng:()=>0,state:first.session.state});
+  assert.equal(second.snapshot().currentMap,'far-field');
+  assert.equal(second.snapshot().quests['hunt-test'].objectives['defeat-woolbeast'],1);
+  assert.equal(second.session.state.sw('warden:defeated'),true);
+  assert.equal(second.bosses()[0].available,false);
 });

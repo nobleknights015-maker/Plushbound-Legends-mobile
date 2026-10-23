@@ -1,4 +1,5 @@
 import {auditContentReferences} from './reference-audit-core.js';
+import {diagnosticDestination} from './editor-navigation-core.js';
 
 async function loadJson(url){const response=await fetch(url);if(!response.ok)throw new Error(`${response.status} ${url}`);return response.json();}
 async function loadContentPackages(){
@@ -25,7 +26,12 @@ async function audit(){
     const [contentPackages,pkg]=await Promise.all([loadContentPackages(),Promise.resolve(window.PlushboundEditor.getPackage())]);
     if(!pkg){summary.textContent='Load a package to audit references.';issuesHost.innerHTML='';return [];}
     const issues=auditContentReferences(pkg,contentPackages);summary.textContent=`${issues.length} project reference issue(s)`;issuesHost.innerHTML='';
-    for(const issue of issues.slice(0,100)){const row=document.createElement('div');row.className='page-row error';row.textContent=`${issue.location||`${issue.mapId||'content'}/${issue.eventId||issue.owner||'reference'}`} • ${issue.message}`;issuesHost.append(row);}return issues;
+    for(const issue of issues.slice(0,100)){
+      const row=document.createElement('div');row.className='page-row error';
+      const text=document.createElement('span');text.textContent=`${issue.location||`${issue.mapId||'content'}/${issue.eventId||issue.owner||'reference'}`} • ${issue.message}`;row.append(text);
+      const destination=diagnosticDestination(issue);if(destination){const link=document.createElement('a');link.className='diagnostic-link';link.href=destination;link.textContent=issue.mapId?'Open Issue':'Find Source';row.append(link);}
+      issuesHost.append(row);
+    }return issues;
   }catch(error){summary.textContent=`Reference audit unavailable: ${error.message}`;issuesHost.innerHTML='';return [];}
 }
 

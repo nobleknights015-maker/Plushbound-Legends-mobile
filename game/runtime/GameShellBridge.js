@@ -56,6 +56,34 @@ export class GameShellBridge {
     return result;
   }
 
+  move(dx, dy, options = {}) {
+    const result = this.#requireSession().move(dx, dy, options);
+    this.publish('move', { dx, dy, moved: result.moved, encounter: clone(result.encounter) });
+    return clone(result);
+  }
+
+  encounterPreview(options = {}) {
+    return clone(this.#requireSession().encounterPreview(options));
+  }
+
+  resolveEncounter(result = 'victory') {
+    const resolved = this.#requireSession().resolveEncounter(result);
+    this.publish('encounter-resolved', { result: resolved.result, encounter: clone(resolved.encounter) });
+    return clone(resolved);
+  }
+
+  exportSave() {
+    const save = this.#requireSession().serializeSave();
+    this.publish('save-exported', { schemaVersion: save.schemaVersion });
+    return clone(save);
+  }
+
+  importSave(save) {
+    const snapshot = this.#requireSession().restoreSave(save);
+    this.publish('save-restored', { mapId: snapshot.currentMap });
+    return clone(snapshot);
+  }
+
   advanceDialogue() {
     const current = this.#requireSession().advanceDialogue();
     this.publish('dialogue', { current });

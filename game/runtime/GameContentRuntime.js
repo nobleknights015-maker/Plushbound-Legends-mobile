@@ -12,6 +12,8 @@ export class GameContentRuntime {
     this.items = new Map();
     this.shops = new Map();
     this.waystitches = new Map();
+    this.encounterTables = new Map();
+    this.enemies = new Map();
     for (const content of contentPackages) this.register(content);
     this.hooks = { emit: (name, payload) => this.emit(name, payload) };
   }
@@ -21,6 +23,8 @@ export class GameContentRuntime {
     for (const item of content.items || []) this.items.set(String(item.id), clone(item));
     for (const shop of content.shops || []) this.shops.set(String(shop.id), clone(shop));
     for (const waystitch of content.waystitches || []) this.waystitches.set(String(waystitch.id), clone(waystitch));
+    for (const table of content.encounterTables || []) this.encounterTables.set(String(table.id), clone(table));
+    for (const enemy of content.enemies || []) this.enemies.set(String(enemy.id), clone(enemy));
     return this;
   }
 
@@ -28,6 +32,10 @@ export class GameContentRuntime {
   questState(id) { return clone(this.state.quests.get(String(id)) || null); }
   itemDefinition(id) { return clone(this.items.get(String(id)) || null); }
   shop(id) { return clone(this.shops.get(String(id)) || null); }
+  encounterTable(id) { return clone(this.encounterTables.get(String(id)) || null); }
+  enemyDefinition(id) { return clone(this.enemies.get(String(id)) || null); }
+  encounterTableEntries(id) { return clone(this.encounterTables.get(String(id))?.entries || []); }
+  encounterTableIds() { return [...this.encounterTables.keys()]; }
 
   startQuest(id) {
     const key = String(id);

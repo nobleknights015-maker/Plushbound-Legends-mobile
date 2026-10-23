@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { scalarFieldDescriptors, recordFieldDescriptors, applyScalarFields, applyRecordFields, collectionProfile, newRecordTemplate } from '../../tools/editor/database-core.js';
+import { scalarFieldDescriptors, recordFieldDescriptors, applyScalarFields, applyRecordFields, collectionProfile, newRecordTemplate, nestedRecordListDescriptors, addNestedRecord, replaceNestedRecord, removeNestedRecord } from '../../tools/editor/database-core.js';
 
 test('visual database fields expose top-level and one-level nested scalars', () => {
   const record = { id:'cinder', name:'Cinder', level:7, active:true, notes:null, assetBindings:{sprite:'guardian/cinder/sprite',battle:'guardian/cinder/battle'}, skills:['spark'] };
@@ -21,6 +21,30 @@ test('domain field descriptors expose primitive lists and useful groups without 
   assert.equal(fields.find(field=>field.key==='rewards.exp').group,'Rewards');
   assert.equal(fields.find(field=>field.key==='assets.battle').group,'Assets');
   assert.equal(fields.some(field=>field.key==='rewards.drops'),false);
+});
+
+test('structured nested rows expose encounter entries and drops with safe templates', () => {
+  const encounter={id:'forest',entries:[{enemyId:'sprout',weight:70}]};
+  const encounterLists=nestedRecordListDescriptors(encounter);
+  assert.equal(encounterLists[0].key,'entries');
+  assert.deepEqual(encounterLists[0].template,{enemyId:'',weight:1});
+  const enemy={id:'sprout',rewards:{exp:10,drops:[]}};
+  const dropLists=nestedRecordListDescriptors(enemy);
+  assert.equal(dropLists[0].key,'rewards.drops');
+  assert.deepEqual(dropLists[0].template,{itemId:'',chance:0});
+});
+
+test('structured nested rows add, edit and remove transactionally', () => {
+  const record={id:'forest',entries:[{enemyId:'sprout',weight:70}]};
+  const added=addNestedRecord(record,'entries');
+  assert.equal(record.entries.length,1);
+  assert.equal(added.entries.length,2);
+  const edited=replaceNestedRecord(added,'entries',1,{enemyId:'mossling',weight:30});
+  assert.deepEqual(edited.entries[1],{enemyId:'mossling',weight:30});
+  assert.deepEqual(added.entries[1],{enemyId:'',weight:1});
+  const removed=removeNestedRecord(edited,'entries',0);
+  assert.deepEqual(removed.entries,[{enemyId:'mossling',weight:30}]);
+  assert.equal(edited.entries.length,2);
 });
 
 test('visual database field application preserves complex arrays while editing native scalar, nested and primitive-list values', () => {

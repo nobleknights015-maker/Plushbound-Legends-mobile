@@ -72,6 +72,44 @@ test('shell bridge exposes map, interaction, dialogue, shop and quest-facing act
   assert.equal(scope.events.some(event => event.detail?.reason === 'shop-close'), true);
 }));
 
+test('shell bridge exports and restores persistent state and publishes save lifecycle updates', () => withCustomEvent(() => {
+  const scope = makeScope();
+  scope.PlushboundGame = makeGame();
+  const bridge = new GameShellBridge({ scope }).attach();
+  bridge.interact('tutorial-chest');
+  bridge.interact('lio');
+  bridge.recordBattle(['frayling']);
+  bridge.interact('lio');
+  bridge.triggerAt(31, 10, 'touch');
+
+  const save = bridge.exportSave();
+  assert.equal(save.schemaVersion, 1);
+  assert.equal(save.state.map.id, 'elyndor-sunthread-crossing');
+
+  bridge.enterMap('elyndor-menders-rest', 3, 10, 6);
+  assert.equal(bridge.snapshot().currentMap, 'elyndor-menders-rest');
+  const restored = bridge.importSave(save);
+  assert.equal(restored.currentMap, 'elyndor-sunthread-crossing');
+  assert.equal(restored.inventory.items['threadmend-tonic'], 2);
+  assert.equal(scope.events.some(event => event.detail?.reason === 'save-exported'), true);
+  assert.equal(scope.events.some(event => event.detail?.reason === 'save-restored'), true);
+}));
+
+test('shell bridge resolves active encounters into quest progress', () => withCustomEvent(() => {
+  const scope = makeScope();
+  scope.PlushboundGame = makeGame();
+  const bridge = new GameShellBridge({ scope }).attach();
+  bridge.interact('lio');
+  scope.PlushboundGame.session.lastEncounter = {
+    enemyId: 'frayling-tuft',
+    enemy: scope.PlushboundGame.session.game.enemyDefinition('frayling-tuft')
+  };
+  const result = bridge.resolveEncounter('victory');
+  assert.equal(result.result, 'victory');
+  assert.equal(bridge.quest('a-thread-begins')?.status, 'ready');
+  assert.equal(scope.events.some(event => event.detail?.reason === 'encounter-resolved'), true);
+}));
+
 test('shell bridge attach is idempotent and detach removes runtime listeners', () => withCustomEvent(() => {
   const scope = makeScope();
   const bridge = new GameShellBridge({ scope });

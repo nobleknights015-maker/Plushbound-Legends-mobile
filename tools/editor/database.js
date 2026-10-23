@@ -1,4 +1,4 @@
-import {clone,collectionDescriptors,collectionRecords,validateCollection,replaceRecord,addRecord,removeRecord,labelFor,searchableRecordText,scalarFieldDescriptors,applyScalarFields} from './database-core.js';
+import {clone,collectionDescriptors,collectionRecords,validateCollection,validatePackageCollections,replaceRecord,addRecord,removeRecord,labelFor,searchableRecordText,scalarFieldDescriptors,applyScalarFields} from './database-core.js';
 
 const state={index:null,packages:[],packageIndex:-1,collectionKey:null,selectedLocator:null,history:{undo:[],redo:[],limit:80}};
 const $=id=>document.getElementById(id);
@@ -90,7 +90,7 @@ function deleteRecord(){
   catch(error){discardSnapshot(label);alert(`Record not deleted: ${error.message}`);}
 }
 function exportPackage(){
-  const entry=activePackage();if(!entry?.data)return;const issues=state.collectionKey?validateCollection(entry.data,state.collectionKey):[];if(issues.some(issue=>issue.severity==='error')){alert('Fix database validation errors before export.');return;}const blob=new Blob([`${JSON.stringify(entry.data,null,2)}\n`],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=entry.path.split('/').at(-1)||`${entry.id}.json`;a.click();URL.revokeObjectURL(url);
+  const entry=activePackage();if(!entry?.data)return;const issues=validatePackageCollections(entry.data);const error=issues.find(issue=>issue.severity==='error');if(error){alert(`Fix ${error.collectionLabel} before export: ${error.message}`);return;}const blob=new Blob([`${JSON.stringify(entry.data,null,2)}\n`],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=entry.path.split('/').at(-1)||`${entry.id}.json`;a.click();URL.revokeObjectURL(url);
 }
 
 els.loadDatabase.addEventListener('click',()=>loadProject().catch(error=>alert(`Database load failed: ${error.message}`)));

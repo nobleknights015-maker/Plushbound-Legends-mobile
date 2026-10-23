@@ -2,17 +2,41 @@ export function clone(value){return typeof structuredClone==='function'?structur
 
 function isRecord(value){return !!value&&typeof value==='object'&&!Array.isArray(value);}
 function isScalar(value){return value===null||['string','number','boolean'].includes(typeof value);}
+function isPrimitiveList(value){return Array.isArray(value)&&value.every(isScalar);}
 function recordId(record,fallback=''){return String(record?.id??fallback??'').trim();}
+
+const COLLECTION_PROFILES={
+  starters:{title:'Plush Guardians',description:'Guardian identity, bond role and presentation assets.',template:{id:'new-guardian',name:'New Guardian',species:'',role:'',bond:'',description:'',assetBindings:{sprite:'',portrait:'',silhouette:'',battle:''}}},
+  enemies:{title:'Enemies',description:'Battle identity, level, stats, skills, rewards and assets.',template:{id:'new-enemy',name:'New Enemy',role:'',level:1,stats:{hp:1,mp:0,attack:1,defense:1,spirit:1,agility:1},tags:[],skills:[],rewards:{exp:0,gold:0,drops:[]},assets:{sprite:'',battle:'',portrait:''}}},
+  encounterTables:{title:'Encounter Tables',description:'Weighted encounter groups referenced by map regions.',template:{id:'new-encounter-table',entries:[]}},
+  bossEncounters:{title:'Boss Encounters',description:'One-time and story-gated regional boss encounters.',template:{id:'new-boss-encounter',mapId:'',enemyId:'',oneTime:true,completionSwitch:''}},
+  namedCore:{title:'Named NPCs',description:'Persistent named NPC identity, home, occupation and quest role.',template:{id:'new-npc',name:'New NPC',ageBand:'adult',home:'',occupation:'',guardianFamily:'',questRole:''}},
+  shops:{title:'Shops',description:'Merchant inventories and economy-facing shop definitions.',template:{id:'new-shop',name:'New Shop'}},
+  items:{title:'Items',description:'Consumables and inventory-facing item definitions.',template:{id:'new-item',name:'New Item'}},
+  waystitches:{title:'Waystitches',description:'Travel and world-link definitions.',template:{id:'new-waystitch',name:'New Waystitch'}}
+};
+
+export function collectionProfile(key=''){
+  const profile=COLLECTION_PROFILES[key];
+  return profile?clone(profile):{title:labelFor(key),description:'Schema-preserving Plushbound content records.',template:{id:`new-${String(key).replace(/[^a-z0-9]+/gi,'-').toLowerCase()}`,name:'New Record'}};
+}
+
+export function newRecordTemplate(key,{suffix}={}){
+  const record=clone(collectionProfile(key).template);
+  const token=suffix||Date.now().toString(36);
+  if(record.id) record.id=`${record.id}-${token}`;
+  return record;
+}
 
 export function collectionDescriptors(pkg={}){
   const out=[];
   for(const [key,value] of Object.entries(pkg||{})){
     if(Array.isArray(value)&&value.every(item=>isRecord(item))){
-      out.push({key,kind:'array',count:value.length,label:labelFor(key)});
+      out.push({key,kind:'array',count:value.length,label:collectionProfile(key).title});
     }else if(isRecord(value)){
       const entries=Object.entries(value);
       if(entries.length&&entries.every(([,item])=>isRecord(item))){
-        out.push({key,kind:'keyed',count:entries.length,label:labelFor(key)});
+        out.push({key,kind:'keyed',count:entries.length,label:collectionProfile(key).title});
       }
     }
   }
@@ -44,19 +68,33 @@ export function validatePackageCollections(pkg={}){
   return issues;
 }
 
-function scalarDescriptor(path,value){
-  const parts=path.split('.');
-  return {key:path,label:parts.map(labelFor).join(' · '),type:value===null?'string':typeof value,value:value??'',depth:parts.length-1};
+function fieldGroup(path){
+  const root=String(path).split('.')[0];
+  if(root==='id'||root==='name'||root==='title'||root==='species'||root==='role'||root==='description') return 'Identity';
+  if(root==='stats'||root==='level'||root==='skills'||root==='tags'||root==='bond') return 'Gameplay';
+  if(root==='rewards') return 'Rewards';
+  if(root==='assets'||root==='assetBindings'||/asset|sprite|portrait|battle/i.test(root)) return 'Assets';
+  if(['mapId','enemyId','oneTime','completionSwitch','home','occupation','guardianFamily','questRole','ageBand'].includes(root)) return 'World & Story';
+  return 'Details';
 }
 
-export function scalarFieldDescriptors(record={}){
+function fieldDescriptor(path,value){
+  const parts=path.split('.');
+  return {key:path,label:parts.map(labelFor).join(' · '),type:isPrimitiveList(value)?'list':value===null?'string':typeof value,value:isPrimitiveList(value)?clone(value):(value??''),depth:parts.length-1,group:fieldGroup(path)};
+}
+
+export function recordFieldDescriptors(record={}){
   if(!isRecord(record)) return [];
   const fields=[];
   for(const [key,value] of Object.entries(record)){
-    if(isScalar(value)){fields.push(scalarDescriptor(key,value));continue;}
-    if(isRecord(value)) for(const [childKey,childValue] of Object.entries(value)) if(isScalar(childValue)) fields.push(scalarDescriptor(`${key}.${childKey}`,childValue));
+    if(isScalar(value)||isPrimitiveList(value)){fields.push(fieldDescriptor(key,value));continue;}
+    if(isRecord(value)) for(const [childKey,childValue] of Object.entries(value)) if(isScalar(childValue)||isPrimitiveList(childValue)) fields.push(fieldDescriptor(`${key}.${childKey}`,childValue));
   }
   return fields;
+}
+
+export function scalarFieldDescriptors(record={}){
+  return recordFieldDescriptors(record).filter(field=>field.type!=='list');
 }
 
 function getPath(record,path){
@@ -65,20 +103,36 @@ function getPath(record,path){
   return {exists:true,value:current,parts};
 }
 
-export function applyScalarFields(record,fields={}){
+function parsePrimitiveList(input,current,pathLabel){
+  if(Array.isArray(input)) return clone(input);
+  const text=String(input??'').trim();
+  if(!text) return [];
+  let parsed;
+  try{parsed=JSON.parse(text);}catch{parsed=text.split(/[\n,]/).map(value=>value.trim()).filter(Boolean);}
+  if(!Array.isArray(parsed)||!parsed.every(isScalar)) throw new Error(`${pathLabel} must be a list of simple values`);
+  const sample=current.find(value=>value!==null);
+  if(typeof sample==='number') return parsed.map(value=>{const n=Number(value);if(!Number.isFinite(n))throw new Error(`${pathLabel} must contain numbers`);return n;});
+  if(typeof sample==='boolean') return parsed.map(value=>value===true||value==='true'||value===1||value==='1');
+  return parsed.map(value=>value===null?'':String(value));
+}
+
+export function applyRecordFields(record,fields={}){
   if(!isRecord(record)) throw new Error('Record must be a JSON object');
   const next=clone(record);
   for(const [path,input] of Object.entries(fields||{})){
     const found=getPath(next,path);if(!found.exists)continue;
-    const current=found.value;let value;
-    if(typeof current==='boolean') value=input===true||input==='true'||input===1||input==='1';
+    const current=found.value;const pathLabel=found.parts.map(labelFor).join(' · ');let value;
+    if(isPrimitiveList(current)) value=parsePrimitiveList(input,current,pathLabel);
+    else if(typeof current==='boolean') value=input===true||input==='true'||input===1||input==='1';
     else if(typeof current==='number'){
-      value=Number(input);if(!Number.isFinite(value)) throw new Error(`${found.parts.map(labelFor).join(' · ')} must be a number`);
+      value=Number(input);if(!Number.isFinite(value)) throw new Error(`${pathLabel} must be a number`);
     }else value=String(input??'');
     let target=next;for(const part of found.parts.slice(0,-1))target=target[part];target[found.parts.at(-1)]=value;
   }
   return next;
 }
+
+export function applyScalarFields(record,fields={}){return applyRecordFields(record,fields);}
 
 export function replaceRecord(pkg,key,locator,nextRecord){
   if(!isRecord(nextRecord)) throw new Error('Record must be a JSON object');
@@ -135,5 +189,5 @@ export function labelFor(key=''){
 
 export function searchableRecordText(row){
   const record=row?.record||{};
-  return `${row?.id||''} ${record.name||''} ${record.title||''} ${record.species||''} ${record.role||''} ${record.description||''}`.toLowerCase();
+  return `${row?.id||''} ${record.name||''} ${record.title||''} ${record.species||''} ${record.role||''} ${record.description||''} ${(record.tags||[]).join?.(' ')||''} ${(record.skills||[]).join?.(' ')||''}`.toLowerCase();
 }

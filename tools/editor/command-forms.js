@@ -6,7 +6,7 @@ function readJson(textarea){try{return JSON.parse(textarea.value||'[]');}catch{r
 function fieldInput([key,type,label,options],value){
   const wrap=document.createElement('label');wrap.className='command-form-field';wrap.textContent=label;
   let input;
-  if(type==='textarea'){input=document.createElement('textarea');input.rows=3;input.value=value??'';}
+  if(type==='textarea'||type==='lines'){input=document.createElement('textarea');input.rows=type==='lines'?4:3;input.value=value??'';}
   else if(type==='select'){input=document.createElement('select');for(const option of options||[]){const pair=Array.isArray(option)?option:[option,option];const o=document.createElement('option');o.value=pair[0];o.textContent=pair[1];input.append(o);}input.value=String(value??'');}
   else if(type==='boolean'){input=document.createElement('input');input.type='checkbox';input.checked=!!value;wrap.classList.add('command-form-check');}
   else {input=document.createElement('input');input.type=type==='number'?'number':'text';if(type==='number')input.step='any';input.value=value??'';}

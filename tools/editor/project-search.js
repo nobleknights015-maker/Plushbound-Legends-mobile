@@ -1,5 +1,5 @@
 import {buildProjectIndex,searchProject} from './project-search-core.js';
-import {editorDestination} from './editor-navigation-core.js';
+import {editorDestination,readSearchLink} from './editor-navigation-core.js';
 
 const query=document.getElementById('projectQuery');
 const type=document.getElementById('projectType');
@@ -29,13 +29,14 @@ function render(){
 }
 
 async function loadProject(){
+  const initial=readSearchLink(location.search);query.value=initial.query;if(initial.sourceType)type.value=initial.sourceType;
   const indexUrl=new URL('../../game/content/content-index.json',location.href);
   const manifest=await loadJson(indexUrl);
   const base=new URL('./',indexUrl);
   const contentPackages=await Promise.all((manifest.packages||[]).map(async entry=>({id:entry.id,data:await loadJson(new URL(entry.path,base))})));
   const runtimePackages=await Promise.all((manifest.runtimePackages||[]).map(async entry=>({id:entry.id,data:await loadJson(new URL(entry.path,base))})));
   let assetManifest=null;
-  if(manifest.assetLibraries?.[0]?.manifest) assetManifest=await loadJson(new URL(manifest.assetLibraries[0].manifest,base));
+  if(manifest.assetLibraries?.[0]?.manifest)assetManifest=await loadJson(new URL(manifest.assetLibraries[0].manifest,base));
   index=buildProjectIndex({contentPackages,runtimePackages,assetManifest});
   render();
 }

@@ -1,6 +1,7 @@
 export function clone(value){return typeof structuredClone==='function'?structuredClone(value):JSON.parse(JSON.stringify(value));}
 
 export const EDITABLE_COMMANDS=new Set(['MESSAGE','SWITCH','TRANSFER','SHOP','SE','SCRIPT_HOOK']);
+export const EDITOR_ASSET_TYPES=new Set(['character-sprite','guardian-sprite','map-object','map-overlay','tileset','parallax']);
 
 export function validatePackage(pkg){
   if(!pkg||typeof pkg!=='object') throw new Error('Runtime package must be an object');
@@ -11,6 +12,7 @@ export function validatePackage(pkg){
     if(!Number.isInteger(map.height)||map.height<=0) throw new Error(`Invalid height for ${map.id}`);
     if(map.events!==undefined&&!Array.isArray(map.events)) throw new Error(`events must be an array for ${map.id}`);
     if(map.blocked!==undefined&&!Array.isArray(map.blocked)) throw new Error(`blocked must be an array for ${map.id}`);
+    if(map.layers!==undefined&&!Array.isArray(map.layers)) throw new Error(`layers must be an array for ${map.id}`);
     for(const event of map.events||[]){
       if(!event.id) throw new Error(`Event without id on ${map.id}`);
       if(!Number.isInteger(event.x)||!Number.isInteger(event.y)) throw new Error(`Event ${event.id} has invalid coordinates`);
@@ -26,9 +28,32 @@ export function normalizePackage(pkg){
   for(const map of result.maps){
     if(!Array.isArray(map.events)) map.events=[];
     if(!Array.isArray(map.blocked)) map.blocked=[];
+    if(!Array.isArray(map.layers)) map.layers=[];
+    map.layers=map.layers.map((layer,index)=>normalizeLayer(layer,map.width,map.height,index));
   }
   return result;
 }
+
+export function normalizeLayer(layer,width,height,index=0){
+  const cellCount=width*height;
+  if(Array.isArray(layer)){
+    const data=flattenLayerData(layer,width,height);
+    return {id:`layer-${index+1}`,name:`Layer ${index+1}`,z:index,visible:true,data:padLayer(data,cellCount)};
+  }
+  const source=layer&&typeof layer==='object'?clone(layer):{};
+  const data=flattenLayerData(source.data||[],width,height);
+  return {...source,id:source.id||`layer-${index+1}`,name:source.name||`Layer ${index+1}`,z:Number.isFinite(Number(source.z))?Number(source.z):index,visible:source.visible!==false,data:padLayer(data,cellCount)};
+}
+
+function flattenLayerData(data,width,height){
+  if(Array.isArray(data?.[0])){
+    const out=[];
+    for(let y=0;y<height;y++)for(let x=0;x<width;x++)out.push(Number(data[y]?.[x])||0);
+    return out;
+  }
+  return Array.isArray(data)?data.map(v=>Number(v)||0):[];
+}
+function padLayer(data,count){const out=data.slice(0,count);while(out.length<count)out.push(0);return out;}
 
 export function clamp(value,min,max){return Math.max(min,Math.min(max,Number(value)||0));}
 
@@ -37,6 +62,30 @@ export function moveEvent(map,eventId,x,y){
   if(!event) throw new Error(`Unknown event: ${eventId}`);
   event.x=clamp(x,0,map.width-1);
   event.y=clamp(y,0,map.height-1);
+  return event;
+}
+
+export function addEvent(map,{id,x=0,y=0,assetId='',trigger='action'}={}){
+  if(!map||!Array.isArray(map.events)) throw new Error('Map events are not available');
+  const cleanId=String(id||'').trim();
+  if(!cleanId) throw new Error('Event ID is required');
+  if(map.events.some(event=>event.id===cleanId)) throw new Error(`Event already exists: ${cleanId}`);
+  const event={id:cleanId,x:clamp(x,0,map.width-1),y:clamp(y,0,map.height-1),pages:[{trigger,commands:[]}]};
+  if(assetId) event.assetId=String(assetId);
+  map.events.push(event);
+  return event;
+}
+
+export function removeEvent(map,eventId){
+  const index=(map.events||[]).findIndex(event=>event.id===eventId);
+  if(index<0) throw new Error(`Unknown event: ${eventId}`);
+  return map.events.splice(index,1)[0];
+}
+
+export function setEventAsset(event,assetId){
+  const value=String(assetId||'').trim();
+  if(value) event.assetId=value;
+  else delete event.assetId;
   return event;
 }
 
@@ -50,6 +99,33 @@ export function setBlocked(map,x,y,blocked=true){
     return ay-by||ax-bx;
   });
   return map.blocked;
+}
+
+export function addLayer(map,{id,name,z,visible=true}={}){
+  if(!Array.isArray(map.layers)) map.layers=[];
+  const index=map.layers.length;
+  const layer=normalizeLayer({id:id||`layer-${index+1}`,name:name||`Layer ${index+1}`,z:z??index,visible,data:[]},map.width,map.height,index);
+  if(map.layers.some(existing=>existing.id===layer.id)) throw new Error(`Layer already exists: ${layer.id}`);
+  map.layers.push(layer);
+  return layer;
+}
+
+export function getLayer(map,layerIndex){
+  if(!Array.isArray(map.layers)) map.layers=[];
+  const layer=map.layers[layerIndex];
+  if(!layer) throw new Error(`Unknown layer: ${layerIndex+1}`);
+  return layer;
+}
+
+export function setLayerVisibility(map,layerIndex,visible){const layer=getLayer(map,layerIndex);layer.visible=!!visible;return layer;}
+export function setLayerZ(map,layerIndex,z){const layer=getLayer(map,layerIndex);layer.z=Number(z)||0;return layer;}
+export function tileAt(map,layerIndex,x,y){const layer=getLayer(map,layerIndex);const cx=clamp(x,0,map.width-1),cy=clamp(y,0,map.height-1);return Number(layer.data[cy*map.width+cx])||0;}
+export function paintTile(map,layerIndex,x,y,tileId){
+  const layer=getLayer(map,layerIndex);
+  const cx=clamp(x,0,map.width-1),cy=clamp(y,0,map.height-1);
+  const id=Math.max(0,Math.floor(Number(tileId)||0));
+  layer.data[cy*map.width+cx]=id;
+  return id;
 }
 
 export function eventSummary(event){
@@ -114,4 +190,9 @@ export function addCommand(event,pageIndex,command){
   const page=getPage(event,pageIndex);
   page.commands.push(clone(command));
   return page.commands.at(-1);
+}
+
+export function normalizeAssetManifest(manifest){
+  if(!manifest||!Array.isArray(manifest.entries)) throw new Error('Asset manifest must contain entries[]');
+  return clone(manifest.entries).filter(entry=>entry&&entry.id&&EDITOR_ASSET_TYPES.has(entry.type));
 }

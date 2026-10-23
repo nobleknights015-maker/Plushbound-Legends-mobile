@@ -6,20 +6,24 @@ on:
     branches: [plushbound-game-development]
     paths:
       - 'tools/editor/brush-core.js'
+      - 'tools/editor/stroke-core.js'
       - 'tools/editor/editor.js'
       - 'tools/editor/tileset-preview.js'
       - 'tools/editor/index.html'
       - 'game/assets/asset-manifest.json'
       - 'game/tests/brush-core.test.js'
+      - 'game/tests/stroke-core.test.js'
       - '.github/workflows/plushbound-brush-ci.yml'
   pull_request:
     paths:
       - 'tools/editor/brush-core.js'
+      - 'tools/editor/stroke-core.js'
       - 'tools/editor/editor.js'
       - 'tools/editor/tileset-preview.js'
       - 'tools/editor/index.html'
       - 'game/assets/asset-manifest.json'
       - 'game/tests/brush-core.test.js'
+      - 'game/tests/stroke-core.test.js'
       - '.github/workflows/plushbound-brush-ci.yml'
 
 jobs:
@@ -34,9 +38,10 @@ jobs:
       - name: Run brush contracts
         run: |
           node --check tools/editor/brush-core.js
+          node --check tools/editor/stroke-core.js
           node --check tools/editor/editor.js
           node --check tools/editor/tileset-preview.js
-          node --test game/tests/brush-core.test.js game/tests/editor-core.test.js
+          node --test game/tests/brush-core.test.js game/tests/stroke-core.test.js game/tests/editor-core.test.js
       - name: Install Chromium
         run: |
           npm install --no-save playwright@1.49.1

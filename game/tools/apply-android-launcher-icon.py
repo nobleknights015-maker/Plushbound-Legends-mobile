@@ -1,4 +1,7 @@
 from pathlib import Path
+from io import BytesIO
+import base64
+import hashlib
 import re
 
 try:
@@ -8,16 +11,61 @@ except ImportError as exc:
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / "game/assets/ui/branding/plushbound-launcher-icon.webp"
+CHUNK_DIR = ROOT / "game/assets/ui/branding/launcher-source"
+EXPECTED_SOURCE_SHA256 = "ae1ba97e7df969d0451fce2413edc2b50a7b95bbc55e5f9f5cc849e0377ef9eb"
 APP = ROOT / "app/src/main"
 MANIFEST = APP / "AndroidManifest.xml"
 RES = APP / "res"
 
-if not SOURCE.is_file():
-    raise SystemExit(f"Missing launcher icon source: {SOURCE}")
 if not MANIFEST.is_file():
     raise SystemExit(f"Missing reconstructed Android manifest: {MANIFEST}")
 
-source = Image.open(SOURCE).convert("RGBA")
+
+def load_source() -> Image.Image:
+    parts = sorted(CHUNK_DIR.glob("part_*.b64")) if CHUNK_DIR.is_dir() else []
+    if parts:
+        expected_names = [f"part_{index:02}.b64" for index in range(len(parts))]
+        actual_names = [part.name for part in parts]
+        if actual_names != expected_names:
+            raise SystemExit(
+                f"Launcher source chunks are incomplete or misnumbered: {actual_names}"
+            )
+        encoded = "".join(part.read_text(encoding="ascii").strip() for part in parts)
+        try:
+            source_bytes = base64.b64decode(encoded, validate=True)
+        except Exception as exc:
+            raise SystemExit("Launcher source chunks are not valid base64") from exc
+        digest = hashlib.sha256(source_bytes).hexdigest()
+        if digest != EXPECTED_SOURCE_SHA256:
+            raise SystemExit(
+                f"Launcher source checksum mismatch: expected {EXPECTED_SOURCE_SHA256}, got {digest}"
+            )
+        try:
+            image = Image.open(BytesIO(source_bytes))
+            image.load()
+        except Exception as exc:
+            raise SystemExit("Decoded launcher source is not a valid image") from exc
+        if image.width < 128 or image.height < 128:
+            raise SystemExit(
+                f"Launcher source is too small: {image.width}x{image.height}"
+            )
+        print(
+            f"Loaded verified launcher source from {len(parts)} text chunk(s): "
+            f"{image.width}x{image.height}, sha256={digest}"
+        )
+        return image.convert("RGBA")
+
+    if not SOURCE.is_file():
+        raise SystemExit(
+            f"Missing launcher icon source chunks under {CHUNK_DIR} and fallback {SOURCE}"
+        )
+    image = Image.open(SOURCE)
+    image.load()
+    print(f"Loaded fallback launcher source: {SOURCE}")
+    return image.convert("RGBA")
+
+
+source = load_source()
 
 # Keep the wolf face and forehead sigil comfortably inside common Android masks.
 def render(size: int) -> Image.Image:
@@ -26,6 +74,7 @@ def render(size: int) -> Image.Image:
     target = source.resize((size - inset * 2, size - inset * 2), Image.Resampling.LANCZOS)
     canvas.alpha_composite(target, (inset, inset))
     return canvas
+
 
 sizes = {
     "mipmap-mdpi": 48,

@@ -47,6 +47,32 @@ export class GameContentRuntime {
   encounterTableIds() { return [...this.encounterTables.keys()]; }
   bossEncounterIds() { return [...this.bossEncounters.keys()]; }
 
+  bossEncounterAvailable(id) {
+    const definition = this.bossEncounters.get(String(id));
+    if (!definition) return false;
+    if (!definition.oneTime) return true;
+    if (!definition.completionSwitch) return true;
+    return !this.state.sw(String(definition.completionSwitch));
+  }
+
+  resolveBossEncounter(id, result = 'victory') {
+    const key = String(id);
+    const definition = this.bossEncounters.get(key);
+    if (!definition) throw new Error(`Unknown boss encounter ${id}`);
+    const normalized = String(result || '').toLowerCase();
+    if (!['victory', 'escape', 'defeat'].includes(normalized)) throw new Error(`Unknown boss encounter result ${result}`);
+    const wasAvailable = this.bossEncounterAvailable(key);
+    if (normalized === 'victory' && definition.completionSwitch) this.state.setSw(String(definition.completionSwitch), true);
+    return {
+      id: key,
+      result: normalized,
+      oneTime: !!definition.oneTime,
+      completionSwitch: definition.completionSwitch || null,
+      wasAvailable,
+      available: this.bossEncounterAvailable(key)
+    };
+  }
+
   startQuest(id) {
     const key = String(id);
     const definition = this.quests.get(key);

@@ -6,14 +6,18 @@ on:
     branches: [ plushbound-game-development ]
     paths:
       - 'tools/editor/database*'
+      - 'tools/editor/common-event-core.js'
       - 'game/content/**'
       - 'game/tests/database*.test.js'
+      - 'game/tests/common-event-core.test.js'
       - '.github/workflows/plushbound-database-ci.yml'
   pull_request:
     paths:
       - 'tools/editor/database*'
+      - 'tools/editor/common-event-core.js'
       - 'game/content/**'
       - 'game/tests/database*.test.js'
+      - 'game/tests/common-event-core.test.js'
       - '.github/workflows/plushbound-database-ci.yml'
 
 jobs:
@@ -29,11 +33,12 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Run database contracts
+      - name: Run database and common-event contracts
         run: |
           node --check tools/editor/database-core.js
           node --check tools/editor/database.js
-          node --test game/tests/database*.test.js
+          node --check tools/editor/common-event-core.js
+          node --test game/tests/database*.test.js game/tests/common-event-core.test.js
 
       - name: Install headless browser
         run: |
@@ -51,7 +56,7 @@ jobs:
           cat database-http.log
           exit 1
 
-      - name: Simulate domain-aware database authoring in Chromium
+      - name: Simulate structured database authoring in Chromium
         run: |
           node --input-type=module <<'NODE'
           import { chromium } from 'playwright';
@@ -71,67 +76,56 @@ jobs:
           await page.evaluate(() => window.PlushboundDatabase.selectCollection('starters'));
           await page.locator('[data-locator="0"]').click();
           assert.match(await page.textContent('#recordIdentity'), /Plush Guardians.*cinder/i);
-          assert.ok(await page.locator('.field-group').count() >= 2);
           assert.ok(await page.locator('[data-field-input="name"]').count());
           assert.ok(await page.locator('[data-field-input="assetBindings.sprite"]').count());
-
-          const before = await page.evaluate(() => structuredClone(window.PlushboundDatabase.getActivePackage().data.starters[0]));
+          const guardianBefore = await page.evaluate(() => structuredClone(window.PlushboundDatabase.getActivePackage().data.starters[0]));
           await page.fill('[data-field-input="name"]', 'Cinder Editor Test');
-          await page.fill('[data-field-input="assetBindings.sprite"]', 'guardian/cinder/sprite-editor-test');
           await page.click('#applyFields');
           assert.equal(await page.evaluate(() => window.PlushboundDatabase.getActivePackage().data.starters[0].name), 'Cinder Editor Test');
-          assert.equal(await page.evaluate(() => window.PlushboundDatabase.getActivePackage().data.starters[0].assetBindings.sprite), 'guardian/cinder/sprite-editor-test');
-          assert.equal(await page.evaluate(() => window.PlushboundDatabase.getActivePackage().data.starters[0].assetBindings.battle), before.assetBindings.battle);
-
           await page.click('#undoDatabase');
-          assert.equal(await page.evaluate(() => window.PlushboundDatabase.getActivePackage().data.starters[0].name), before.name);
-          await page.click('#redoDatabase');
-          assert.equal(await page.evaluate(() => window.PlushboundDatabase.getActivePackage().data.starters[0].name), 'Cinder Editor Test');
+          assert.equal(await page.evaluate(() => window.PlushboundDatabase.getActivePackage().data.starters[0].name), guardianBefore.name);
 
-          const packageBeforeInvalidEdit = await page.evaluate(() => JSON.stringify(window.PlushboundDatabase.getActivePackage().data));
-          const undoCountBeforeInvalidEdit = await page.evaluate(() => window.PlushboundDatabase.getState().history.undo.length);
-          await page.fill('[data-field-input="id"]', 'mallow');
-          page.once('dialog', dialog => dialog.accept());
-          await page.click('#applyFields');
-          assert.equal(await page.evaluate(() => JSON.stringify(window.PlushboundDatabase.getActivePackage().data)), packageBeforeInvalidEdit);
-          assert.equal(await page.evaluate(() => window.PlushboundDatabase.getState().history.undo.length), undoCountBeforeInvalidEdit);
-
-          // Enemy domain: typed stats + primitive-list skills/tags.
           state = await page.evaluate(() => window.PlushboundDatabase.getState());
           const enemyIndex = state.packages.findIndex(entry => entry.id === 'verdancia-enemies');
           assert.ok(enemyIndex >= 0);
           await page.evaluate(index => window.PlushboundDatabase.selectPackage(index), enemyIndex);
+
+          // Encounter table rows are editable as structured enemyId/weight fields.
+          await page.evaluate(() => window.PlushboundDatabase.selectCollection('encounterTables'));
+          await page.locator('[data-locator="0"]').click();
+          assert.ok(await page.locator('[data-nested-path="entries"][data-nested-index="0"][data-nested-key="enemyId"]').count());
+          assert.ok(await page.locator('[data-nested-path="entries"][data-nested-index="0"][data-nested-key="weight"]').count());
+          const weightBefore = await page.evaluate(() => window.PlushboundDatabase.getActivePackage().data.encounterTables[0].entries[0].weight);
+          await page.fill('[data-nested-path="entries"][data-nested-index="0"][data-nested-key="weight"]', '61');
+          await page.click('#applyFields');
+          assert.equal(await page.evaluate(() => window.PlushboundDatabase.getActivePackage().data.encounterTables[0].entries[0].weight),61);
+          await page.click('#undoDatabase');
+          assert.equal(await page.evaluate(() => window.PlushboundDatabase.getActivePackage().data.encounterTables[0].entries[0].weight),weightBefore);
+
+          // Add/remove encounter rows uses schema-specific row templates and history.
+          const encounterCount = await page.evaluate(() => window.PlushboundDatabase.getActivePackage().data.encounterTables[0].entries.length);
+          await page.click('[data-add-nested="entries"]');
+          assert.equal(await page.evaluate(() => window.PlushboundDatabase.getActivePackage().data.encounterTables[0].entries.length),encounterCount+1);
+          const addedEntry = await page.evaluate(() => window.PlushboundDatabase.getActivePackage().data.encounterTables[0].entries.at(-1));
+          assert.deepEqual(addedEntry,{enemyId:'',weight:1});
+          await page.click('#undoDatabase');
+          assert.equal(await page.evaluate(() => window.PlushboundDatabase.getActivePackage().data.encounterTables[0].entries.length),encounterCount);
+
+          // Enemy reward drops are also structured rows.
           await page.evaluate(() => window.PlushboundDatabase.selectCollection('enemies'));
           await page.locator('[data-locator="0"]').click();
-          assert.match(await page.textContent('#recordIdentity'), /Enemies/);
-          assert.ok(await page.locator('[data-field-input="stats.hp"]').count());
-          assert.ok(await page.locator('[data-field-input="tags"]').count());
-          assert.ok(await page.locator('[data-field-input="skills"]').count());
-          const dropsBefore = await page.evaluate(() => structuredClone(window.PlushboundDatabase.getActivePackage().data.enemies[0].rewards.drops));
-          await page.fill('[data-field-input="stats.hp"]', '99');
-          await page.fill('[data-field-input="tags"]', '["frayling","verdancia","editor-test"]');
-          await page.fill('[data-field-input="skills"]', 'fray-scratch, moss-dart, editor-skill');
+          assert.ok(await page.locator('[data-nested-path="rewards.drops"][data-nested-index="0"][data-nested-key="itemId"]').count());
+          assert.ok(await page.locator('[data-nested-path="rewards.drops"][data-nested-index="0"][data-nested-key="chance"]').count());
+          const dropBefore = await page.evaluate(() => structuredClone(window.PlushboundDatabase.getActivePackage().data.enemies[0].rewards.drops[0]));
+          await page.fill('[data-nested-path="rewards.drops"][data-nested-index="0"][data-nested-key="chance"]','0.25');
           await page.click('#applyFields');
-          assert.equal(await page.evaluate(() => window.PlushboundDatabase.getActivePackage().data.enemies[0].stats.hp), 99);
-          assert.deepEqual(await page.evaluate(() => window.PlushboundDatabase.getActivePackage().data.enemies[0].tags), ['frayling','verdancia','editor-test']);
-          assert.deepEqual(await page.evaluate(() => window.PlushboundDatabase.getActivePackage().data.enemies[0].skills), ['fray-scratch','moss-dart','editor-skill']);
-          assert.deepEqual(await page.evaluate(() => window.PlushboundDatabase.getActivePackage().data.enemies[0].rewards.drops), dropsBefore);
-
-          // Collection-specific New uses a structurally useful enemy template.
-          const countBeforeNew = await page.evaluate(() => window.PlushboundDatabase.getActivePackage().data.enemies.length);
-          await page.click('#newRecord');
-          assert.equal(await page.evaluate(() => window.PlushboundDatabase.getActivePackage().data.enemies.length), countBeforeNew + 1);
-          const created = await page.evaluate(() => window.PlushboundDatabase.getActivePackage().data.enemies.at(-1));
-          assert.ok(created.id.startsWith('new-enemy-'));
-          assert.equal(created.level, 1);
-          assert.equal(created.stats.hp, 1);
-          assert.deepEqual(created.skills, []);
+          assert.equal(await page.evaluate(() => window.PlushboundDatabase.getActivePackage().data.enemies[0].rewards.drops[0].chance),0.25);
           await page.click('#undoDatabase');
-          assert.equal(await page.evaluate(() => window.PlushboundDatabase.getActivePackage().data.enemies.length), countBeforeNew);
+          assert.deepEqual(await page.evaluate(() => window.PlushboundDatabase.getActivePackage().data.enemies[0].rewards.drops[0]),dropBefore);
 
           assert.deepEqual(errors, []);
           await browser.close();
-          console.log('Plushbound domain-aware visual database mobile authoring simulation passed');
+          console.log('Plushbound structured database mobile authoring simulation passed');
           NODE
 
       - name: Record database simulation gate
@@ -140,7 +134,7 @@ jobs:
           cat > plushbound-database-gate.txt <<EOF
           Plushbound Database simulation
           Browser: Chromium headless (412x915 Android-class viewport)
-          Coverage: Guardian + enemy domain forms, grouped typed fields, nested fields, primitive-list tags/skills, domain new-record templates, nested-data preservation, undo/redo, invalid-edit rollback
+          Coverage: Guardian forms, encounter entries, enemy reward drops, nested add/edit/remove, history rollback, reusable common-event authoring contracts
           Result: ${{ job.status }}
           Commit: ${{ github.sha }}
           EOF

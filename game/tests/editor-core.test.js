@@ -126,8 +126,8 @@ test('supported commands can be replaced or appended without rewriting neighbors
   assert.equal(lio.pages[0].commands.at(-1).code, 'SE');
 });
 
-test('unsupported engine commands stay protected from replacement', () => {
-  const fake = { id: 'advanced', pages: [{ trigger: 'action', commands: [{ code: 'MOVE_ROUTE', parameters: [{ route: [] }] }] }] };
+test('unknown commands stay protected from replacement', () => {
+  const fake = { id: 'advanced', pages: [{ trigger: 'action', commands: [{ code: 'ENGINE_PLUGIN_PRIVATE', parameters: [{ payload: true }] }] }] };
   assert.throws(() => replaceCommand(fake, 0, 0, { code: 'MESSAGE', parameters: ['nope'] }), /read-only/);
 });
 

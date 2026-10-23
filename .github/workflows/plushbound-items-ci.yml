@@ -1,0 +1,82 @@
+name: Plushbound Items & Equipment CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ plushbound-game-development ]
+    paths:
+      - 'tools/editor/items.html'
+      - 'tools/editor/items.css'
+      - 'tools/editor/items.js'
+      - 'tools/editor/item-equipment-core.js'
+      - 'game/tests/item-equipment-core.test.js'
+      - 'game/content/**'
+      - 'game/runtime/**'
+      - '.github/workflows/plushbound-items-ci.yml'
+  pull_request:
+    paths:
+      - 'tools/editor/items.html'
+      - 'tools/editor/items.css'
+      - 'tools/editor/items.js'
+      - 'tools/editor/item-equipment-core.js'
+      - 'game/tests/item-equipment-core.test.js'
+      - 'game/content/**'
+      - 'game/runtime/**'
+      - '.github/workflows/plushbound-items-ci.yml'
+
+jobs:
+  item-equipment-simulation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run item and equipment contracts
+        run: |
+          node --check tools/editor/item-equipment-core.js
+          node --check tools/editor/items.js
+          node --test game/tests/item-equipment-core.test.js
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: Serve repository
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >items-http.log 2>&1 &
+          for i in {1..20}; do
+            curl -fsS http://127.0.0.1:4173/tools/editor/items.html >/dev/null && exit 0
+            sleep 1
+          done
+          cat items-http.log
+          exit 1
+      - name: Simulate item and equipment authoring on Android viewport
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+          import assert from 'node:assert/strict';
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:412,height:915}});
+          const errors=[];page.on('pageerror',error=>errors.push(String(error)));
+          await page.goto('http://127.0.0.1:4173/tools/editor/items.html');
+          await page.waitForSelector('#itemList [data-locator]');
+          await page.fill('#itemSearch','Woven Charm');
+          const charm=page.locator('#itemList [data-locator]').filter({hasText:'Woven Charm'}).first();
+          await charm.click();
+          assert.equal(await page.inputValue('#itemType'),'accessory');
+          assert.ok((await page.textContent('#usageSummary')).includes('1 inbound reference'));
+          const defense=page.locator('.stat-row').filter({has:page.locator('[data-stat-key][value="defense"]')}).first();
+          assert.equal(await defense.locator('[data-stat-value]').inputValue(),'2');
+          await defense.locator('[data-stat-value]').fill('4');
+          await page.click('#applyItem');
+          assert.equal(await page.locator('.stat-row').filter({has:page.locator('[data-stat-key][value="defense"]')}).first().locator('[data-stat-value]').inputValue(),'4');
+          await page.click('#undoItems');
+          assert.equal(await page.locator('.stat-row').filter({has:page.locator('[data-stat-key][value="defense"]')}).first().locator('[data-stat-value]').inputValue(),'2');
+          await page.selectOption('#itemKind','consumable');
+          await page.fill('#itemSearch','Threadmend Tonic');
+          assert.ok(await page.locator('#itemList [data-locator]').filter({hasText:'Threadmend Tonic'}).count());
+          assert.deepEqual(errors,[]);
+          await browser.close();
+          console.log('Android item and equipment simulation passed');
+          NODE

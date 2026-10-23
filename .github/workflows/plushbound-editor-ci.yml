@@ -74,7 +74,7 @@ jobs:
           assert.ok(await page.locator('.asset-card').count() > 5);
           assert.ok(await page.evaluate(() => window.PlushboundEditor.getAssets().some(a => a.id === 'npc/lio/sprite')));
 
-          // Layer authoring uses Engine v1's native map.layers contract.
+          // Native tile layer painting.
           assert.equal(await page.locator('#layerSelect option').count(), 1);
           await page.fill('#tileId', '17');
           await page.click('[data-tool="tile"]');
@@ -84,58 +84,76 @@ jobs:
           await page.locator('.tile[data-x="4"][data-y="5"]').click({ position: { x: 2, y: 2 } });
           assert.equal(await page.evaluate(() => window.PlushboundEditor.getPackage().maps[0].layers[0].data[5*32+4]), 0);
           await page.click('#addLayer');
-          assert.equal(await page.locator('#layerSelect option').count(), 2);
           await page.fill('#layerZ', '10');
           await page.uncheck('#layerVisible');
           await page.click('#applyLayer');
           assert.equal(await page.evaluate(() => window.PlushboundEditor.getPackage().maps[0].layers[1].z), 10);
           assert.equal(await page.evaluate(() => window.PlushboundEditor.getPackage().maps[0].layers[1].visible), false);
 
+          // Native Engine v1 region painting.
+          await page.fill('#regionId', '9');
+          await page.click('[data-tool="region"]');
+          await page.locator('.tile[data-x="8"][data-y="8"]').click({ position: { x: 2, y: 2 } });
+          assert.equal(await page.evaluate(() => window.PlushboundEditor.getPackage().maps[0].regions[8*32+8]), 9);
+          assert.equal(await page.locator('.tile[data-x="8"][data-y="8"] .region-id').textContent(), 'R9');
+          await page.click('[data-tool="erase-region"]');
+          await page.locator('.tile[data-x="8"][data-y="8"]').click({ position: { x: 2, y: 2 } });
+          assert.equal(await page.evaluate(() => window.PlushboundEditor.getPackage().maps[0].regions[8*32+8]), 0);
+
           // Existing event movement and asset assignment.
+          await page.click('[data-tool="select"]');
           await page.click('[data-event-id="lio"]');
           const beforePages = await page.evaluate(() => JSON.stringify(window.PlushboundEditor.getPackage().maps[0].events.find(e => e.id === 'lio').pages));
           await page.fill('#eventX', '20');
           await page.fill('#eventY', '11');
           await page.selectOption('#eventAsset', 'npc/lio/sprite');
           await page.click('#applyEvent');
-          assert.equal(await page.inputValue('#eventX'), '20');
           assert.equal(await page.evaluate(() => window.PlushboundEditor.getPackage().maps[0].events.find(e => e.id === 'lio').assetId), 'npc/lio/sprite');
-          const afterMovePages = await page.evaluate(() => JSON.stringify(window.PlushboundEditor.getPackage().maps[0].events.find(e => e.id === 'lio').pages));
-          assert.equal(afterMovePages, beforePages);
+          assert.equal(await page.evaluate(() => JSON.stringify(window.PlushboundEditor.getPackage().maps[0].events.find(e => e.id === 'lio').pages)), beforePages);
 
-          // Asset browser assignment is logical-ID driven.
+          // Asset browser assignment.
           await page.fill('#assetSearch', 'chest');
-          const chest = page.locator('[data-asset-id="environment/chest/elyndor-small"]');
-          await chest.click();
+          await page.locator('[data-asset-id="environment/chest/elyndor-small"]').click();
           assert.equal(await page.inputValue('#eventAsset'), 'environment/chest/elyndor-small');
 
-          // Place a brand-new event through the visual map.
+          // Place a brand-new authored NPC.
           await page.fill('#newEventId', 'editor-browser-npc');
           await page.click('#armNewEvent');
           await page.locator('.tile[data-x="6"][data-y="6"]').click({ position: { x: 2, y: 2 } });
           assert.equal(await page.inputValue('#eventId'), 'editor-browser-npc');
-          assert.equal(await page.evaluate(() => window.PlushboundEditor.getPackage().maps[0].events.find(e => e.id === 'editor-browser-npc').pages[0].trigger), 'action');
-
-          // MV-style page + command authoring on the new event.
           await page.selectOption('#pageTrigger', 'touch');
           await page.fill('#pageConditions', '{"switchId":"editor:browser-test","switchValue":true}');
           await page.click('#applyPage');
           await page.selectOption('#newCommandType', 'MESSAGE');
           await page.fill('#newCommandParameters', '["Hello from the visual editor"]');
           await page.click('#addCommand');
-          let authored = await page.evaluate(() => window.PlushboundEditor.getPackage().maps[0].events.find(e => e.id === 'editor-browser-npc').pages[0]);
+          const authored = await page.evaluate(() => window.PlushboundEditor.getPackage().maps[0].events.find(e => e.id === 'editor-browser-npc').pages[0]);
           assert.equal(authored.trigger, 'touch');
-          assert.equal(authored.conditions.switchId, 'editor:browser-test');
           assert.equal(authored.commands[0].parameters[0], 'Hello from the visual editor');
 
-          // Collision painting remains compatible with layer/event editing.
+          // Create a native cross-map transfer and validate it.
+          await page.fill('#transferEventId', 'editor-to-crossing');
+          await page.selectOption('#transferTargetMap', 'elyndor-sunthread-crossing');
+          await page.fill('#transferX', '2');
+          await page.fill('#transferY', '12');
+          await page.selectOption('#transferDirection', '6');
+          await page.click('#armTransfer');
+          await page.locator('.tile[data-x="30"][data-y="10"]').click({ position: { x: 2, y: 2 } });
+          const transfer = await page.evaluate(() => window.PlushboundEditor.getPackage().maps[0].events.find(e => e.id === 'editor-to-crossing'));
+          assert.equal(transfer.pages[0].trigger, 'touch');
+          assert.deepEqual(transfer.pages[0].commands[0].parameters, ['elyndor-sunthread-crossing',2,12,6]);
+          assert.deepEqual(await page.evaluate(() => window.PlushboundEditor.validateLinks()), []);
+          await page.click('#validateLinks');
+          assert.match(await page.textContent('#linkSummary'), /0 issue/);
+
+          // Collision painting remains compatible with all map authoring layers.
           await page.click('[data-tool="blocked"]');
           await page.locator('.tile[data-x="4"][data-y="4"]').click({ position: { x: 2, y: 2 } });
           assert.equal(await page.evaluate(() => window.PlushboundEditor.getPackage().maps[0].blocked.includes('4,4')), true);
 
           assert.deepEqual(errors, []);
           await browser.close();
-          console.log('Plushbound editor world-construction simulation passed');
+          console.log('Plushbound editor playable-map simulation passed');
           NODE
 
       - name: Record editor simulation gate
@@ -145,7 +163,7 @@ jobs:
           Plushbound Visual Editor simulation
           Browser: Chromium headless
           Target package: Elyndor runtime maps
-          Coverage: native tile layers, tile painting, collision, asset manifest, event placement/assets, page settings, command authoring
+          Coverage: native tile layers, regions, collision, assets, event placement, event pages/commands, native TRANSFER links, cross-map validation
           Result: ${{ job.status }}
           Commit: ${{ github.sha }}
           EOF

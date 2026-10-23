@@ -40,16 +40,20 @@ export function validateCollection(pkg,key){
 export function replaceRecord(pkg,key,locator,nextRecord){
   if(!isRecord(nextRecord)) throw new Error('Record must be a JSON object');
   const value=pkg?.[key];
+  const candidate=clone(pkg);
+  const candidateValue=candidate?.[key];
   if(Array.isArray(value)){
     if(!Number.isInteger(locator)||locator<0||locator>=value.length) throw new Error(`Unknown ${key} record`);
-    value[locator]=clone(nextRecord);
+    candidateValue[locator]=clone(nextRecord);
   }else if(isRecord(value)){
     const registryKey=String(locator);
     if(!Object.prototype.hasOwnProperty.call(value,registryKey)) throw new Error(`Unknown ${key} record`);
-    value[registryKey]=clone(nextRecord);
+    candidateValue[registryKey]=clone(nextRecord);
   }else throw new Error(`Unknown collection: ${key}`);
-  const issues=validateCollection(pkg,key);
+  const issues=validateCollection(candidate,key);
   if(issues.some(issue=>issue.severity==='error')) throw new Error(issues[0].message);
+  if(Array.isArray(value)) value[locator]=clone(nextRecord);
+  else value[String(locator)]=clone(nextRecord);
   return nextRecord;
 }
 

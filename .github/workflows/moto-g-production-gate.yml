@@ -7,6 +7,11 @@ on:
   push:
     branches: [ plushbound-game-development ]
     paths:
+      - 'app/**'
+      - 'tools/editor/**'
+      - 'game/runtime/**'
+      - 'game/content/**'
+      - 'game/assets/**'
       - '.github/workflows/moto-g-production-gate.yml'
       - '.github/workflows/plushbound-game-android-apk.yml'
   workflow_dispatch:

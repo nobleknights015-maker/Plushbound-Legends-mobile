@@ -95,3 +95,14 @@ test('sparse pointer updates interpolate every grid cell with one checkpoint',()
   assert.equal(checkpoints,1);
   assert.equal(endStroke(state).changed,5);
 });
+
+test('the editor-facing applyStrokePoint API interpolates a sparse live pointer jump',()=>{
+  const state=createStrokeState();let checkpoints=0;const painted=[];
+  beginStroke(state,{pointerId:31,tool:'tile',label:'Live fast stroke'});
+  applyStrokePoint(state,{x:2,y:4,checkpoint:()=>checkpoints++,apply:(x,y)=>{painted.push(`${x},${y}`);return 1;}});
+  const leap=applyStrokePoint(state,{x:7,y:4,checkpoint:()=>checkpoints++,apply:(x,y)=>{painted.push(`${x},${y}`);return 1;}});
+  assert.equal(leap.points,5);
+  assert.deepEqual(painted,['2,4','3,4','4,4','5,4','6,4','7,4']);
+  assert.equal(checkpoints,1);
+  assert.equal(endStroke(state).changed,6);
+});

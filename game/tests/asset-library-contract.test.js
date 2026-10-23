@@ -11,8 +11,27 @@ const read = path => JSON.parse(readFileSync(resolve(gameRoot, path), 'utf8'));
 const manifest = read('assets/asset-manifest.json');
 const slots = read('content/elyndor-asset-slots.json');
 const guardians = read('content/guardians.json');
+const runtimeMaps = read('runtime/elyndor-route-one.maps.json');
 
 const entryById = new Map(manifest.entries.map(entry => [entry.id, entry]));
+
+function runtimeAssetIds() {
+  const ids = new Set();
+  for (const map of runtimeMaps.maps || []) {
+    for (const key of ['tileset', 'parallax', 'music', 'ambience']) if (map[key]) ids.add(map[key]);
+    for (const event of map.events || []) {
+      if (event.assetId) ids.add(event.assetId);
+      for (const page of event.pages || []) {
+        if (page.assetId) ids.add(page.assetId);
+        for (const command of page.commands || []) {
+          if (command.code === 'SE' && command.parameters?.[0]) ids.add(command.parameters[0]);
+          if (command.code === 'MESSAGE' && command.parameters?.[1]?.portrait) ids.add(command.parameters[1].portrait);
+        }
+      }
+    }
+  }
+  return [...ids].sort();
+}
 
 test('game asset library has stable unique logical IDs and safe relative paths', () => {
   assert.equal(manifest.schemaVersion, 1);
@@ -31,6 +50,12 @@ test('every established Elyndor asset slot has a physical-library destination', 
   for (const slot of slots.slots) {
     assert.ok(entryById.has(slot.id), `missing manifest destination for ${slot.id}`);
   }
+});
+
+test('every runtime map asset reference resolves through the game manifest', () => {
+  const ids = runtimeAssetIds();
+  assert.ok(ids.length > 0);
+  for (const id of ids) assert.ok(entryById.has(id), `runtime references unregistered asset ${id}`);
 });
 
 test('all four starter Guardian bindings have physical-library destinations', () => {

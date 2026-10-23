@@ -36,9 +36,28 @@ function installEventCopyActions(){
   refresh();return refresh;
 }
 
+function installPageActions(){
+  const editor=window.PlushboundEditor,pageEditor=document.getElementById('pageEditor'),addPage=document.getElementById('addPage');
+  if(!editor||!pageEditor||!addPage||document.getElementById('eventPageActions'))return ()=>{};
+  const host=document.createElement('div');host.id='eventPageActions';host.className='tool-grid';host.style.margin='.55rem 0';
+  const duplicate=document.createElement('button');duplicate.id='duplicatePage';duplicate.type='button';duplicate.textContent='Duplicate Page';
+  const up=document.createElement('button');up.id='movePageUp';up.type='button';up.textContent='Page ↑';
+  const down=document.createElement('button');down.id='movePageDown';down.type='button';down.textContent='Page ↓';
+  const remove=document.createElement('button');remove.id='deletePage';remove.type='button';remove.textContent='Delete Page';
+  host.append(duplicate,up,down,remove);addPage.after(host);
+  const refresh=()=>{const selected=!!editor.getSelectedEventId?.(),index=Number(editor.getSelectedPageIndex?.()||0),count=Number(editor.getSelectedPageCount?.()||0);duplicate.disabled=!selected;up.disabled=!selected||index<=0;down.disabled=!selected||index>=count-1;remove.disabled=!selected||count<=1;};
+  duplicate.addEventListener('click',()=>{editor.duplicateSelectedPage?.();refresh();});
+  up.addEventListener('click',()=>{editor.moveSelectedPage?.(-1);refresh();});
+  down.addEventListener('click',()=>{editor.moveSelectedPage?.(1);refresh();});
+  remove.addEventListener('click',()=>{if(confirm('Delete the selected event page?'))editor.deleteSelectedPage?.();refresh();});
+  document.getElementById('pageSelect')?.addEventListener('change',()=>queueMicrotask(refresh));
+  refresh();return refresh;
+}
+
 attachBuilder(document.getElementById('newCommandType'),document.getElementById('newCommandParameters'));
 attachBuilder(document.getElementById('commonCommandType'),document.getElementById('commonCommandParameters'));
 enhanceCards();
 const refreshEventCopy=installEventCopyActions();
-const observer=new MutationObserver(mutations=>{for(const mutation of mutations)for(const node of mutation.addedNodes)if(node.nodeType===1){if(node.matches?.('.command-card'))enhanceCards(node.parentElement||document);else if(node.querySelector?.('.command-card'))enhanceCards(node);}queueMicrotask(refreshEventCopy);});observer.observe(document.body,{childList:true,subtree:true});
+const refreshPageActions=installPageActions();
+const observer=new MutationObserver(mutations=>{for(const mutation of mutations)for(const node of mutation.addedNodes)if(node.nodeType===1){if(node.matches?.('.command-card'))enhanceCards(node.parentElement||document);else if(node.querySelector?.('.command-card'))enhanceCards(node);}queueMicrotask(()=>{refreshEventCopy();refreshPageActions();});});observer.observe(document.body,{childList:true,subtree:true});
 if(window.PlushboundEditor) import('./reference-audit.js');

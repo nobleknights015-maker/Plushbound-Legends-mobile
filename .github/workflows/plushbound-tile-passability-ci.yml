@@ -1,0 +1,81 @@
+name: Plushbound Tile & Passability CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ plushbound-game-development ]
+    paths:
+      - 'tools/editor/tile-passability-core.js'
+      - 'tools/editor/tile-passability.js'
+      - 'tools/editor/tile-passability.css'
+      - 'tools/editor/tile-passability.html'
+      - 'game/tests/tile-passability-core.test.js'
+      - '.github/workflows/plushbound-tile-passability-ci.yml'
+  pull_request:
+    paths:
+      - 'tools/editor/tile-passability-core.js'
+      - 'tools/editor/tile-passability.js'
+      - 'tools/editor/tile-passability.css'
+      - 'tools/editor/tile-passability.html'
+      - 'game/tests/tile-passability-core.test.js'
+      - '.github/workflows/plushbound-tile-passability-ci.yml'
+
+jobs:
+  tile-passability-simulation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run tile/passability contracts
+        run: |
+          node --check tools/editor/tile-passability-core.js
+          node --check tools/editor/tile-passability.js
+          node --test game/tests/tile-passability-core.test.js
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: Serve repository
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >tile-passability-http.log 2>&1 &
+          for i in {1..20}; do
+            curl -fsS http://127.0.0.1:4173/tools/editor/tile-passability.html >/dev/null && exit 0
+            sleep 1
+          done
+          cat tile-passability-http.log
+          exit 1
+      - name: Simulate tile and passability authoring on Android viewport
+        run: |
+          node --input-type=module <<'NODE'
+          import {chromium} from 'playwright';
+          import assert from 'node:assert/strict';
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:412,height:915}});
+          const errors=[];page.on('pageerror',error=>errors.push(String(error)));
+          await page.goto('http://127.0.0.1:4173/tools/editor/tile-passability.html');
+          await page.click('#loadDefault');
+          await page.waitForFunction(()=>window.PlushboundTilePassability?.getPackage()?.maps?.length===3);
+          assert.match(await page.textContent('#tilesetMeta'),/tileset\/elyndor\/sunny-plains/);
+          await page.fill('#tileId','23');
+          await page.click('[data-tool="tile"]');
+          const cell=page.locator('.cell[data-x="2"][data-y="2"]');
+          await cell.click();
+          let pkg=await page.evaluate(()=>window.PlushboundTilePassability.getPackage());
+          assert.equal(pkg.maps[0].layers[0].data[2+2*pkg.maps[0].width],23);
+          await page.click('[data-tool="blocked"]');
+          await page.locator('.cell[data-x="3"][data-y="3"]').click();
+          pkg=await page.evaluate(()=>window.PlushboundTilePassability.getPackage());
+          assert.ok(pkg.maps[0].blocked.includes('3,3'));
+          await page.fill('#regionId','7');
+          await page.click('[data-tool="region"]');
+          await page.locator('.cell[data-x="4"][data-y="4"]').click();
+          pkg=await page.evaluate(()=>window.PlushboundTilePassability.getPackage());
+          assert.equal(pkg.maps[0].regions[4+4*pkg.maps[0].width],7);
+          assert.deepEqual(await page.evaluate(()=>window.PlushboundTilePassability.validate()),[]);
+          assert.deepEqual(errors,[]);
+          await browser.close();
+          console.log('Android tile/passability simulation passed');
+          NODE

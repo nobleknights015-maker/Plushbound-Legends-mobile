@@ -24,23 +24,23 @@ Target: mature RPG Maker MV-class authoring capability adapted to Plushbound Leg
 | Event pages | Mature | Pages, triggers, conditions, summaries, safe preservation, undo/redo, duplicate/reorder/delete with last-page protection | Rich visual condition builder and condition reference pickers |
 | Event commands | Mature | Full Engine v1 registry exposed; rich visual forms; command copy/paste/duplicate/reorder/delete; unknown future commands preserved and protected from destructive deletion | Branch/choice structure visualization and richer reference pickers |
 | Common events | Functional | Dedicated visual library, create/rename/delete, command editing/reorder, import/export, graph validation, authoring-time expansion and runtime COMMON_EVENT support | Project-integrated persistence/reference pickers and richer branch editing |
-| Visual database | Functional | Project package discovery, collections, search, create/duplicate/delete, domain-aware forms, primitive lists, structured encounter/drop/quest rows, Advanced JSON, validation, export, undo/redo | Deeper item/equipment domains and more cross-record references |
-| Database safety | Mature | Array/keyed registries preserved, transactional replacement, duplicate-ID validation, rollback tests, package-wide export validation | Broader cross-package dependency diagnostics |
-| Guardians | Functional | Guardian identity/species/role/bond/assets forms and safe templates | Stats/skills/bond progression editor |
+| Visual database | Functional | Project package discovery, collections, search, create/duplicate/delete, domain-aware forms, primitive lists, structured encounter/drop/quest rows, Advanced JSON, validation, export, undo/redo, cross-record datalist suggestions for proven IDs | More domain-specific panels and deep links while retaining freeform extensibility |
+| Database safety | Mature | Array/keyed registries preserved, transactional replacement, duplicate-ID validation, rollback tests, package-wide export validation, live-project dependency audit | Deep-link diagnostics directly to offending records |
+| Guardians | Functional | Guardian identity/species/role/bond/assets forms and safe templates | Stats/skills/bond progression only when explicit runtime schemas exist |
 | NPCs | Partial | Named NPC domain profiles and editable identity/world/story fields | Route/event linking and schedule editor |
-| Enemies/bosses | Functional | Level/stats/tags/skills/rewards/assets plus structured drop and encounter editing | AI/behavior authoring only when explicit runtime behavior contracts exist |
-| Quests/events | Functional | Structured prerequisites, objectives, reward items, unlocks, stage/giver fields, project reference audits and runtime-owned quest hooks | State-flow visualization, objective/reference pickers and broader dependency diagnostics |
-| Items/equipment | Partial | Runtime item registries editable; accessory stats and asset bindings preserved; hook references audited | Dedicated item/equipment profiles and effect builder grounded in explicit schemas |
+| Enemies/bosses | Functional | Enemy level/stats/tags/skills/rewards/assets, structured drops/encounters, boss definitions exposed through the game runtime and Battle Test | Explicit boss resolution semantics and AI/behavior authoring only when runtime contracts are defined |
+| Quests/events | Functional | Structured prerequisites, objectives, reward items, unlocks, stage/giver fields, project reference audits, runtime-owned quest hooks and reference suggestions | State-flow visualization and deep links |
+| Items/equipment | Functional | Dedicated Items & Equipment workspace over the shared runtime items registry; consumable/accessory authoring, generic numeric accessory stats, icon IDs, source-package export, undo/redo, duplicate-safe IDs and inbound usage tracing | Item effects/equipment slots only when explicit runtime schemas exist |
 | Skills/abilities | Missing | Enemy skill IDs exist as references, but no standalone explicit authoring schema is established | Add a visual skill database only when a concrete game/runtime definition schema exists |
-| Battle/encounter tooling | Functional | Runtime-backed Battle & Encounter Test workspace, runtime-map switching, region-filtered encounter candidates, weighted EncounterManager picks, enemy definition inspection, victory/escape/defeat resolution and isolated battle-quest progress testing; Android Chromium gate covers real Elyndor content | Richer battle diagnostics, encounter-table deep links, deterministic RNG controls and battle-adapter previews |
+| Battle/encounter tooling | Functional | Runtime-backed Battle & Encounter Test, runtime-map switching, region-filtered candidates, weighted EncounterManager picks, enemy inspection, quest battle progress, plus queryable boss definitions and honest visibility of missing boss-completion semantics | Define/implement boss resolution contract, deeper encounter links and deterministic RNG controls |
 | Tileset/passability | Functional | Logical tileset IDs, map layers, observed tile palette, numeric tile painting, regions, blocked-cell paint/erase, layer visibility/Z, validation/export | Real asset-backed tile thumbnails, multi-tile brushes and runtime-backed terrain metadata if/when a contract exists |
 | Project search | Mature | Manifest-driven search across all declared content packages, runtime packages and asset manifest with source filtering; Android simulation covered | Deep-link results directly into specific editor selections |
-| Reference diagnostics | Functional | Transfer, asset, encounter table, SHOP and runtime-owned SCRIPT_HOOK references validated with map/event locations | Quest objective/reward/prerequisite dependency diagnostics and deep links |
-| Animation/effects tooling | Missing | Screen-effect commands and asset hooks only | Timeline/effect authoring surface |
-| Audio tooling | Functional | BGM/BGS/ME/SE visual command forms and runtime audio contracts | Audio browser, preview and assignment UI |
+| Reference diagnostics | Mature | Map/asset/encounter/SHOP/runtime hook references plus quest prerequisites/objectives/rewards, shop stock, enemy drops/tags, Waystitch dependencies and live-project cross-package audit | Deep-link each issue into the relevant workspace/record |
+| Animation/effects tooling | Missing | Screen-effect commands and asset hooks only | Timeline/effect authoring only after a concrete effect/animation asset contract is established |
+| Audio tooling | Functional | BGM/BGS/ME/SE command forms plus manifest-driven Audio Browser, type/status filtering, exact command tuples and ready-only preview policy | Assignment deep links and richer preview controls once ready audio assets exist |
 | Plugin/extension management | Missing | No editor-facing manager | Plushbound-safe extension registry and compatibility checks |
-| Build/deployment UI | Partial | CI builds Android debug APK, verifies installability and frozen Engine v1 baseline, and validates content | Editor-facing build/export controls and diagnostics |
-| Mobile/Android ergonomics | Functional | Responsive map/database/common-event/search/passability/battle workspaces, touch tools, dedicated 412x915 Chromium gates, touch-first event/page/command structural actions | Larger touch affordances, compact navigation and device workflow polish |
+| Build/deployment UI | Partial | CI builds Android debug APK, verifies installability and frozen Engine v1 baseline, and validates content | Editor-facing build/export status and diagnostics |
+| Mobile/Android ergonomics | Functional | Responsive map/database/common-event/search/passability/battle/item/audio workspaces, touch tools and dedicated 412x915 Chromium gates | Larger touch affordances, compact navigation and device workflow polish |
 
 ## Automated gates
 
@@ -50,8 +50,11 @@ Target: mature RPG Maker MV-class authoring capability adapted to Plushbound Leg
 - Plushbound Event Copy UI CI: same-map/cross-map event copy-paste with deep-copy, clamping, selection and undo/redo history coverage at 412x915.
 - Plushbound Event Page UI CI: page duplicate/reorder/delete, unknown-command preservation and undo selection continuity at 412x915.
 - Plushbound Event Command UI CI: command copy/paste/duplicate/reorder/delete and history coverage at 412x915.
-- Plushbound Battle Test CI: real runtime encounter selection, Elyndor enemy resolution and battle-quest objective advancement at 412x915.
+- Plushbound Battle Test CI: real runtime encounter selection, Elyndor enemy resolution, battle-quest objective advancement and boss-definition visibility at 412x915.
 - Plushbound Quest Authoring CI: structured quest prerequisite/objective/reward/unlock editing against live project content at 412x915.
+- Plushbound Items & Equipment CI: shared item-registry authoring, Woven Charm stat edit/undo, usage tracing and consumable filtering at 412x915.
+- Plushbound Reference Picker CI: cross-record datalist suggestions for proven item/enemy/quest/NPC/map references at 412x915.
+- Plushbound Audio Browser CI: manifest-driven BGM/BGS/ME/SE browsing, exact command tuples and planned-vs-ready preview policy at 412x915.
 - Plushbound Project Search CI: manifest-driven project indexing/search at 412x915.
 - Plushbound Tile & Passability CI: tile, blocked-cell and region painting against runtime-native map contracts at 412x915.
 - Game Content CI: JSON syntax, asset root, runtime/content/asset contract tests.
@@ -59,14 +62,14 @@ Target: mature RPG Maker MV-class authoring capability adapted to Plushbound Leg
 
 ## Current priority order
 
-1. Dedicated item/equipment authoring grounded in the existing item/accessory/stat schemas, plus broader quest/item/waystitch dependency diagnostics.
-2. Richer battle/encounter diagnostics and deep links into encounter/enemy database records.
-3. Skills/status-effect authoring only when explicit game/runtime schemas exist; do not invent unsupported definitions.
-4. Asset-backed tileset palette/brush ergonomics without inventing unsupported runtime metadata.
-5. Audio browser/preview plus animation/effects workflows.
-6. Editor-facing build/deploy and extension management.
+1. Define and verify boss encounter completion semantics at the game layer before exposing one-time/completion-switch behavior as executable runtime functionality.
+2. Map duplication/management and richer map/tileset brush ergonomics using existing runtime-native contracts.
+3. Deep-link Project Search/reference diagnostics into exact editor records, maps and events.
+4. Skills/status effects and item effects/equipment slots only when explicit game/runtime schemas exist; do not invent unsupported definitions.
+5. Animation/effects authoring only when an explicit asset/runtime contract exists.
+6. Editor-facing build/deploy diagnostics and extension management.
 7. Continue Android-first UX polish and regression simulations.
 
 ## Current checkpoint
 
-The editor suite now has mature map/world foundations, runtime playtest, transaction-safe event copy/paste, mature page and command structural editing, manifest-driven project search, a dedicated tile/passability workspace, domain-aware database authoring, structured quest editing, reusable Common Events with runtime support and cycle validation, rich visual parameter forms for the Engine v1 command vocabulary, reference diagnostics for runtime-owned IDs, and a runtime-backed Battle & Encounter Test workspace verified against real Elyndor battle-objective progress on an Android-class viewport. The largest remaining gaps are dedicated item/equipment depth, explicit-schema skills/status effects, richer asset-backed tileset ergonomics, animation tooling and editor-facing deployment. Frozen Engine v1 remains unchanged.
+The editor suite now has mature map/world foundations, runtime playtest, transaction-safe event copy/paste, mature page and command structural editing, manifest-driven project search, a dedicated tile/passability workspace, domain-aware database authoring with cross-record suggestions, structured quest editing, a dedicated item/accessory workspace, reusable Common Events with runtime support and cycle validation, rich visual parameter forms for the Engine v1 command vocabulary, mature cross-package reference diagnostics, a runtime-backed Battle & Encounter Test workspace, queryable boss definitions with intentionally unimplemented completion semantics clearly surfaced, and a manifest-driven Audio Browser with safe ready-only preview behavior. The largest remaining gaps are map-management polish, boss-resolution semantics, explicit-schema skills/status effects, animation tooling and editor-facing deployment. Frozen Engine v1 remains unchanged.

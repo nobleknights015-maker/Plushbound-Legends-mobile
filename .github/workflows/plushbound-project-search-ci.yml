@@ -1,0 +1,80 @@
+name: Plushbound Project Search CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ plushbound-game-development ]
+    paths:
+      - 'tools/editor/project-search*'
+      - 'tools/editor/index.html'
+      - 'game/content/**'
+      - 'game/runtime/**'
+      - 'game/assets/asset-manifest.json'
+      - 'game/tests/project-search-core.test.js'
+      - '.github/workflows/plushbound-project-search-ci.yml'
+  pull_request:
+    paths:
+      - 'tools/editor/project-search*'
+      - 'tools/editor/index.html'
+      - 'game/content/**'
+      - 'game/runtime/**'
+      - 'game/assets/asset-manifest.json'
+      - 'game/tests/project-search-core.test.js'
+      - '.github/workflows/plushbound-project-search-ci.yml'
+
+jobs:
+  project-search-simulation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run project search contracts
+        run: |
+          node --check tools/editor/project-search-core.js
+          node --check tools/editor/project-search.js
+          node --test game/tests/project-search-core.test.js
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: Serve repository
+        run: |
+          python3 -m http.server 4175 --bind 127.0.0.1 >project-search-http.log 2>&1 &
+          for i in {1..20}; do
+            curl -fsS http://127.0.0.1:4175/tools/editor/project-search.html >/dev/null && exit 0
+            sleep 1
+          done
+          cat project-search-http.log
+          exit 1
+      - name: Simulate project search on Android viewport
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+          import assert from 'node:assert/strict';
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:412,height:915}});
+          const errors=[];page.on('pageerror',error=>errors.push(String(error)));
+          await page.goto('http://127.0.0.1:4175/tools/editor/project-search.html');
+          await page.waitForFunction(()=>window.PlushboundProjectSearch?.getIndex().length>100);
+          assert.ok((await page.locator('.result').count())>0);
+          await page.locator('#projectQuery').fill('menders-rest-provisions');
+          await page.waitForTimeout(50);
+          assert.ok((await page.locator('.result').count())>0);
+          assert.ok((await page.locator('.result').first().innerText()).toLowerCase().includes('mender'));
+          await page.locator('#projectType').selectOption('runtime');
+          await page.locator('#projectQuery').fill('SHOP');
+          await page.waitForTimeout(50);
+          const runtimeResults=await page.locator('.result').allInnerTexts();
+          assert.ok(runtimeResults.length>0);
+          assert.ok(runtimeResults.every(text=>text.toLowerCase().includes('runtime')));
+          await page.locator('#projectType').selectOption('assets');
+          await page.locator('#projectQuery').fill('npc/lio/sprite');
+          await page.waitForTimeout(50);
+          assert.ok((await page.locator('.result').count())>0);
+          assert.deepEqual(errors,[]);
+          await browser.close();
+          console.log('Android project search simulation passed');
+          NODE

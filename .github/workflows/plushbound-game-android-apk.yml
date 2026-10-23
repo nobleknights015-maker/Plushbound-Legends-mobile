@@ -35,6 +35,15 @@ jobs:
           find tools/editor game/runtime engine/src -name '*.js' -print0 | xargs -0 -r -n1 node --check
           find game/content game/runtime game/assets -name '*.json' -print0 | xargs -0 -r -n1 node -e "JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8'))"
 
+      - name: Assert obsolete demo reconstruction is gone
+        run: |
+          set -euo pipefail
+          test ! -e project-source.zip
+          test ! -d source_chunks
+          test ! -e .github/workflows/android-debug-apk.yml
+          test ! -e .github/workflows/engine-v1-android-apk.yml
+          echo 'Legacy reconstructed demo path is absent'
+
       - name: Assemble clean engine + editor asset surface
         run: |
           set -euo pipefail
@@ -47,7 +56,9 @@ jobs:
           cp -R engine/src app/src/main/assets/engine/src
           mkdir -p app/src/main/assets/engine/content
           cp engine/content/asset-manifest.json app/src/main/assets/engine/content/asset-manifest.json
-          test -f app/src/main/assets/tools/editor/index.html
+          sed -i 's#<script type="module" src="./editor.js"></script>#<script type="module" src="./editor-entry.js"></script>#' app/src/main/assets/tools/editor/index.html
+          grep -q 'editor-entry.js' app/src/main/assets/tools/editor/index.html
+          test -f app/src/main/assets/tools/editor/editor-entry.js
           test -f app/src/main/assets/tools/editor/editor.js
           test -f app/src/main/assets/tools/editor/editor.css
           test -f app/src/main/assets/game/runtime/PlushboundGameSession.js
@@ -69,6 +80,7 @@ jobs:
           set -euo pipefail
           grep -q 'https://appassets.androidplatform.net/assets/tools/editor/index.html' app/src/main/java/com/plushbound/legends/MainActivity.java
           grep -q 'WebViewAssetLoader' app/src/main/java/com/plushbound/legends/MainActivity.java
+          grep -q 'PLUSHBOUND_EDITOR_READY' app/src/main/java/com/plushbound/legends/MainActivity.java
           grep -q 'applicationId = "com.plushbound.legends"' app/build.gradle.kts
           grep -q 'android.useAndroidX=true' gradle.properties
           test -f app/src/main/assets/tools/editor/battle-test.html
@@ -109,6 +121,7 @@ jobs:
           test "$(stat -c%s "$APK")" -gt 10000
           unzip -t "$APK" >/dev/null
           unzip -l "$APK" | grep -q 'assets/tools/editor/index.html'
+          unzip -l "$APK" | grep -q 'assets/tools/editor/editor-entry.js'
           unzip -l "$APK" | grep -q 'assets/tools/editor/editor.js'
           unzip -l "$APK" | grep -q 'assets/game/runtime/PlushboundGameSession.js'
           unzip -l "$APK" | grep -q 'assets/engine/src/core/GameState.js'

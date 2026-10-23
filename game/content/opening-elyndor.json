@@ -89,5 +89,15 @@
       "description": "A mild restorative brewed for travelers working near unstable threads.",
       "assetBindings": { "icon": "item/threadmend-tonic/icon" }
     }
+  ],
+  "waystitches": [
+    {
+      "id": "elyndor-first-waystitch",
+      "mapId": "elyndor-sunny-plains",
+      "position": { "x": 19, "y": 7 },
+      "unlockedByDefault": true,
+      "activationSwitch": "waystitch:elyndor-first:active",
+      "assetBindings": { "sprite": "environment/waystitch/elyndor-first" }
+    }
   ]
 }

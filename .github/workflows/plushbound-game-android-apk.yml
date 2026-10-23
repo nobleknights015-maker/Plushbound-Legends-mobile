@@ -9,6 +9,7 @@ on:
       - 'engine/**'
       - 'game/**'
       - 'tools/editor/**'
+      - 'gradle.properties'
       - '.github/workflows/plushbound-game-android-apk.yml'
 
 jobs:
@@ -69,6 +70,7 @@ jobs:
           grep -q 'https://appassets.androidplatform.net/assets/tools/editor/index.html' app/src/main/java/com/plushbound/legends/MainActivity.java
           grep -q 'WebViewAssetLoader' app/src/main/java/com/plushbound/legends/MainActivity.java
           grep -q 'applicationId = "com.plushbound.legends"' app/build.gradle.kts
+          grep -q 'android.useAndroidX=true' gradle.properties
           test -f app/src/main/assets/tools/editor/battle-test.html
           test -f app/src/main/assets/tools/editor/database.html
           test -f app/src/main/assets/tools/editor/common-events.html

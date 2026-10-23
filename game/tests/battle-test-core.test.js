@@ -25,15 +25,29 @@ test('battle tester performs deterministic runtime weighted picks with enemy def
   assert.equal(tester.snapshot().lastEncounter.enemyId,'woolbeast-a');
 });
 
-test('battle tester exposes and loads boss definitions without inventing completion semantics',()=>{
+test('battle tester resolves declared one-time boss completion semantics through the game session',()=>{
   const tester=new BattleEncounterTester({mapPackage,contentPackages,rng:()=>0});
   assert.equal(tester.bosses()[0].enemy.name,'Warden');
+  assert.equal(tester.bosses()[0].available,true);
   const encounter=tester.loadBoss('warden-boss');
   assert.equal(encounter.bossId,'warden-boss');
   assert.equal(encounter.bossDefinition.completionSwitch,'warden:defeated');
-  tester.resolveEncounter('victory');
-  assert.equal(tester.snapshot().lastEncounter,null);
+  const resolved=tester.resolveEncounter('victory');
+  assert.equal(resolved.boss.result,'victory');
+  assert.equal(resolved.boss.available,false);
+  assert.equal(tester.session.state.sw('warden:defeated'),true);
+  assert.equal(tester.bosses()[0].available,false);
+  assert.throws(()=>tester.loadBoss('warden-boss'),/already complete/i);
+});
+
+test('boss escape leaves one-time encounter available',()=>{
+  const tester=new BattleEncounterTester({mapPackage,contentPackages,rng:()=>0});
+  tester.loadBoss('warden-boss');
+  const resolved=tester.resolveEncounter('escape');
+  assert.equal(resolved.boss.result,'escape');
+  assert.equal(resolved.boss.available,true);
   assert.equal(tester.session.state.sw('warden:defeated'),false);
+  assert.equal(tester.loadBoss('warden-boss').bossId,'warden-boss');
 });
 
 test('victory resolves through PlushboundGameSession and progresses battle objectives',()=>{

@@ -28,22 +28,30 @@ function renderRuntimePackages(){
   els.runtimePackage.innerHTML='';state.runtimePackages.forEach((entry,index)=>{const option=document.createElement('option');option.value=String(index);option.textContent=entry.id;els.runtimePackage.append(option);});els.runtimePackage.value=String(Math.max(0,state.activeRuntimeIndex));
 }
 
-function createTester(){
+function runtimeIndexForMap(mapId){
+  const id=String(mapId||'');return state.runtimePackages.findIndex(entry=>(entry.data?.maps||[]).some(map=>String(map.id)===id));
+}
+
+function createTester(preferredMapId=null){
   const source=state.runtimePackages[state.activeRuntimeIndex];
   if(!source)throw new Error('No runtime map package with maps[] was found');
   state.tester=new BattleEncounterTester({mapPackage:source.data,contentPackages:state.contentPackages,seed:state.seed});
-  renderMaps();renderQuests();refreshAll();
+  renderMaps(preferredMapId);renderQuests();refreshAll();
 }
 
-function renderMaps(){
-  els.battleMap.innerHTML='';for(const map of state.tester.maps()){const option=document.createElement('option');option.value=map.id;option.textContent=map.name;els.battleMap.append(option);}const start=state.index?.start?.mapId;if(start&&state.tester.maps().some(map=>map.id===start))els.battleMap.value=start;state.tester.enterMap(els.battleMap.value,0,0);
+function renderMaps(preferredMapId=null){
+  const activeMaps=state.tester.maps(),activeIds=new Set(activeMaps.map(map=>String(map.id)));els.battleMap.innerHTML='';
+  state.runtimePackages.forEach((entry,index)=>{for(const map of entry.data?.maps||[]){const option=document.createElement('option');option.value=String(map.id);option.textContent=`${map.name} • ${entry.id}`;option.dataset.runtimeIndex=String(index);els.battleMap.append(option);}});
+  const current=String(preferredMapId||els.battleMap.value||''),start=String(state.index?.start?.mapId||'');let selected=activeIds.has(current)?current:(activeIds.has(start)?start:String(activeMaps[0]?.id||''));
+  if(!selected)throw new Error('Active runtime package has no selectable map');
+  els.battleMap.value=selected;state.tester.enterMap(selected,0,0);
 }
 
 function renderQuests(){
   els.battleQuest.innerHTML='<option value="">No quest selected</option>';for(const quest of state.tester.battleQuests()){const option=document.createElement('option');option.value=quest.id;option.textContent=`${quest.name} (${quest.id})`;els.battleQuest.append(option);}
 }
 
-function selectedPreview(){return state.tester.encounterPreview({mapId:els.battleMap.value,regionId:Number(els.battleRegion.value)||0});}
+function selectedPreview(){return state.tester.encounterPreview({mapId=els.battleMap.value,regionId:Number(els.battleRegion.value)||0});}
 
 function renderCandidates(){
   const preview=selectedPreview();els.encounterTableMeta.textContent=preview.tableId?`${preview.tableId} • region ${preview.regionId} • ${preview.entries.length} candidate(s)`:'This map has no encounter table.';els.encounterCandidates.innerHTML='';
@@ -76,12 +84,12 @@ function loadBoss(id){
   try{
     const definition=state.tester.session.game.bossEncounter(id),targetMapId=definition?.mapId?String(definition.mapId):null;
     if(targetMapId&&!state.tester.session.maps.maps.has(targetMapId)){
-      const runtimeIndex=state.runtimePackages.findIndex(entry=>(entry.data?.maps||[]).some(map=>String(map.id)===targetMapId));
+      const runtimeIndex=runtimeIndexForMap(targetMapId);
       if(runtimeIndex<0)throw new Error(`Boss encounter ${id} references unknown map ${targetMapId}`);
-      state.activeRuntimeIndex=runtimeIndex;renderRuntimePackages();createTester();
+      state.activeRuntimeIndex=runtimeIndex;renderRuntimePackages();createTester(targetMapId);
     }
     const encounter=state.tester.loadBoss(id);
-    if(encounter?.bossDefinition?.mapId&&state.tester.maps().some(map=>map.id===String(encounter.bossDefinition.mapId)))els.battleMap.value=String(encounter.bossDefinition.mapId);
+    if(encounter?.bossDefinition?.mapId)els.battleMap.value=String(encounter.bossDefinition.mapId);
     refreshAll(`Boss loaded: ${encounter.enemy?.name||encounter.enemyId}`);
   }catch(error){refreshAll(error.message);}
 }
@@ -91,7 +99,7 @@ function prepareQuest(){const id=els.battleQuest.value;if(!id)return;try{const d
 function applySeed(){const parsed=Number(els.battleSeed.value);state.seed=(Number.isFinite(parsed)?Math.trunc(parsed):1)>>>0;els.battleSeed.value=String(state.seed);createTester();refreshAll(`Battle test reset with encounter seed ${state.seed}`);}
 
 els.runtimePackage.addEventListener('change',()=>{state.activeRuntimeIndex=Number(els.runtimePackage.value)||0;createTester();});
-els.battleMap.addEventListener('change',()=>{state.tester.enterMap(els.battleMap.value,0,0);refreshAll(`Map selected: ${els.battleMap.value}`);});
+els.battleMap.addEventListener('change',()=>{const mapId=els.battleMap.value,runtimeIndex=runtimeIndexForMap(mapId);if(runtimeIndex<0){refreshAll(`Map ${mapId} is not available in a loaded runtime package`);return;}if(runtimeIndex!==state.activeRuntimeIndex){state.activeRuntimeIndex=runtimeIndex;renderRuntimePackages();createTester(mapId);refreshAll(`Map selected: ${mapId} • switched runtime package`);return;}state.tester.enterMap(mapId,0,0);refreshAll(`Map selected: ${mapId}`);});
 els.battleRegion.addEventListener('input',()=>refreshAll('Region preview updated'));
 els.applyBattleSeed.addEventListener('click',applySeed);
 els.encounterCandidates.addEventListener('click',event=>{const button=event.target.closest('[data-enemy-id]');if(button)pick(button.dataset.enemyId);});

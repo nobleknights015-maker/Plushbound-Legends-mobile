@@ -34,6 +34,34 @@ test('structured nested rows expose encounter entries and drops with safe templa
   assert.deepEqual(dropLists[0].template,{itemId:'',chance:0});
 });
 
+test('quest flow exposes prerequisites objectives rewards and unlocks without JSON-only editing',()=>{
+  const quest={id:'threads-out-of-tune',name:'Threads Out of Tune',stage:2,giver:'bram',summary:'Repair the anchors.',prerequisites:[{questComplete:'a-thread-begins'}],objectives:[{id:'inspect-west-anchor',type:'interact',target:'anchor-west',count:1}],rewards:{gold:180,items:[{id:'threadmend-tonic',count:2}]},unlocks:['waystitch-menders-rest']};
+  assert.equal(collectionProfile('quests').title,'Quests');
+  const fields=recordFieldDescriptors(quest);
+  assert.equal(fields.find(field=>field.key==='stage').group,'Quest Flow');
+  assert.equal(fields.find(field=>field.key==='giver').group,'Quest Flow');
+  assert.equal(fields.find(field=>field.key==='unlocks').group,'Quest Flow');
+  const lists=nestedRecordListDescriptors(quest);
+  assert.deepEqual(lists.map(list=>list.key),['prerequisites','objectives','rewards.items']);
+  assert.deepEqual(lists.find(list=>list.key==='prerequisites').template,{questComplete:''});
+  assert.deepEqual(lists.find(list=>list.key==='objectives').template,{id:'new-objective',type:'interact',target:'',count:1});
+  assert.deepEqual(lists.find(list=>list.key==='rewards.items').template,{id:'',count:1});
+  const seeded=newRecordTemplate('quests',{suffix:'test'});
+  assert.equal(seeded.id,'new-quest-test');
+  assert.equal(seeded.stage,1);
+  assert.deepEqual(seeded.objectives,[]);
+  assert.deepEqual(seeded.rewards,{gold:0,items:[]});
+});
+
+test('shop inventory rows have an authoring template for empty new shops',()=>{
+  const shop=newRecordTemplate('shops',{suffix:'test'});
+  assert.equal(shop.id,'new-shop-test');
+  assert.deepEqual(shop.inventory,[]);
+  const lists=nestedRecordListDescriptors(shop);
+  assert.equal(lists[0].key,'inventory');
+  assert.deepEqual(lists[0].template,{itemId:'',price:0});
+});
+
 test('structured nested rows add, edit and remove transactionally', () => {
   const record={id:'forest',entries:[{enemyId:'sprout',weight:70}]};
   const added=addNestedRecord(record,'entries');

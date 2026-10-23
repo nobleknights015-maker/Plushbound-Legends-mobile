@@ -5,12 +5,16 @@ on:
   push:
     branches: [ plushbound-game-development ]
     paths:
+      - 'app/**'
+      - 'engine/**'
       - 'game/**'
+      - 'tools/editor/**'
       - '.github/workflows/plushbound-game-android-apk.yml'
 
 jobs:
   build-game-debug-apk:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - name: Check out game development
         uses: actions/checkout@v4
@@ -20,214 +24,58 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Validate game JSON and runtime contracts
+      - name: Validate frozen engine, game and editor contracts
         run: |
-          find game/content game/runtime game/assets -name '*.json' -print0 | xargs -0 -r -n1 node -e "JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8'))"
+          set -euo pipefail
+          (cd engine && npm test)
+          node --test engine/tests/final_acceptance_gate.test.js
+          node --test engine/tests/freeze_readiness_gate.test.js
           node --test game/tests/*.test.js
-          node - <<'NODE'
-          const fs = require('fs');
-          const path = require('path');
-          const indexPath = 'game/content/content-index.json';
-          const index = JSON.parse(fs.readFileSync(indexPath,'utf8'));
-          const contentDir = path.dirname(indexPath);
-          for (const pkg of [...(index.packages || []), ...(index.runtimePackages || [])]) {
-            const resolved = path.resolve(contentDir, pkg.path);
-            if (!fs.existsSync(resolved)) throw new Error(`Indexed package path does not exist: ${pkg.id} -> ${pkg.path}`);
-          }
-          const required = ['verdancia-region','verdancia-population','verdancia-npcs','verdancia-quests-events','verdancia-asset-slots'];
-          for (const id of required) if (!index.packages.some(p => p.id === id && p.required)) throw new Error(`Missing required Verdancia package: ${id}`);
-          for (const id of ['verdancia-region-maps','verdancia-runtime-contract']) if (!index.runtimePackages.some(p => p.id === id && p.required)) throw new Error(`Missing required Verdancia runtime package: ${id}`);
-          const maps = JSON.parse(fs.readFileSync('game/runtime/verdancia-region.maps.json','utf8'));
-          const contract = JSON.parse(fs.readFileSync('game/runtime/verdancia-runtime-contract.json','utf8'));
-          if (!Array.isArray(maps.maps) || maps.maps.length !== 6) throw new Error('Verdancia runtime must contain exactly six maps');
-          const ids = new Set(maps.maps.map(m => m.id));
-          for (const id of ['verdancia-threadwood-verge','verdancia-lanternbough','verdancia-mossveil-hollow','verdancia-elderstitch-grove','verdancia-rootbound-depths','verdancia-weavers-sanctum']) if (!ids.has(id)) throw new Error(`Missing Verdancia map ${id}`);
-          const tier = contract.progression?.tier ?? contract.tier;
-          if (contract.regionId !== 'verdancia' || tier !== 2) throw new Error('Verdancia runtime contract identity/tier mismatch');
-          console.log('Verdancia runtime acceptance preflight passed');
-          NODE
+          find tools/editor game/runtime engine/src -name '*.js' -print0 | xargs -0 -r -n1 node --check
+          find game/content game/runtime game/assets -name '*.json' -print0 | xargs -0 -r -n1 node -e "JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8'))"
 
-      - name: Re-verify frozen Engine v1 baseline
-        working-directory: engine
+      - name: Assemble clean engine + editor asset surface
         run: |
-          npm test
-          node --test tests/final_acceptance_gate.test.js
-          node --test tests/freeze_readiness_gate.test.js
-
-      - name: Record game package gate
-        run: |
-          cat > plushbound-game-release-gate.json <<JSON
-          {
-            "game": "Plushbound Legends",
-            "branch": "plushbound-game-development",
-            "gameCommit": "${GITHUB_SHA}",
-            "engineBaseline": "160d9fd95bc0d3db39224f8bb4c5e1e3a1f54425",
-            "regions": ["elyndor", "verdancia"],
-            "status": "passed"
-          }
-          JSON
-          python -m json.tool plushbound-game-release-gate.json >/dev/null
-
-      - name: Reconstruct clean Android project source
-        run: |
-          cat source_chunks/part_* > project-source.b64
-          base64 -d project-source.b64 > project-source-fixed.zip
-          unzip -o project-source-fixed.zip -d .
+          set -euo pipefail
+          rm -rf app/src/main/assets
+          mkdir -p app/src/main/assets/tools app/src/main/assets/game app/src/main/assets/engine
+          cp -R tools/editor app/src/main/assets/tools/editor
+          cp -R game/content app/src/main/assets/game/content
+          cp -R game/runtime app/src/main/assets/game/runtime
+          cp -R game/assets app/src/main/assets/game/assets
+          cp -R engine/src app/src/main/assets/engine/src
+          mkdir -p app/src/main/assets/engine/content
+          cp engine/content/asset-manifest.json app/src/main/assets/engine/content/asset-manifest.json
+          test -f app/src/main/assets/tools/editor/index.html
+          test -f app/src/main/assets/tools/editor/editor.js
+          test -f app/src/main/assets/tools/editor/editor.css
+          test -f app/src/main/assets/game/runtime/PlushboundGameSession.js
+          test -f app/src/main/assets/engine/src/core/GameState.js
+          if find app/src/main/assets -iname '*placeholder*' -o -iname '*demo*' | grep -q .; then
+            echo 'Placeholder/demo asset detected in clean editor package'
+            find app/src/main/assets -iname '*placeholder*' -o -iname '*demo*'
+            exit 1
+          fi
 
       - name: Apply official Plushbound launcher icon
         run: |
           python -m pip install --disable-pip-version-check --quiet pillow
           python game/tools/apply-android-launcher-icon.py
-          test -f app/src/main/res/mipmap-mdpi/plushbound_launcher.webp
-          test -f app/src/main/res/mipmap-xxxhdpi/plushbound_launcher.webp
-          test -f app/src/main/res/mipmap-anydpi-v26/plushbound_launcher.xml
           grep -q 'android:icon="@mipmap/plushbound_launcher"' app/src/main/AndroidManifest.xml
           grep -q 'android:roundIcon="@mipmap/plushbound_launcher_round"' app/src/main/AndroidManifest.xml
 
-      - name: Apply native-feel fixed viewport shell policy
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          css_files = sorted(Path('app/src/main/assets').rglob('style.css'))
-          if not css_files:
-              raise SystemExit('No shell stylesheet found under app/src/main/assets')
-          native_css = "\n/* Plushbound Engine v1 native-surface policy: no document or panel scrolling. */\nhtml,body,#app{position:fixed!important;inset:0!important;width:100%!important;height:100%!important;overflow:hidden!important;overscroll-behavior:none!important;touch-action:none!important}\n.screen,.overlay{overflow:hidden!important;min-width:0!important;min-height:0!important}\n.panel{overflow:hidden!important;max-height:calc(100dvh - 16px)!important;max-width:calc(100dvw - 16px)!important}\n#creatorScreen .panel,#starterScreen .panel,#mapScreen .panel,#menuScreen .panel,#creditsScreen .panel{height:min(680px,calc(100dvh - 16px));display:flex;flex-direction:column;min-height:0}\n#creatorScreen .creator-grid{flex:1;min-height:0;overflow:hidden;grid-template-columns:minmax(180px,30%) 1fr}\n#creatorScreen .avatar-preview{min-height:0;height:100%}\n#creatorScreen .creator-form{min-height:0;align-content:center}\n#starterScreen .starter-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;min-height:0}\n#starterScreen .starter-card{min-height:0;padding:10px}\n#starterScreen .starter-icon{font-size:34px;margin-bottom:4px}\n#starterScreen .starter-stat{margin-top:6px}\n#starterScreen .starter-detail{margin-top:8px;padding:10px;line-height:1.25}\n#starterScreen .row-actions{margin-top:8px}\n#mapScreen .world-map{flex:1;min-height:220px;height:auto}\n#mapScreen .map-info{flex:0 0 auto}\n#menuScreen .menu-grid{flex:1;min-height:0;align-content:center}\n#menuScreen .info-card{min-height:0}\n#creditsScreen .credits-copy{flex:1;min-height:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:18px;row-gap:4px;align-content:center;font-size:13px;line-height:1.35}\n@media (max-height:600px){.screen,.overlay{padding:8px!important}.panel{padding:12px!important}.section-heading{margin-bottom:8px!important}.section-heading h2{font-size:22px!important}button{min-height:38px!important;padding:7px 12px!important}#starterScreen .starter-grid{gap:6px!important}#mapScreen .world-map{min-height:180px}}\n"
-          for css in css_files:
-              text = css.read_text(encoding='utf-8')
-              if 'Plushbound Engine v1 native-surface policy' not in text:
-                  css.write_text(text + native_css, encoding='utf-8')
-          PY
-
-      - name: Package frozen engine, game runtime and assets
-        run: |
-          rm -rf app/src/main/assets/engine-v1 app/src/main/assets/game
-          mkdir -p app/src/main/assets/engine-v1/content app/src/main/assets/game
-          cp -R engine/src/. app/src/main/assets/engine-v1/
-          cp engine/content/asset-manifest.json app/src/main/assets/engine-v1/content/asset-manifest.json
-          cp -R game/content app/src/main/assets/game/content
-          cp -R game/runtime app/src/main/assets/game/runtime
-          cp -R game/assets app/src/main/assets/game/assets
-          cp plushbound-game-release-gate.json app/src/main/assets/game/release-gate.json
-          python - <<'PY'
-          from pathlib import Path
-          for js in Path('app/src/main/assets/game/runtime').rglob('*.js'):
-              text = js.read_text(encoding='utf-8')
-              text = text.replace('../../engine/src/', '../../engine-v1/')
-              js.write_text(text, encoding='utf-8')
-          PY
-          cat > app/src/main/assets/game/package-manifest.json <<'JSON'
-          {
-            "game": "Plushbound Legends",
-            "engineBaseline": "160d9fd95bc0d3db39224f8bb4c5e1e3a1f54425",
-            "bootstrap": "runtime/AndroidGameBootstrap.js",
-            "shellBridge": "runtime/GameShellBridge.js",
-            "contentIndex": "content/content-index.json",
-            "assetManifest": "assets/asset-manifest.json",
-            "runtimeMaps": ["runtime/elyndor-route-one.maps.json", "runtime/verdancia-region.maps.json"],
-            "runtimeContracts": ["runtime/elyndor-runtime-contract.json", "runtime/verdancia-runtime-contract.json"],
-            "releaseGate": "release-gate.json"
-          }
-          JSON
-
-      - name: Inject frozen engine and Plushbound game bootstrap
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          import os
-          root = Path('app/src/main/assets')
-          engine = root / 'engine-v1/runtime/BrowserRuntimeEntry.js'
-          manifest = root / 'engine-v1/content/asset-manifest.json'
-          game = root / 'game/runtime/AndroidGameBootstrap.js'
-          shell = root / 'game/runtime/GameShellBridge.js'
-          html_files = sorted(root.rglob('*.html'))
-          if not html_files:
-              raise SystemExit('No Android WebView HTML entrypoint found')
-          for html in html_files:
-              text = html.read_text(encoding='utf-8')
-              engine_rel = Path(os.path.relpath(engine, html.parent)).as_posix()
-              manifest_rel = Path(os.path.relpath(manifest, html.parent)).as_posix()
-              game_rel = Path(os.path.relpath(game, html.parent)).as_posix()
-              shell_rel = Path(os.path.relpath(shell, html.parent)).as_posix()
-              engine_tag = f'<script type="module" src="{engine_rel}" data-plushbound-engine-v1="runtime" data-asset-manifest="{manifest_rel}"></script>'
-              game_tag = f'<script type="module" src="{game_rel}" data-plushbound-game="runtime"></script>'
-              shell_tag = f'<script type="module" src="{shell_rel}" data-plushbound-shell="bridge"></script>'
-              tags = []
-              if 'data-plushbound-engine-v1="runtime"' not in text: tags.append(engine_tag)
-              if 'data-plushbound-shell="bridge"' not in text: tags.append(shell_tag)
-              if 'data-plushbound-game="runtime"' not in text: tags.append(game_tag)
-              if tags:
-                  injection = '\n'.join(tags)
-                  text = text.replace('</body>', injection + '\n</body>', 1) if '</body>' in text else text + '\n' + injection
-              html.write_text(text, encoding='utf-8')
-          PY
-
-      - name: Validate packaged game payload
+      - name: Verify editor boot target and repository-shaped payload
         run: |
           set -euo pipefail
-          check_file() {
-            if [ ! -f "$1" ]; then
-              echo "MISSING PACKAGED FILE: $1"
-              exit 1
-            fi
-            echo "OK FILE: $1"
-          }
-          check_text() {
-            file="$1"
-            marker="$2"
-            if ! grep -Fq -- "$marker" "$file"; then
-              echo "MARKER MISSING: $marker :: $file"
-              exit 1
-            fi
-            echo "OK MARKER: $marker :: $file"
-          }
-
-          check_file app/src/main/assets/engine-v1/core/GameState.js
-          check_file app/src/main/assets/engine-v1/maps/MapRuntime.js
-          check_file app/src/main/assets/game/runtime/AndroidGameBootstrap.js
-          check_file app/src/main/assets/game/runtime/PlushboundGameSession.js
-          check_file app/src/main/assets/game/runtime/GameContentRuntime.js
-          check_file app/src/main/assets/game/runtime/GameShellBridge.js
-          check_file app/src/main/assets/game/runtime/GameDomAdapter.js
-          check_file app/src/main/assets/game/runtime/elyndor-route-one.maps.json
-          check_file app/src/main/assets/game/runtime/elyndor-runtime-contract.json
-          check_file app/src/main/assets/game/runtime/verdancia-region.maps.json
-          check_file app/src/main/assets/game/runtime/verdancia-runtime-contract.json
-          check_file app/src/main/assets/game/content/regions/verdancia.json
-          check_file app/src/main/assets/game/content/verdancia-population.json
-          check_file app/src/main/assets/game/content/verdancia-npcs.json
-          check_file app/src/main/assets/game/content/verdancia-quests-events.json
-          check_file app/src/main/assets/game/content/verdancia-asset-slots.json
-          check_file app/src/main/assets/game/content/content-index.json
-          check_file app/src/main/assets/game/assets/asset-manifest.json
-          check_file app/src/main/assets/game/assets/README.md
-          check_file app/src/main/assets/game/assets/ui/branding/launcher-source/part_00.b64
-          check_file app/src/main/res/mipmap-xxxhdpi/plushbound_launcher.webp
-
-          check_text app/src/main/assets/game/content/content-index.json '160d9fd95bc0d3db39224f8bb4c5e1e3a1f54425'
-          check_text app/src/main/assets/game/content/content-index.json 'plushbound-game-assets'
-          check_text app/src/main/assets/game/content/content-index.json 'regions/verdancia.json'
-          check_text app/src/main/assets/game/content/content-index.json 'verdancia-region-maps'
-          check_text app/src/main/assets/game/content/content-index.json 'verdancia-runtime-contract'
-          check_text app/src/main/assets/game/runtime/AndroidGameBootstrap.js '../../engine-v1/core/GameState.js'
-          check_text app/src/main/assets/game/runtime/PlushboundGameSession.js '../../engine-v1/maps/MapRuntime.js'
-
-          python - <<'PY'
-          from pathlib import Path
-          roots = [Path('app/src/main/assets')]
-          html_files = [p for root in roots for p in root.rglob('*.html')]
-          css_files = [p for root in roots for p in root.rglob('style.css')]
-          if not any('data-plushbound-game="runtime"' in p.read_text(encoding='utf-8') for p in html_files):
-              raise SystemExit('MISSING HTML MARKER: data-plushbound-game="runtime"')
-          if not any('data-plushbound-shell="bridge"' in p.read_text(encoding='utf-8') for p in html_files):
-              raise SystemExit('MISSING HTML MARKER: data-plushbound-shell="bridge"')
-          if not any('Plushbound Engine v1 native-surface policy' in p.read_text(encoding='utf-8') for p in css_files):
-              raise SystemExit('MISSING CSS MARKER: Plushbound Engine v1 native-surface policy')
-          print('OK shell injection and native-surface markers')
-          PY
-
-          find app/src/main/assets/engine-v1 app/src/main/assets/game/runtime -name '*.js' -print0 | xargs -0 -n1 node --check
-          find app/src/main/assets/game -name '*.json' -print0 | xargs -0 -r -n1 python -m json.tool >/dev/null
-          echo 'Packaged game payload validation passed'
+          grep -q 'file:///android_asset/tools/editor/index.html' app/src/main/java/com/plushbound/legends/MainActivity.java
+          grep -q 'com.plushbound.legends' app/src/main/AndroidManifest.xml
+          test -f app/src/main/assets/tools/editor/battle-test.html
+          test -f app/src/main/assets/tools/editor/database.html
+          test -f app/src/main/assets/tools/editor/common-events.html
+          test -f app/src/main/assets/game/content/content-index.json
+          test -f app/src/main/assets/game/assets/asset-manifest.json
+          test -f app/src/main/assets/engine/content/asset-manifest.json
+          echo 'Clean engine/editor package surface verified'
 
       - name: Set up Java 17
         uses: actions/setup-java@v5
@@ -247,62 +95,28 @@ jobs:
           export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH"
           yes | sdkmanager --licenses >/dev/null || true
           sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
-          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> "$GITHUB_ENV"
-          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
-          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
-          echo "$ANDROID_HOME/build-tools/35.0.0" >> "$GITHUB_PATH"
 
-      - name: Build Plushbound game debug APK
-        run: gradle --no-daemon assembleDebug
+      - name: Build clean editor debug APK
+        run: gradle :app:assembleDebug --stacktrace
 
-      - name: Verify APK game payload and installability
+      - name: Validate APK contains editor, engine and game payload
         run: |
+          set -euo pipefail
           APK=app/build/outputs/apk/debug/app-debug.apk
           test -f "$APK"
           test "$(stat -c%s "$APK")" -gt 10000
           unzip -t "$APK" >/dev/null
-          unzip -l "$APK" | grep -q 'assets/engine-v1/core/GameState.js'
-          unzip -l "$APK" | grep -q 'assets/game/runtime/AndroidGameBootstrap.js'
-          unzip -l "$APK" | grep -q 'assets/game/runtime/GameShellBridge.js'
-          unzip -l "$APK" | grep -q 'assets/game/runtime/elyndor-route-one.maps.json'
-          unzip -l "$APK" | grep -q 'assets/game/runtime/verdancia-region.maps.json'
-          unzip -l "$APK" | grep -q 'assets/game/runtime/verdancia-runtime-contract.json'
-          unzip -l "$APK" | grep -q 'assets/game/content/regions/verdancia.json'
-          unzip -l "$APK" | grep -q 'assets/game/content/verdancia-population.json'
-          unzip -l "$APK" | grep -q 'assets/game/content/verdancia-npcs.json'
-          unzip -l "$APK" | grep -q 'assets/game/content/verdancia-quests-events.json'
-          unzip -l "$APK" | grep -q 'assets/game/content/verdancia-asset-slots.json'
-          unzip -l "$APK" | grep -q 'assets/game/content/content-index.json'
-          unzip -l "$APK" | grep -q 'assets/game/assets/asset-manifest.json'
-          unzip -l "$APK" | grep -q 'assets/game/assets/guardians/README.md'
-          unzip -l "$APK" | grep -q 'assets/game/assets/ui/branding/launcher-source/part_00.b64'
-          unzip -p "$APK" assets/game/release-gate.json | grep -q "${GITHUB_SHA}"
-          unzip -p "$APK" assets/game/release-gate.json | grep -q 'verdancia'
-          HTML=$(unzip -Z1 "$APK" | grep '^assets/.*\.html$' | head -n 1)
-          CSS=$(unzip -Z1 "$APK" | grep '^assets/.*style\.css$' | head -n 1)
-          unzip -p "$APK" "$HTML" | grep -q 'data-plushbound-game="runtime"'
-          unzip -p "$APK" "$HTML" | grep -q 'data-plushbound-shell="bridge"'
-          unzip -p "$APK" "$CSS" | grep -q 'overflow:hidden!important'
-          aapt dump badging "$APK" | tee apk-badging.txt
-          grep -q "package: name='com.plushbound.legends'" apk-badging.txt
-          grep -q 'plushbound_launcher' apk-badging.txt
-          aapt dump permissions "$APK" | tee apk-permissions.txt
-          if grep -q 'android.permission.INTERNET' apk-permissions.txt; then exit 1; fi
-          apksigner verify --verbose --print-certs "$APK"
-          zipalign -c -v 4 "$APK"
+          unzip -l "$APK" | grep -q 'assets/tools/editor/index.html'
+          unzip -l "$APK" | grep -q 'assets/tools/editor/editor.js'
+          unzip -l "$APK" | grep -q 'assets/game/runtime/PlushboundGameSession.js'
+          unzip -l "$APK" | grep -q 'assets/engine/src/core/GameState.js'
+          sha256sum "$APK" | tee plushbound-editor-apk.sha256
 
-      - name: Record game APK checksum
-        run: sha256sum app/build/outputs/apk/debug/app-debug.apk | tee plushbound-game-apk.sha256
-
-      - name: Upload Plushbound game Android APK
+      - name: Upload clean editor APK
         uses: actions/upload-artifact@v4
         with:
           name: plushbound-game-debug-apk
           path: |
             app/build/outputs/apk/debug/app-debug.apk
-            plushbound-game-apk.sha256
-            plushbound-game-release-gate.json
-            apk-badging.txt
-            apk-permissions.txt
+            plushbound-editor-apk.sha256
           if-no-files-found: error

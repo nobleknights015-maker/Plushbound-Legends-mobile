@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 
 import {contentReferenceRegistry,commandReferences,auditContentPackageReferences,auditContentReferences} from '../../tools/editor/reference-audit-core.js';
 
@@ -16,6 +17,8 @@ const contentPackages=[{
 function mapPackage(commands){
   return {maps:[{id:'map-one',events:[{id:'event-one',pages:[{commands}]}]}]};
 }
+
+function readJson(url){return JSON.parse(fs.readFileSync(url,'utf8'));}
 
 test('reference registry accepts array and keyed content collections plus objective/tag registries',()=>{
   const registry=contentReferenceRegistry(contentPackages);
@@ -81,6 +84,19 @@ test('cross-package audit reports broken quest, shop, encounter and waystitch re
   assert.ok(codes.includes('missing-enemy-tag-reference'));
   assert.ok(codes.includes('missing-waystitch-reference'));
   assert.ok(codes.includes('missing-enemy-reference'));
+});
+
+test('live Plushbound content and runtime map hooks have no broken explicit references',()=>{
+  const indexUrl=new URL('../content/content-index.json',import.meta.url),index=readJson(indexUrl);
+  const liveContent=(index.packages||[]).map(entry=>readJson(new URL(`../content/${entry.path}`,import.meta.url)));
+  const contentIssues=auditContentPackageReferences(liveContent);
+  assert.deepEqual(contentIssues,[],contentIssues.map(issue=>issue.message).join('\n'));
+  for(const runtime of index.runtimePackages||[]){
+    const data=readJson(new URL(`../content/${runtime.path}`,import.meta.url));
+    if(!Array.isArray(data?.maps))continue;
+    const issues=auditContentReferences(data,liveContent);
+    assert.deepEqual(issues,[],`${runtime.id}:\n${issues.map(issue=>issue.message).join('\n')}`);
+  }
 });
 
 test('command reference scan ignores commands without explicit content registry contracts',()=>{

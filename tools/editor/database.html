@@ -27,10 +27,11 @@
       <aside class="database-inspector">
         <section><h2>Record Inspector</h2><div id="recordEmpty" class="meta">Select a database record.</div><div id="recordEditor" hidden><div id="recordIdentity" class="meta"></div><div id="fieldEditor" class="field-editor"></div><button id="applyFields">Apply Fields</button><details class="advanced-json"><summary>Advanced JSON</summary><textarea id="recordJson" rows="20" spellcheck="false"></textarea><button id="applyRecord">Apply JSON</button></details></div></section>
         <section><h2>Validation</h2><div id="validationSummary" class="meta">No collection selected.</div><div id="validationIssues" class="page-summary"></div></section>
-        <section><h2>Contract</h2><div class="note">Visual fields preserve nested Plushbound data, structured arrays, and native keyed/array registries. Advanced JSON remains available for unusual schemas, and frozen Engine v1 is never mutated.</div></section>
+        <section><h2>Contract</h2><div class="note">Visual fields preserve nested Plushbound data, structured arrays, and native keyed/array registries. Known cross-record IDs are suggested without restricting future/custom IDs. Advanced JSON remains available for unusual schemas, and frozen Engine v1 is never mutated.</div></section>
       </aside>
     </main>
   </div>
   <script type="module" src="./database.js"></script>
+  <script type="module" src="./database-reference-pickers.js"></script>
 </body>
 </html>

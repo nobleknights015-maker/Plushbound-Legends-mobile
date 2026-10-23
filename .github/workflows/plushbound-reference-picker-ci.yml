@@ -1,0 +1,74 @@
+name: Plushbound Reference Picker CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ plushbound-game-development ]
+    paths:
+      - 'tools/editor/reference-picker-core.js'
+      - 'tools/editor/database-reference-pickers.js'
+      - 'tools/editor/database.html'
+      - 'game/tests/reference-picker-core.test.js'
+      - 'game/content/**'
+      - 'game/runtime/**'
+      - '.github/workflows/plushbound-reference-picker-ci.yml'
+  pull_request:
+    paths:
+      - 'tools/editor/reference-picker-core.js'
+      - 'tools/editor/database-reference-pickers.js'
+      - 'tools/editor/database.html'
+      - 'game/tests/reference-picker-core.test.js'
+      - 'game/content/**'
+      - 'game/runtime/**'
+      - '.github/workflows/plushbound-reference-picker-ci.yml'
+
+jobs:
+  reference-picker-simulation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run reference picker contracts
+        run: |
+          node --check tools/editor/reference-picker-core.js
+          node --check tools/editor/database-reference-pickers.js
+          node --test game/tests/reference-picker-core.test.js
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: Serve repository
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >reference-picker-http.log 2>&1 &
+          for i in {1..20}; do curl -fsS http://127.0.0.1:4173/tools/editor/database.html >/dev/null && exit 0; sleep 1; done
+          cat reference-picker-http.log
+          exit 1
+      - name: Simulate cross-record suggestions on Android viewport
+        run: |
+          node --input-type=module <<'NODE'
+          import {chromium} from 'playwright';
+          import assert from 'node:assert/strict';
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:412,height:915}});
+          const errors=[];page.on('pageerror',error=>errors.push(String(error)));
+          await page.goto('http://127.0.0.1:4173/tools/editor/database.html');
+          await page.click('#loadDatabase');
+          await page.waitForSelector('#packageList [data-package-index]');
+          await page.locator('#packageList [data-package-index]').filter({hasText:'elyndor-route-one'}).first().click();
+          await page.click('#collectionList [data-collection-key="quests"]');
+          await page.locator('#recordList [data-locator]').filter({hasText:'Threads Out of Tune'}).first().click();
+          const giver=page.locator('[data-field-input="giver"]');
+          await page.waitForFunction(()=>document.querySelector('[data-field-input="giver"]')?.getAttribute('list'));
+          const giverList=await giver.getAttribute('list');
+          assert.ok(await page.locator(`#${giverList} option[value="bram"]`).count());
+          const reward=page.locator('[data-nested-path="rewards.items"][data-nested-key="id"]').first();
+          const rewardList=await reward.getAttribute('list');
+          assert.ok(rewardList);
+          assert.ok(await page.locator(`#${rewardList} option[value="waybread"]`).count());
+          assert.deepEqual(errors,[]);
+          await browser.close();
+          console.log('Android database reference picker simulation passed');
+          NODE

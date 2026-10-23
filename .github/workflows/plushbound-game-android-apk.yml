@@ -35,7 +35,8 @@ jobs:
           if (!Array.isArray(maps.maps) || maps.maps.length !== 6) throw new Error('Verdancia runtime must contain exactly six maps');
           const ids = new Set(maps.maps.map(m => m.id));
           for (const id of ['verdancia-threadwood-verge','verdancia-lanternbough','verdancia-mossveil-hollow','verdancia-elderstitch-grove','verdancia-rootbound-depths','verdancia-weavers-sanctum']) if (!ids.has(id)) throw new Error(`Missing Verdancia map ${id}`);
-          if (contract.regionId !== 'verdancia' || contract.tier !== 2) throw new Error('Verdancia runtime contract identity/tier mismatch');
+          const tier = contract.progression?.tier ?? contract.tier;
+          if (contract.regionId !== 'verdancia' || tier !== 2) throw new Error('Verdancia runtime contract identity/tier mismatch');
           console.log('Verdancia runtime acceptance preflight passed');
           NODE
 

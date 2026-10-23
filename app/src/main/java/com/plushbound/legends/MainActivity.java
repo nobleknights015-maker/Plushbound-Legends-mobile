@@ -3,8 +3,10 @@ package com.plushbound.legends;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
@@ -17,12 +19,16 @@ import android.webkit.WebViewClient;
 import androidx.webkit.WebViewAssetLoader;
 
 public class MainActivity extends Activity {
+    private static final String TAG = "PlushboundEditor";
     private static final int FILE_CHOOSER_REQUEST = 4201;
+    private static final int READY_RETRY_LIMIT = 20;
+    private static final long READY_RETRY_DELAY_MS = 250L;
     private static final String EDITOR_URL =
             "https://appassets.androidplatform.net/assets/tools/editor/index.html";
 
     private WebView webView;
     private ValueCallback<Uri[]> pendingFileChooser;
+    private int readyChecks;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,6 +51,20 @@ public class MainActivity extends Activity {
             @SuppressWarnings("deprecation")
             public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
                 return assetLoader.shouldInterceptRequest(Uri.parse(url));
+            }
+
+            @Override
+            public void onPageStarted(WebView view, String url, Bitmap favicon) {
+                readyChecks = 0;
+                super.onPageStarted(view, url, favicon);
+            }
+
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                if (EDITOR_URL.equals(url)) {
+                    verifyEditorReady();
+                }
             }
         });
         webView.setWebChromeClient(new WebChromeClient() {
@@ -87,6 +107,24 @@ public class MainActivity extends Activity {
         }
     }
 
+    private void verifyEditorReady() {
+        if (webView == null) return;
+        webView.evaluateJavascript(
+                "Boolean(window.__PLUSHBOUND_EDITOR_MODULE_READY__)",
+                value -> {
+                    if ("true".equals(value)) {
+                        Log.i(TAG, "PLUSHBOUND_EDITOR_READY");
+                        return;
+                    }
+                    readyChecks++;
+                    if (readyChecks < READY_RETRY_LIMIT && webView != null) {
+                        webView.postDelayed(this::verifyEditorReady, READY_RETRY_DELAY_MS);
+                    } else {
+                        Log.e(TAG, "PLUSHBOUND_EDITOR_NOT_READY");
+                    }
+                });
+    }
+
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         webView.saveState(outState);
@@ -125,6 +163,7 @@ public class MainActivity extends Activity {
         if (webView != null) {
             webView.loadUrl("about:blank");
             webView.destroy();
+            webView = null;
         }
         super.onDestroy();
     }

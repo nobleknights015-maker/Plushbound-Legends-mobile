@@ -12,23 +12,53 @@ function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+function validateCommonEventRegistry(registry = {}) {
+  const ids = new Set(Object.keys(registry));
+  const edges = new Map();
+  for (const [id, commands] of Object.entries(registry)) {
+    if (!Array.isArray(commands)) throw new Error(`Common event ${id} must contain commands[]`);
+    const targets = [];
+    for (const command of commands) {
+      if (command?.code !== 'COMMON_EVENT') continue;
+      const target = String(command.parameters?.[0] ?? '').trim();
+      if (!target) throw new Error(`Common event ${id} has COMMON_EVENT without a target id`);
+      if (!ids.has(target)) throw new Error(`Common event ${id} references unknown common event: ${target}`);
+      targets.push(target);
+    }
+    edges.set(id, targets);
+  }
+  const visiting = new Set(), visited = new Set(), trail = [];
+  function visit(id) {
+    if (visited.has(id)) return;
+    if (visiting.has(id)) {
+      const start = Math.max(0, trail.indexOf(id));
+      throw new Error(`Recursive common event cycle: ${[...trail.slice(start), id].join(' -> ')}`);
+    }
+    visiting.add(id); trail.push(id);
+    for (const target of edges.get(id) || []) visit(target);
+    trail.pop(); visiting.delete(id); visited.add(id);
+  }
+  for (const id of ids) visit(id);
+  return registry;
+}
+
 function normalizeCommonEvents(source = {}) {
   const registry = {};
   if (source instanceof Map) {
     for (const [id, value] of source) registry[String(id)] = clone(Array.isArray(value) ? value : value?.commands || []);
-    return registry;
+    return validateCommonEventRegistry(registry);
   }
   if (Array.isArray(source?.commonEvents)) {
     for (const event of source.commonEvents) {
       if (!event?.id || !Array.isArray(event.commands)) continue;
       registry[String(event.id)] = clone(event.commands);
     }
-    return registry;
+    return validateCommonEventRegistry(registry);
   }
   if (source && typeof source === 'object') {
     for (const [id, value] of Object.entries(source)) registry[String(id)] = clone(Array.isArray(value) ? value : value?.commands || []);
   }
-  return registry;
+  return validateCommonEventRegistry(registry);
 }
 
 function titleCase(value = '') {

@@ -10,6 +10,8 @@ on:
       - 'tools/editor/map-manager.js'
       - 'tools/editor/map-management-core.js'
       - 'tools/editor/editor-core.js'
+      - 'tools/editor/editor-navigation-core.js'
+      - 'tools/editor/editor-deeplinks.js'
       - 'game/tests/map-management-core.test.js'
       - 'game/runtime/*.maps.json'
       - '.github/workflows/plushbound-map-manager-ci.yml'
@@ -20,6 +22,8 @@ on:
       - 'tools/editor/map-manager.js'
       - 'tools/editor/map-management-core.js'
       - 'tools/editor/editor-core.js'
+      - 'tools/editor/editor-navigation-core.js'
+      - 'tools/editor/editor-deeplinks.js'
       - 'game/tests/map-management-core.test.js'
       - 'game/runtime/*.maps.json'
       - '.github/workflows/plushbound-map-manager-ci.yml'
@@ -37,6 +41,8 @@ jobs:
         run: |
           node --check tools/editor/map-management-core.js
           node --check tools/editor/map-manager.js
+          node --check tools/editor/editor-navigation-core.js
+          node --check tools/editor/editor-deeplinks.js
           node --test game/tests/map-management-core.test.js
       - name: Install Chromium
         run: |
@@ -59,8 +65,9 @@ jobs:
           const browser=await chromium.launch({headless:true});
           const page=await browser.newPage({viewport:{width:412,height:915}});
           const errors=[];page.on('pageerror',error=>errors.push(String(error)));
-          await page.goto('http://127.0.0.1:4173/tools/editor/map-manager.html');
+          await page.goto('http://127.0.0.1:4173/tools/editor/map-manager.html?map=elyndor-sunthread-crossing');
           await page.waitForSelector('#mapList [data-map-id]');
+          await page.waitForFunction(()=>document.querySelector('#mapId')?.value==='elyndor-sunthread-crossing');
           const initial=await page.locator('#mapList [data-map-id]').count();
           assert.ok(initial>=2);
 
@@ -92,7 +99,21 @@ jobs:
           assert.equal(await page.inputValue('#mapId'),'android-test-map');
           assert.equal(await page.inputValue('#mapWidth'),'8');
           assert.equal(await page.inputValue('#mapHeight'),'6');
+
+          await page.fill('#mapWidth','10');
+          await page.fill('#mapHeight','7');
+          await page.click('#resizeMap');
+          assert.equal(await page.inputValue('#mapWidth'),'10');
+          assert.equal(await page.inputValue('#mapHeight'),'7');
+          assert.match(await page.textContent('#mapStatus'),/Resized android-test-map: 8×6 → 10×7/i);
+          await page.click('#undoMaps');
+          assert.equal(await page.inputValue('#mapWidth'),'8');
+          assert.equal(await page.inputValue('#mapHeight'),'6');
+          await page.click('#redoMaps');
+          assert.equal(await page.inputValue('#mapWidth'),'10');
+          assert.equal(await page.inputValue('#mapHeight'),'7');
+
           assert.deepEqual(errors,[]);
           await browser.close();
-          console.log('Android map management simulation passed');
+          console.log('Android map management + safe resize simulation passed');
           NODE

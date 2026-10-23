@@ -25,11 +25,16 @@ test('battle tester performs deterministic runtime weighted picks with enemy def
   assert.equal(tester.snapshot().lastEncounter.enemyId,'woolbeast-a');
 });
 
-test('battle tester resolves declared one-time boss completion semantics through the game session',()=>{
+test('battle tester loads declared bosses on their runtime map before resolving lifecycle',()=>{
   const tester=new BattleEncounterTester({mapPackage,contentPackages,rng:()=>0});
+  tester.enterMap('test-field',1,1);
+  assert.equal(tester.snapshot().currentMap,'test-field');
   assert.equal(tester.bosses()[0].enemy.name,'Warden');
   assert.equal(tester.bosses()[0].available,true);
   const encounter=tester.loadBoss('warden-boss');
+  assert.equal(tester.snapshot().currentMap,'sanctum');
+  assert.equal(tester.snapshot().map.x,0);
+  assert.equal(tester.snapshot().map.y,0);
   assert.equal(encounter.bossId,'warden-boss');
   assert.equal(encounter.bossDefinition.completionSwitch,'warden:defeated');
   const resolved=tester.resolveEncounter('victory');

@@ -37,6 +37,25 @@ export function validateCollection(pkg,key){
   return issues;
 }
 
+export function scalarFieldDescriptors(record={}){
+  if(!isRecord(record)) return [];
+  return Object.entries(record).filter(([,value])=>value===null||['string','number','boolean'].includes(typeof value)).map(([key,value])=>({key,label:labelFor(key),type:value===null?'string':typeof value,value:value??''}));
+}
+
+export function applyScalarFields(record,fields={}){
+  if(!isRecord(record)) throw new Error('Record must be a JSON object');
+  const next=clone(record);
+  for(const [key,input] of Object.entries(fields||{})){
+    if(!Object.prototype.hasOwnProperty.call(next,key)) continue;
+    const current=next[key];
+    if(typeof current==='boolean') next[key]=input===true||input==='true'||input===1||input==='1';
+    else if(typeof current==='number'){
+      const value=Number(input);if(!Number.isFinite(value)) throw new Error(`${labelFor(key)} must be a number`);next[key]=value;
+    }else next[key]=String(input??'');
+  }
+  return next;
+}
+
 export function replaceRecord(pkg,key,locator,nextRecord){
   if(!isRecord(nextRecord)) throw new Error('Record must be a JSON object');
   const value=pkg?.[key];

@@ -53,11 +53,18 @@ jobs:
           await page.goto('http://127.0.0.1:4173/tools/editor/battle-test.html');
           await page.waitForFunction(()=>document.querySelector('#battleStatus')?.textContent==='Ready');
           assert.ok(await page.locator('#runtimePackage option').count()>=1);
-          assert.ok(await page.locator('#bossList [data-boss-id="verdancia-unraveled-hart"]').count());
-          await page.click('#bossList [data-boss-id="verdancia-unraveled-hart"]');
+          const boss=page.locator('#bossList [data-boss-id="verdancia-unraveled-hart"]');
+          assert.ok(await boss.count());
+          assert.equal(await boss.isDisabled(),false);
+          await boss.click();
           assert.match(await page.locator('#activeEncounter').innerText(),/Unraveled Hart/i);
-          assert.match(await page.locator('#activeEncounter').innerText(),/not auto-applied/i);
+          assert.match(await page.locator('#activeEncounter').innerText(),/completion switch verdancia:unraveled-hart:defeated/i);
           await page.click('#resolveEscape');
+          assert.equal(await page.locator('#bossList [data-boss-id="verdancia-unraveled-hart"]').isDisabled(),false);
+          await page.click('#bossList [data-boss-id="verdancia-unraveled-hart"]');
+          await page.click('#resolveVictory');
+          assert.equal(await page.locator('#bossList [data-boss-id="verdancia-unraveled-hart"]').isDisabled(),true);
+          assert.match(await page.textContent('#battleStatus'),/marked complete/i);
 
           await page.selectOption('#battleMap','elyndor-sunthread-crossing');
           await page.fill('#battleRegion','0');
@@ -77,5 +84,5 @@ jobs:
           assert.match(after,/1\/3/);
           assert.deepEqual(errors,[]);
           await browser.close();
-          console.log('Android battle encounter + boss-definition simulation passed');
+          console.log('Android battle encounter + boss lifecycle simulation passed');
           NODE

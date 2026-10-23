@@ -12,6 +12,25 @@ function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+function normalizeCommonEvents(source = {}) {
+  const registry = {};
+  if (source instanceof Map) {
+    for (const [id, value] of source) registry[String(id)] = clone(Array.isArray(value) ? value : value?.commands || []);
+    return registry;
+  }
+  if (Array.isArray(source?.commonEvents)) {
+    for (const event of source.commonEvents) {
+      if (!event?.id || !Array.isArray(event.commands)) continue;
+      registry[String(event.id)] = clone(event.commands);
+    }
+    return registry;
+  }
+  if (source && typeof source === 'object') {
+    for (const [id, value] of Object.entries(source)) registry[String(id)] = clone(Array.isArray(value) ? value : value?.commands || []);
+  }
+  return registry;
+}
+
 function titleCase(value = '') {
   return String(value)
     .replace(/^elyndor-/, '')
@@ -53,7 +72,7 @@ function actionDescriptor(raw, resolved) {
 }
 
 export class PlushboundGameSession {
-  constructor({ state = new GameState(), mapPackage, contentPackages = [], ui = {}, audio = {}, battle = {}, screen = {}, movement = {}, player = {}, encounter = {}, logger = console } = {}) {
+  constructor({ state = new GameState(), mapPackage, contentPackages = [], commonEvents = {}, ui = {}, audio = {}, battle = {}, screen = {}, movement = {}, player = {}, encounter = {}, logger = console } = {}) {
     if (!mapPackage?.maps?.length) throw new Error('PlushboundGameSession requires a runtime map package');
     this.state = state;
     this.messages = [];
@@ -61,6 +80,7 @@ export class PlushboundGameSession {
     this.shopHistory = [];
     this.activeShop = null;
     this.lastEncounter = null;
+    this.commonEvents = normalizeCommonEvents(commonEvents);
     this.game = new GameContentRuntime({ state, contentPackages });
     this.maps = new MapRuntime({ state, logger });
     for (const map of mapPackage.maps) this.maps.register(map);
@@ -263,7 +283,7 @@ export class PlushboundGameSession {
   }
 
   #runEvent(event) {
-    this.interpreter.start(event.commands || [], { mapId: this.maps.current?.id, eventId: event.id, hooks: this.game.hooks });
+    this.interpreter.start(event.commands || [], { mapId: this.maps.current?.id, eventId: event.id, hooks: this.game.hooks, commonEvents: this.commonEvents });
     let safety = 100;
     while (this.interpreter.running && safety-- > 0) this.interpreter.update(0);
     if (safety <= 0) throw new Error(`Game event did not settle: ${event.id}`);

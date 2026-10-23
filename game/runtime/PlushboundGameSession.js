@@ -213,14 +213,25 @@ export class PlushboundGameSession {
     return { mapId: map.id, regionId, tableId: map.encounterTable, entries: clone(entries) };
   }
 
+  startBossEncounter(bossId) {
+    const definition = this.game.bossEncounter(bossId);
+    if (!definition) throw new Error(`Unknown boss encounter ${bossId}`);
+    if (!this.game.bossEncounterAvailable(bossId)) throw new Error(`Boss encounter ${bossId} is already complete`);
+    const enemy = this.game.enemyDefinition(definition.enemyId);
+    if (!enemy) throw new Error(`Boss encounter ${bossId} references unknown enemy ${definition.enemyId}`);
+    this.lastEncounter = { enemyId: String(definition.enemyId), enemy, bossId: String(definition.id), bossDefinition: definition };
+    return clone(this.lastEncounter);
+  }
+
   resolveEncounter(result = 'victory') {
     if (!this.lastEncounter) throw new Error('No encounter is active');
     const normalized = String(result || '').toLowerCase();
     if (!['victory', 'escape', 'defeat'].includes(normalized)) throw new Error(`Unknown encounter result ${result}`);
     const encounter = clone(this.lastEncounter);
     if (normalized === 'victory') this.game.recordBattle(encounter.enemy?.tags || []);
+    const boss = encounter.bossId ? this.game.resolveBossEncounter(encounter.bossId, normalized) : null;
     this.lastEncounter = null;
-    return { result: normalized, encounter, snapshot: this.snapshot() };
+    return { result: normalized, encounter, boss, snapshot: this.snapshot() };
   }
 
   serializeSave() {

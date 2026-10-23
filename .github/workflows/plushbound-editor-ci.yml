@@ -1,0 +1,115 @@
+name: Plushbound Visual Editor CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ plushbound-game-development ]
+    paths:
+      - 'tools/editor/**'
+      - 'game/runtime/**'
+      - 'game/tests/editor-core.test.js'
+      - '.github/workflows/plushbound-editor-ci.yml'
+  pull_request:
+    paths:
+      - 'tools/editor/**'
+      - 'game/runtime/**'
+      - 'game/tests/editor-core.test.js'
+      - '.github/workflows/plushbound-editor-ci.yml'
+
+jobs:
+  editor-simulation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out game development
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run editor core contracts
+        run: |
+          node --check tools/editor/editor-core.js
+          node --check tools/editor/editor.js
+          node --test game/tests/editor-core.test.js
+
+      - name: Install headless browser
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+
+      - name: Serve repository
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >editor-http.log 2>&1 &
+          echo $! > editor-http.pid
+          for i in {1..20}; do
+            if curl -fsS http://127.0.0.1:4173/tools/editor/index.html >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat editor-http.log
+          exit 1
+
+      - name: Simulate Elyndor editing in Chromium
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+          import assert from 'node:assert/strict';
+
+          const browser = await chromium.launch({ headless: true });
+          const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+          const errors = [];
+          page.on('pageerror', err => errors.push(String(err)));
+          await page.goto('http://127.0.0.1:4173/tools/editor/index.html');
+          await page.click('#loadElyndor');
+          await page.waitForFunction(() => document.querySelectorAll('.event-marker').length >= 4);
+
+          assert.match(await page.textContent('#status'), /Sunny Plains of Elyndor/);
+          assert.equal(await page.locator('#mapCanvas').evaluate(el => el.style.width), '896px');
+          assert.equal(await page.locator('#mapCanvas').evaluate(el => el.style.height), '560px');
+          assert.equal(await page.locator('.tile').count(), 640);
+
+          await page.click('[data-event-id="lio"]');
+          assert.equal(await page.inputValue('#eventId'), 'lio');
+          assert.equal(await page.inputValue('#eventX'), '18');
+          assert.equal(await page.inputValue('#eventY'), '9');
+          const before = await page.evaluate(() => JSON.stringify(window.PlushboundEditor.getPackage().maps[0].events.find(e => e.id === 'lio').pages));
+
+          await page.fill('#eventX', '20');
+          await page.fill('#eventY', '11');
+          await page.click('#applyPosition');
+          assert.equal(await page.inputValue('#eventX'), '20');
+          assert.equal(await page.inputValue('#eventY'), '11');
+          const after = await page.evaluate(() => JSON.stringify(window.PlushboundEditor.getPackage().maps[0].events.find(e => e.id === 'lio').pages));
+          assert.equal(after, before);
+
+          await page.click('[data-tool="blocked"]');
+          await page.locator('.tile[data-x="4"][data-y="4"]').click({ position: { x: 2, y: 2 } });
+          assert.equal(await page.evaluate(() => window.PlushboundEditor.getPackage().maps[0].blocked.includes('4,4')), true);
+
+          assert.deepEqual(errors, []);
+          await browser.close();
+          console.log('Plushbound editor browser simulation passed');
+          NODE
+
+      - name: Record editor simulation gate
+        if: always()
+        run: |
+          cat > plushbound-editor-gate.txt <<EOF
+          Plushbound Visual Editor simulation
+          Browser: Chromium headless
+          Target package: Elyndor runtime maps
+          Result: ${{ job.status }}
+          Commit: ${{ github.sha }}
+          EOF
+
+      - name: Upload editor diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: plushbound-editor-ci
+          path: |
+            plushbound-editor-gate.txt
+            editor-http.log
+          if-no-files-found: warn

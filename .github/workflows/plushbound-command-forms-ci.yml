@@ -63,9 +63,10 @@ jobs:
           await page.waitForFunction(()=>document.querySelectorAll('.event-marker').length>=4);
           await page.click('[data-event-id="lio"]');
           await page.selectOption('#newCommandType','MESSAGE');
-          await page.locator('.visual-command-form[data-code="MESSAGE"] [data-command-field="text"]').fill('Visual form message');
-          await page.locator('.visual-command-form[data-code="MESSAGE"] [data-command-field="speaker"]').fill('Lio');
-          await page.locator('.visual-command-form[data-code="MESSAGE"] [data-command-field="portrait"]').fill('npc/lio/portrait');
+          const builder=page.locator('#newCommandParameters').locator('..').locator(':scope > .visual-command-form[data-code="MESSAGE"]');
+          await builder.locator('[data-command-field="text"]').fill('Visual form message');
+          await builder.locator('[data-command-field="speaker"]').fill('Lio');
+          await builder.locator('[data-command-field="portrait"]').fill('npc/lio/portrait');
           assert.deepEqual(JSON.parse(await page.inputValue('#newCommandParameters')),['Visual form message',{speaker:'Lio',portrait:'npc/lio/portrait'}]);
           const before=await page.evaluate(()=>window.PlushboundEditor.getPackage().maps[0].events.find(e=>e.id==='lio').pages[0].commands.length);
           await page.click('#addCommand');
@@ -78,7 +79,7 @@ jobs:
           await page.goto('http://127.0.0.1:4173/tools/editor/common-events.html');
           await page.click('#addCommon');
           await page.selectOption('#commonCommandType','TRANSFER');
-          const transfer=page.locator('.visual-command-form[data-code="TRANSFER"]');
+          const transfer=page.locator('#commonCommandParameters').locator('..').locator(':scope > .visual-command-form[data-code="TRANSFER"]');
           await transfer.locator('[data-command-field="mapId"]').fill('elyndor-sunthread-crossing');
           await transfer.locator('[data-command-field="x"]').fill('2');
           await transfer.locator('[data-command-field="y"]').fill('12');

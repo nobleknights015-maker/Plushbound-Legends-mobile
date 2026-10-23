@@ -2,10 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { normalizePackage, moveEvent, setBlocked, eventSummary, addEventPage, updatePageTrigger, updatePageConditions, replaceCommand, addCommand, addLayer, paintTile, tileAt, setLayerVisibility, setLayerZ, addEvent, removeEvent, setEventAsset, normalizeAssetManifest, setRegion, regionAt, addTransferEvent, transferLinks, validateTransferLinks } from '../../tools/editor/editor-core.js';
+import { normalizePackage, moveEvent, setBlocked, eventSummary, addEventPage, updatePageTrigger, updatePageConditions, replaceCommand, addCommand, addLayer, paintTile, tileAt, setLayerVisibility, setLayerZ, addEvent, removeEvent, setEventAsset, normalizeAssetManifest, setRegion, regionAt, addTransferEvent, transferLinks, validateTransferLinks, validatePlayablePackage, createHistory, checkpointHistory, undoHistory, redoHistory, encounterCandidates } from '../../tools/editor/editor-core.js';
 
 const source = JSON.parse(readFileSync(new URL('../runtime/elyndor-route-one.maps.json', import.meta.url), 'utf8'));
 const manifest = JSON.parse(readFileSync(new URL('../assets/asset-manifest.json', import.meta.url), 'utf8'));
+const opening = JSON.parse(readFileSync(new URL('../content/opening-elyndor.json', import.meta.url), 'utf8'));
+const route = JSON.parse(readFileSync(new URL('../content/elyndor-route-one.json', import.meta.url), 'utf8'));
 
 test('editor accepts and clones the real Elyndor runtime package', () => {
   const pkg = normalizePackage(source);
@@ -127,4 +129,35 @@ test('supported commands can be replaced or appended without rewriting neighbors
 test('unsupported engine commands stay protected from replacement', () => {
   const fake = { id: 'advanced', pages: [{ trigger: 'action', commands: [{ code: 'MOVE_ROUTE', parameters: [{ route: [] }] }] }] };
   assert.throws(() => replaceCommand(fake, 0, 0, { code: 'MESSAGE', parameters: ['nope'] }), /read-only/);
+});
+
+test('editor history reverses and reapplies complete package mutations', () => {
+  const pkg = normalizePackage(source);
+  addLayer(pkg.maps[0], { id: 'ground' });
+  const history = createHistory(3);
+  checkpointHistory(history, pkg, 'paint tile');
+  paintTile(pkg.maps[0], 0, 2, 2, 44);
+  assert.equal(tileAt(pkg.maps[0], 0, 2, 2), 44);
+  const undone = undoHistory(history, pkg);
+  assert.equal(tileAt(undone.pkg.maps[0], 0, 2, 2), 0);
+  const redone = redoHistory(history, undone.pkg);
+  assert.equal(tileAt(redone.pkg.maps[0], 0, 2, 2), 44);
+});
+
+test('playable package validator catches broken links, assets and encounter tables', () => {
+  const pkg = normalizePackage(source);
+  addLayer(pkg.maps[0], { id: 'ground' });
+  pkg.maps[0].events[0].assetId = 'missing/asset';
+  pkg.maps[0].encounterTable = 'missing-table';
+  addTransferEvent(pkg.maps[0], { id: 'broken-link', x: 1, y: 1, targetMapId: 'missing-map', targetX: 0, targetY: 0 });
+  const issues = validatePlayablePackage(pkg, { assetIds: normalizeAssetManifest(manifest).map(a => a.id), encounterTableIds: [...opening.encounterTables, ...route.encounterTables].map(t => t.id) });
+  assert.ok(issues.some(issue => issue.code === 'asset-unregistered'));
+  assert.ok(issues.some(issue => issue.code === 'encounter-table-missing'));
+  assert.ok(issues.some(issue => issue.code === 'transfer-missing-map'));
+});
+
+test('encounter candidate preview respects numeric Engine v1 region filters when present', () => {
+  const table = { entries: [{ enemyId: 'common', weight: 2 }, { enemyId: 'region-only', weight: 1, regions: [7] }] };
+  assert.deepEqual(encounterCandidates(table, 3).map(e => e.enemyId), ['common']);
+  assert.deepEqual(encounterCandidates(table, 7).map(e => e.enemyId), ['common','region-only']);
 });

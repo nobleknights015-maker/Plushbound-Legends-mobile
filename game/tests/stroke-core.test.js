@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createStrokeState,beginStroke,applyStrokePoint,endStroke,cancelStroke,isContinuousPaintTool} from '../../tools/editor/stroke-core.js';
+import {createStrokeState,beginStroke,applyStrokePoint,applyStrokePath,endStroke,cancelStroke,gridStrokePoints,isContinuousPaintTool} from '../../tools/editor/stroke-core.js';
 import {brushCells,paintTileBrush} from '../../tools/editor/brush-core.js';
 
 test('continuous tools are limited to map paint and erase modes',()=>{
@@ -80,4 +80,18 @@ test('cancelled or lost pointer finalizes the stroke and clears gesture state',(
   assert.equal(state.changed,0);
   assert.equal(state.checkpointed,false);
   assert.equal(state.visited.size,0);
+  assert.equal(state.lastX,null);
+  assert.equal(state.lastY,null);
+});
+
+test('sparse pointer updates interpolate every grid cell with one checkpoint',()=>{
+  assert.deepEqual(gridStrokePoints(1,2,5,2),[{x:1,y:2},{x:2,y:2},{x:3,y:2},{x:4,y:2},{x:5,y:2}]);
+  const state=createStrokeState();let checkpoints=0;const painted=[];
+  beginStroke(state,{pointerId:30,tool:'tile',label:'Fast paint stroke'});
+  applyStrokePath(state,{x:1,y:2,checkpoint:()=>checkpoints++,apply:(x,y)=>{painted.push(`${x},${y}`);return 1;}});
+  const leap=applyStrokePath(state,{x:5,y:2,checkpoint:()=>checkpoints++,apply:(x,y)=>{painted.push(`${x},${y}`);return 1;}});
+  assert.equal(leap.points,4);
+  assert.deepEqual(painted,['1,2','2,2','3,2','4,2','5,2']);
+  assert.equal(checkpoints,1);
+  assert.equal(endStroke(state).changed,5);
 });

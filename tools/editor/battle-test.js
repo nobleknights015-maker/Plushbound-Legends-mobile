@@ -51,7 +51,7 @@ function renderQuests(){
   els.battleQuest.innerHTML='<option value="">No quest selected</option>';for(const quest of state.tester.battleQuests()){const option=document.createElement('option');option.value=quest.id;option.textContent=`${quest.name} (${quest.id})`;els.battleQuest.append(option);}
 }
 
-function selectedPreview(){return state.tester.encounterPreview({mapId=els.battleMap.value,regionId:Number(els.battleRegion.value)||0});}
+function selectedPreview(){return state.tester.encounterPreview({mapId:els.battleMap.value,regionId:Number(els.battleRegion.value)||0});}
 
 function renderCandidates(){
   const preview=selectedPreview();els.encounterTableMeta.textContent=preview.tableId?`${preview.tableId} • region ${preview.regionId} • ${preview.entries.length} candidate(s)`:'This map has no encounter table.';els.encounterCandidates.innerHTML='';

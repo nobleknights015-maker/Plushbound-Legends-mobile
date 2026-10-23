@@ -32,6 +32,11 @@ test('reference registry accepts array and keyed content collections plus object
   assert.equal(registry.enemyTags.has('beast'),true);
 });
 
+test('reference registry also accepts source-aware package wrappers',()=>{
+  const registry=contentReferenceRegistry([{sourceId:'route-one',data:contentPackages[0]}]);
+  assert.equal(registry.quests.has('quest-one'),true);assert.equal(registry.items.has('potion'),true);
+});
+
 test('valid cross-package content dependencies produce no issues',()=>{
   assert.deepEqual(auditContentPackageReferences(contentPackages),[]);
 });
@@ -70,25 +75,29 @@ test('quest objective hooks validate objective ids as well as quest ids',()=>{
   assert.match(issues[0].message,/Unknown objective/);
 });
 
-test('cross-package audit reports broken quest, shop, encounter and waystitch references',()=>{
-  const broken=[{
+test('cross-package audit reports broken references with exact source record identity',()=>{
+  const broken=[{sourceId:'broken-route',data:{
     quests:[{id:'broken',prerequisites:[{questComplete:'missing-q'}],objectives:[{id:'talk',type:'talk',target:'missing-npc'},{id:'fight',type:'battle',targetTag:'missing-tag'}],rewards:{items:[{id:'missing-item'}]},unlocks:['waystitch-missing']}],
     shops:[{id:'bad-shop',inventory:[{itemId:'missing-stock'}]}],
     waystitches:[{id:'bad-stitch',unlockCondition:{questComplete:'missing-q2'}}],
     encounterTables:[{id:'bad-table',entries:[{enemyId:'missing-enemy'}]}]
-  }];
-  const codes=auditContentPackageReferences(broken).map(issue=>issue.code);
+  }}];
+  const issues=auditContentPackageReferences(broken),codes=issues.map(issue=>issue.code);
   assert.ok(codes.includes('missing-quest-reference'));
   assert.ok(codes.includes('missing-item-reference'));
   assert.ok(codes.includes('missing-npc-reference'));
   assert.ok(codes.includes('missing-enemy-tag-reference'));
   assert.ok(codes.includes('missing-waystitch-reference'));
   assert.ok(codes.includes('missing-enemy-reference'));
+  const questIssue=issues.find(issue=>issue.owner==='quest:broken');
+  assert.equal(questIssue.packageId,'broken-route');assert.equal(questIssue.collectionKey,'quests');assert.equal(questIssue.recordId,'broken');
+  const shopIssue=issues.find(issue=>issue.owner==='shop:bad-shop');
+  assert.equal(shopIssue.collectionKey,'shops');assert.equal(shopIssue.recordId,'bad-shop');
 });
 
 test('live Plushbound content and runtime map hooks have no broken explicit references',()=>{
   const indexUrl=new URL('../content/content-index.json',import.meta.url),index=readJson(indexUrl);
-  const liveContent=(index.packages||[]).map(entry=>readJson(new URL(`../content/${entry.path}`,import.meta.url)));
+  const liveContent=(index.packages||[]).map(entry=>({sourceId:entry.id,data:readJson(new URL(`../content/${entry.path}`,import.meta.url))}));
   const contentIssues=auditContentPackageReferences(liveContent);
   assert.deepEqual(contentIssues,[],contentIssues.map(issue=>issue.message).join('\n'));
   for(const runtime of index.runtimePackages||[]){

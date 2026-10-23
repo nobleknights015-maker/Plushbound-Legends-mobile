@@ -64,7 +64,14 @@ export class BattleEncounterTester{
   }
 
   loadBoss(bossId){
-    return this.session.startBossEncounter(String(bossId));
+    const id=String(bossId),definition=this.session.game.bossEncounter(id);
+    if(!definition)throw new Error(`Unknown boss encounter ${id}`);
+    if(definition.mapId){
+      const targetMapId=String(definition.mapId);
+      if(!this.session.maps.maps.has(targetMapId))throw new Error(`Boss encounter ${id} references unknown map ${targetMapId}`);
+      if(this.session.maps.current?.id!==targetMapId)this.enterMap(targetMapId,0,0);
+    }
+    return this.session.startBossEncounter(id);
   }
 
   resolveEncounter(result='victory'){

@@ -5,12 +5,20 @@ import { readFileSync } from 'node:fs';
 import { bootPlushboundGame } from '../runtime/AndroidGameBootstrap.js';
 
 const read = path => JSON.parse(readFileSync(new URL(`../${path}`, import.meta.url), 'utf8'));
-const fixtures = new Map([
-  ['content-index.json', read('content/content-index.json')],
-  ['opening-elyndor.json', read('content/opening-elyndor.json')],
-  ['elyndor-route-one.json', read('content/elyndor-route-one.json')],
-  ['elyndor-route-one.maps.json', read('runtime/elyndor-route-one.maps.json')]
-]);
+const index = read('content/content-index.json');
+const fixtures = new Map([['content/content-index.json', index]]);
+for (const entry of index.packages || []) fixtures.set(`content/${entry.path}`, read(`content/${entry.path}`));
+for (const entry of index.runtimePackages || []) {
+  const normalized = new URL(entry.path, 'file:///game/content/').pathname.replace('/game/', '');
+  fixtures.set(normalized, read(normalized));
+}
+
+function fixtureKey(url) {
+  const pathname = new URL(url).pathname;
+  const marker = '/game/';
+  const offset = pathname.indexOf(marker);
+  return offset >= 0 ? pathname.slice(offset + marker.length) : pathname.split('/').pop();
+}
 
 test('Android bootstrap supplies structuredClone compatibility before frozen engine map registration', async () => {
   const originalClone = globalThis.structuredClone;
@@ -21,8 +29,7 @@ test('Android bootstrap supplies structuredClone compatibility before frozen eng
     constructor(type, init = {}) { this.type = type; this.detail = init.detail; }
   };
   globalThis.fetch = async url => {
-    const name = new URL(url).pathname.split('/').pop();
-    const data = fixtures.get(name);
+    const data = fixtures.get(fixtureKey(url));
     return data
       ? { ok: true, status: 200, async json() { return JSON.parse(JSON.stringify(data)); } }
       : { ok: false, status: 404, async json() { return {}; } };
@@ -38,6 +45,7 @@ test('Android bootstrap supplies structuredClone compatibility before frozen eng
     const runtime = await bootPlushboundGame({ scope, baseUrl: 'file:///android_asset/game/runtime/' });
     assert.equal(typeof globalThis.structuredClone, 'function');
     assert.equal(runtime.session.snapshot().currentMap, 'elyndor-sunny-plains');
+    assert.ok(runtime.loadedMapIds.includes('verdancia-lanternbough'));
     runtime.session.interact('lio');
     assert.equal(runtime.session.snapshot().quests['a-thread-begins'].status, 'active');
     assert.ok(events.some(event => event.type === 'plushbound-shell-update'));

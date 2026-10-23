@@ -1,4 +1,5 @@
 import {buildProjectIndex,searchProject} from './project-search-core.js';
+import {editorDestination} from './editor-navigation-core.js';
 
 const query=document.getElementById('projectQuery');
 const type=document.getElementById('projectType');
@@ -21,6 +22,8 @@ function render(){
     head.append(title,badge,source);card.append(head);
     const path=document.createElement('div');path.className='path';path.textContent=record.path.length?record.path.join('.'):'(root)';card.append(path);
     const body=document.createElement('div');body.className='preview';body.textContent=preview(record.value);card.append(body);
+    const destination=editorDestination(record);
+    if(destination){const open=document.createElement('a');open.className='result-open';open.href=destination;open.textContent='Open in Editor';open.dataset.destination=destination;card.append(open);}
     results.append(card);
   }
 }
@@ -39,4 +42,4 @@ async function loadProject(){
 
 query.addEventListener('input',render);type.addEventListener('change',render);
 loadProject().catch(error=>{status.textContent=`Project index failed: ${error.message}`;});
-window.PlushboundProjectSearch={getIndex:()=>index.slice(),search:(value,options)=>searchProject(index,value,options)};
+window.PlushboundProjectSearch={getIndex:()=>index.slice(),search:(value,options)=>searchProject(index,value,options),destination:editorDestination};

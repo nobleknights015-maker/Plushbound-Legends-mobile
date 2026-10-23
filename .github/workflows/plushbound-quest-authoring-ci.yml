@@ -1,0 +1,104 @@
+name: Plushbound Quest Authoring CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ plushbound-game-development ]
+    paths:
+      - 'tools/editor/database-core.js'
+      - 'tools/editor/database.js'
+      - 'tools/editor/database.html'
+      - 'game/tests/database-fields.test.js'
+      - 'game/content/elyndor-route-one.json'
+      - '.github/workflows/plushbound-quest-authoring-ci.yml'
+  pull_request:
+    paths:
+      - 'tools/editor/database-core.js'
+      - 'tools/editor/database.js'
+      - 'tools/editor/database.html'
+      - 'game/tests/database-fields.test.js'
+      - 'game/content/elyndor-route-one.json'
+      - '.github/workflows/plushbound-quest-authoring-ci.yml'
+
+jobs:
+  quest-authoring-simulation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run quest database contracts
+        run: |
+          node --check tools/editor/database-core.js
+          node --check tools/editor/database.js
+          node --test game/tests/database-fields.test.js
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: Serve repository
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >quest-http.log 2>&1 &
+          for i in {1..20}; do
+            curl -fsS http://127.0.0.1:4173/tools/editor/database.html >/dev/null && exit 0
+            sleep 1
+          done
+          cat quest-http.log
+          exit 1
+      - name: Simulate structured quest authoring on Android viewport
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+          import assert from 'node:assert/strict';
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:412,height:915}});
+          const errors=[];page.on('pageerror',error=>errors.push(String(error)));
+          await page.goto('http://127.0.0.1:4173/tools/editor/database.html');
+          await page.click('#loadDatabase');
+          await page.waitForFunction(()=>window.PlushboundDatabase?.getPackages?.()?.length>0);
+          const route=page.locator('#packageList [data-package-index]').filter({hasText:'elyndor-route-one'}).first();
+          await route.click();
+          await page.click('#collectionList [data-collection-key="quests"]');
+          const quest=page.locator('#recordList [data-locator]').filter({hasText:'Threads Out of Tune'}).first();
+          await quest.click();
+          assert.ok((await page.textContent('#recordIdentity')).includes('Quests'));
+          assert.ok(await page.locator('[data-field-input="stage"]').count());
+          assert.ok(await page.locator('[data-nested-path="objectives"]').count());
+          assert.ok(await page.locator('[data-nested-path="rewards.items"]').count());
+
+          const before=JSON.parse(await page.inputValue('#recordJson'));
+          await page.fill('[data-field-input="stage"]','3');
+          await page.fill('[data-nested-path="objectives"][data-nested-index="0"][data-nested-key="count"]','2');
+          await page.click('#applyFields');
+          let edited=JSON.parse(await page.inputValue('#recordJson'));
+          assert.equal(edited.stage,3);
+          assert.equal(edited.objectives[0].count,2);
+          assert.deepEqual(edited.rewards.items,before.rewards.items);
+
+          await page.click('[data-add-nested="rewards.items"]');
+          edited=JSON.parse(await page.inputValue('#recordJson'));
+          assert.equal(edited.rewards.items.length,before.rewards.items.length+1);
+          assert.deepEqual(edited.rewards.items.at(-1),{id:'',count:1});
+          await page.fill(`[data-nested-path="rewards.items"][data-nested-index="${edited.rewards.items.length-1}"][data-nested-key="id"]`,'waybread');
+          await page.fill(`[data-nested-path="rewards.items"][data-nested-index="${edited.rewards.items.length-1}"][data-nested-key="count"]`,'3');
+          await page.click('#applyFields');
+          edited=JSON.parse(await page.inputValue('#recordJson'));
+          assert.deepEqual(edited.rewards.items.at(-1),{id:'waybread',count:3});
+
+          await page.click('#undoDatabase');
+          let undone=JSON.parse(await page.inputValue('#recordJson'));
+          assert.deepEqual(undone.rewards.items.at(-1),{id:'',count:1});
+          await page.click('#undoDatabase');
+          undone=JSON.parse(await page.inputValue('#recordJson'));
+          assert.equal(undone.rewards.items.length,before.rewards.items.length);
+          assert.equal(undone.stage,3);
+          await page.click('#undoDatabase');
+          undone=JSON.parse(await page.inputValue('#recordJson'));
+          assert.equal(undone.stage,before.stage);
+          assert.equal(undone.objectives[0].count,before.objectives[0].count);
+          assert.deepEqual(errors,[]);
+          await browser.close();
+          console.log('Android quest authoring simulation passed');
+          NODE

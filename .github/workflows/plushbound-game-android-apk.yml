@@ -156,37 +156,70 @@ jobs:
 
       - name: Validate packaged game payload
         run: |
-          test -f app/src/main/assets/engine-v1/core/GameState.js
-          test -f app/src/main/assets/engine-v1/maps/MapRuntime.js
-          test -f app/src/main/assets/game/runtime/AndroidGameBootstrap.js
-          test -f app/src/main/assets/game/runtime/PlushboundGameSession.js
-          test -f app/src/main/assets/game/runtime/GameContentRuntime.js
-          test -f app/src/main/assets/game/runtime/GameShellBridge.js
-          test -f app/src/main/assets/game/runtime/elyndor-route-one.maps.json
-          test -f app/src/main/assets/game/runtime/elyndor-runtime-contract.json
-          test -f app/src/main/assets/game/runtime/verdancia-region.maps.json
-          test -f app/src/main/assets/game/runtime/verdancia-runtime-contract.json
-          test -f app/src/main/assets/game/content/verdancia-region.json
-          test -f app/src/main/assets/game/content/verdancia-population.json
-          test -f app/src/main/assets/game/content/verdancia-npcs.json
-          test -f app/src/main/assets/game/content/verdancia-quests-events.json
-          test -f app/src/main/assets/game/content/verdancia-asset-slots.json
-          test -f app/src/main/assets/game/content/content-index.json
-          test -f app/src/main/assets/game/assets/asset-manifest.json
-          test -f app/src/main/assets/game/assets/README.md
-          test -f app/src/main/assets/game/assets/ui/branding/launcher-source/part_00.b64
-          test -f app/src/main/res/mipmap-xxxhdpi/plushbound_launcher.webp
-          grep -q '160d9fd95bc0d3db39224f8bb4c5e1e3a1f54425' app/src/main/assets/game/content/content-index.json
-          grep -q 'plushbound-game-assets' app/src/main/assets/game/content/content-index.json
-          grep -q 'verdancia-region-maps' app/src/main/assets/game/content/content-index.json
-          grep -q 'verdancia-runtime-contract' app/src/main/assets/game/content/content-index.json
-          grep -q '../../engine-v1/core/GameState.js' app/src/main/assets/game/runtime/AndroidGameBootstrap.js
-          grep -q '../../engine-v1/maps/MapRuntime.js' app/src/main/assets/game/runtime/PlushboundGameSession.js
-          grep -R -q 'data-plushbound-game="runtime"' app/src/main/assets --include='*.html'
-          grep -R -q 'data-plushbound-shell="bridge"' app/src/main/assets --include='*.html'
-          grep -R -q 'Plushbound Engine v1 native-surface policy' app/src/main/assets --include='style.css'
+          set -euo pipefail
+          check_file() {
+            if [ ! -f "$1" ]; then
+              echo "MISSING PACKAGED FILE: $1"
+              exit 1
+            fi
+            echo "OK FILE: $1"
+          }
+          check_text() {
+            file="$1"
+            marker="$2"
+            if ! grep -Fq -- "$marker" "$file"; then
+              echo "MARKER MISSING: $marker :: $file"
+              exit 1
+            fi
+            echo "OK MARKER: $marker :: $file"
+          }
+
+          check_file app/src/main/assets/engine-v1/core/GameState.js
+          check_file app/src/main/assets/engine-v1/maps/MapRuntime.js
+          check_file app/src/main/assets/game/runtime/AndroidGameBootstrap.js
+          check_file app/src/main/assets/game/runtime/PlushboundGameSession.js
+          check_file app/src/main/assets/game/runtime/GameContentRuntime.js
+          check_file app/src/main/assets/game/runtime/GameShellBridge.js
+          check_file app/src/main/assets/game/runtime/GameDomAdapter.js
+          check_file app/src/main/assets/game/runtime/elyndor-route-one.maps.json
+          check_file app/src/main/assets/game/runtime/elyndor-runtime-contract.json
+          check_file app/src/main/assets/game/runtime/verdancia-region.maps.json
+          check_file app/src/main/assets/game/runtime/verdancia-runtime-contract.json
+          check_file app/src/main/assets/game/content/verdancia-region.json
+          check_file app/src/main/assets/game/content/verdancia-population.json
+          check_file app/src/main/assets/game/content/verdancia-npcs.json
+          check_file app/src/main/assets/game/content/verdancia-quests-events.json
+          check_file app/src/main/assets/game/content/verdancia-asset-slots.json
+          check_file app/src/main/assets/game/content/content-index.json
+          check_file app/src/main/assets/game/assets/asset-manifest.json
+          check_file app/src/main/assets/game/assets/README.md
+          check_file app/src/main/assets/game/assets/ui/branding/launcher-source/part_00.b64
+          check_file app/src/main/res/mipmap-xxxhdpi/plushbound_launcher.webp
+
+          check_text app/src/main/assets/game/content/content-index.json '160d9fd95bc0d3db39224f8bb4c5e1e3a1f54425'
+          check_text app/src/main/assets/game/content/content-index.json 'plushbound-game-assets'
+          check_text app/src/main/assets/game/content/content-index.json 'verdancia-region-maps'
+          check_text app/src/main/assets/game/content/content-index.json 'verdancia-runtime-contract'
+          check_text app/src/main/assets/game/runtime/AndroidGameBootstrap.js '../../engine-v1/core/GameState.js'
+          check_text app/src/main/assets/game/runtime/PlushboundGameSession.js '../../engine-v1/maps/MapRuntime.js'
+
+          python - <<'PY'
+          from pathlib import Path
+          roots = [Path('app/src/main/assets')]
+          html_files = [p for root in roots for p in root.rglob('*.html')]
+          css_files = [p for root in roots for p in root.rglob('style.css')]
+          if not any('data-plushbound-game="runtime"' in p.read_text(encoding='utf-8') for p in html_files):
+              raise SystemExit('MISSING HTML MARKER: data-plushbound-game="runtime"')
+          if not any('data-plushbound-shell="bridge"' in p.read_text(encoding='utf-8') for p in html_files):
+              raise SystemExit('MISSING HTML MARKER: data-plushbound-shell="bridge"')
+          if not any('Plushbound Engine v1 native-surface policy' in p.read_text(encoding='utf-8') for p in css_files):
+              raise SystemExit('MISSING CSS MARKER: Plushbound Engine v1 native-surface policy')
+          print('OK shell injection and native-surface markers')
+          PY
+
           find app/src/main/assets/engine-v1 app/src/main/assets/game/runtime -name '*.js' -print0 | xargs -0 -n1 node --check
           find app/src/main/assets/game -name '*.json' -print0 | xargs -0 -r -n1 python -m json.tool >/dev/null
+          echo 'Packaged game payload validation passed'
 
       - name: Set up Java 17
         uses: actions/setup-java@v5

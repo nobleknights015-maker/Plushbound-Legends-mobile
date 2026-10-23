@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Plushbound Tile & Passability</title>
+  <link rel="stylesheet" href="./tile-passability.css">
+</head>
+<body>
+  <header class="topbar">
+    <div><strong>Tile & Passability</strong><div class="meta">Runtime-native tile layers, regions and blocked cells • Engine v1 frozen</div></div>
+    <div class="actions"><button onclick="location.href='./index.html'">Map Editor</button><button onclick="location.href='./database.html'">Database</button><button onclick="location.href='./common-events.html'">Common Events</button><button onclick="location.href='./project-search.html'">Project Search</button></div>
+  </header>
+  <main class="layout">
+    <aside class="panel controls">
+      <section><h2>Package</h2><button id="loadDefault">Load Elyndor</button><label class="button">Open JSON<input id="fileInput" type="file" accept="application/json,.json"></label><button id="exportJson">Export JSON</button><div id="packageStatus" class="meta">Load a runtime map package.</div></section>
+      <section><h2>Map</h2><select id="mapSelect"></select><div id="mapMeta" class="meta"></div></section>
+      <section><h2>Layer</h2><select id="layerSelect"></select><div class="two"><label>Z<input id="layerZ" type="number"></label><label class="check"><input id="layerVisible" type="checkbox"> Visible</label></div><button id="applyLayer">Apply Layer</button></section>
+      <section><h2>Brush</h2><div class="tools"><button data-tool="tile" class="active">Tile</button><button data-tool="erase-tile">Erase Tile</button><button data-tool="blocked">Block</button><button data-tool="erase-blocked">Unblock</button><button data-tool="region">Region</button><button data-tool="erase-region">Erase Region</button></div><label>Tile ID<input id="tileId" type="number" min="0" value="1"></label><label>Region ID<input id="regionId" type="number" min="0" value="1"></label></section>
+      <section><h2>Tile Palette</h2><div id="tilePalette" class="palette"></div><div class="meta">Palette is derived from tile IDs currently present in the runtime package. Any numeric tile ID can also be entered manually.</div></section>
+      <section><h2>Tileset</h2><div id="tilesetMeta" class="meta"></div></section>
+      <section><h2>Validation</h2><div id="validationSummary" class="meta"></div><div id="validationIssues" class="issues"></div></section>
+    </aside>
+    <section class="workspace"><div class="toolbar"><span id="status">Ready.</span><span id="cursor">x —, y —</span></div><div class="scroll"><div id="grid" class="grid" aria-label="Tile and passability grid"></div></div></section>
+  </main>
+  <script type="module" src="./tile-passability.js"></script>
+</body>
+</html>

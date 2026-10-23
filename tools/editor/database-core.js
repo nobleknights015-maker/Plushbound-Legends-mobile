@@ -38,6 +38,12 @@ export function validateCollection(pkg,key){
   return issues;
 }
 
+export function validatePackageCollections(pkg={}){
+  const issues=[];
+  for(const descriptor of collectionDescriptors(pkg)) for(const issue of validateCollection(pkg,descriptor.key)) issues.push({...issue,collectionKey:descriptor.key,collectionLabel:descriptor.label});
+  return issues;
+}
+
 function scalarDescriptor(path,value){
   const parts=path.split('.');
   return {key:path,label:parts.map(labelFor).join(' · '),type:value===null?'string':typeof value,value:value??'',depth:parts.length-1};

@@ -30,7 +30,12 @@ def load_source() -> Image.Image:
             raise SystemExit(
                 f"Launcher source chunks are incomplete or misnumbered: {actual_names}"
             )
-        encoded = "".join(part.read_text(encoding="ascii").strip() for part in parts)
+        # Chunk files are intentionally line-wrapped for repository readability.
+        # Strict base64 validation rejects whitespace, so normalize every chunk first.
+        encoded = "".join(
+            "".join(part.read_text(encoding="ascii").split())
+            for part in parts
+        )
         try:
             source_bytes = base64.b64decode(encoded, validate=True)
         except Exception as exc:

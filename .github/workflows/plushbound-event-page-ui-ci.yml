@@ -1,0 +1,89 @@
+name: Plushbound Event Page UI CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ plushbound-game-development ]
+    paths:
+      - 'tools/editor/editor.js'
+      - 'tools/editor/event-page-core.js'
+      - 'tools/editor/command-forms.js'
+      - 'game/tests/event-page-core.test.js'
+      - '.github/workflows/plushbound-event-page-ui-ci.yml'
+  pull_request:
+    paths:
+      - 'tools/editor/editor.js'
+      - 'tools/editor/event-page-core.js'
+      - 'tools/editor/command-forms.js'
+      - 'game/tests/event-page-core.test.js'
+      - '.github/workflows/plushbound-event-page-ui-ci.yml'
+
+jobs:
+  event-page-ui-simulation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run page operation contracts
+        run: |
+          node --check tools/editor/event-page-core.js
+          node --check tools/editor/editor.js
+          node --check tools/editor/command-forms.js
+          node --test game/tests/event-page-core.test.js
+      - name: Install Chromium
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: Serve repository
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >event-page-http.log 2>&1 &
+          for i in {1..20}; do
+            curl -fsS http://127.0.0.1:4173/tools/editor/index.html >/dev/null && exit 0
+            sleep 1
+          done
+          cat event-page-http.log
+          exit 1
+      - name: Simulate event page operations on Android viewport
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+          import assert from 'node:assert/strict';
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:412,height:915}});
+          const errors=[];page.on('pageerror',error=>errors.push(String(error)));
+          await page.goto('http://127.0.0.1:4173/tools/editor/index.html');
+          await page.click('#loadElyndor');
+          await page.waitForFunction(()=>window.PlushboundEditor?.getPackage()?.maps?.length===3);
+          await page.click('[data-event-id="lio"]');
+          assert.ok(await page.locator('#eventPageActions').count());
+          assert.equal(await page.evaluate(()=>window.PlushboundEditor.getSelectedPageCount()),3);
+          const original=await page.evaluate(()=>window.PlushboundEditor.getPackage().maps[0].events.find(e=>e.id==='lio').pages[0]);
+
+          await page.click('#duplicatePage');
+          assert.equal(await page.evaluate(()=>window.PlushboundEditor.getSelectedPageCount()),4);
+          assert.equal(await page.evaluate(()=>window.PlushboundEditor.getSelectedPageIndex()),1);
+          assert.deepEqual(await page.evaluate(()=>window.PlushboundEditor.getPackage().maps[0].events.find(e=>e.id==='lio').pages[1]),original);
+          assert.equal(await page.evaluate(()=>window.PlushboundEditor.getHistory().undo),1);
+
+          await page.click('#movePageDown');
+          assert.equal(await page.evaluate(()=>window.PlushboundEditor.getSelectedPageIndex()),2);
+          assert.deepEqual(await page.evaluate(()=>window.PlushboundEditor.getPackage().maps[0].events.find(e=>e.id==='lio').pages[2]),original);
+          assert.equal(await page.evaluate(()=>window.PlushboundEditor.getHistory().undo),2);
+
+          page.once('dialog',dialog=>dialog.accept());
+          await page.click('#deletePage');
+          assert.equal(await page.evaluate(()=>window.PlushboundEditor.getSelectedPageCount()),3);
+          assert.equal(await page.evaluate(()=>window.PlushboundEditor.getHistory().undo),3);
+          await page.click('#undoEdit');
+          assert.equal(await page.evaluate(()=>window.PlushboundEditor.getSelectedPageCount()),4);
+          assert.equal(await page.evaluate(()=>window.PlushboundEditor.getHistory().undo),2);
+          await page.click('#undoEdit');
+          await page.click('#undoEdit');
+          assert.equal(await page.evaluate(()=>window.PlushboundEditor.getSelectedPageCount()),3);
+          assert.deepEqual(errors,[]);
+          await browser.close();
+          console.log('Android event page operation simulation passed');
+          NODE

@@ -21,8 +21,24 @@ function attachBuilder(select,textarea){if(!select||!textarea)return;let host=te
 function commandCode(card){const head=card.querySelector('.command-head,.common-command-head');const text=head?.textContent||'';const match=text.match(/\b([A-Z][A-Z0-9_]+)\b/);return match?.[1]||null;}
 function enhanceCards(root=document){for(const card of root.querySelectorAll('.command-card')){if(card.dataset.visualEnhanced==='1')continue;const code=commandCode(card),textarea=card.querySelector('textarea');if(!code||!textarea||!visualFormSupported(code))continue;card.dataset.visualEnhanced='1';const host=document.createElement('div');host.className='visual-command-form existing-command-form';textarea.before(host);renderForm(code,textarea,host);textarea.addEventListener('input',()=>{if(document.activeElement===textarea)queueMicrotask(()=>renderForm(code,textarea,host));});}}
 
+function installEventCopyActions(){
+  const editor=window.PlushboundEditor,eventList=document.getElementById('eventList');
+  if(!editor||!eventList||document.getElementById('eventCopyActions'))return ()=>{};
+  const host=document.createElement('div');host.id='eventCopyActions';host.className='tool-grid';host.style.marginTop='.55rem';
+  const duplicate=document.createElement('button');duplicate.id='duplicateEvent';duplicate.type='button';duplicate.textContent='Duplicate';
+  const copy=document.createElement('button');copy.id='copyEvent';copy.type='button';copy.textContent='Copy';
+  const paste=document.createElement('button');paste.id='pasteEvent';paste.type='button';paste.textContent='Paste';
+  host.append(duplicate,copy,paste);eventList.after(host);
+  const refresh=()=>{const selected=!!editor.getSelectedEventId?.();duplicate.disabled=!selected;copy.disabled=!selected;paste.disabled=!editor.hasEventClipboard?.();};
+  duplicate.addEventListener('click',()=>{editor.duplicateSelectedEvent?.();refresh();});
+  copy.addEventListener('click',()=>{editor.copySelectedEvent?.();refresh();});
+  paste.addEventListener('click',()=>{editor.pasteCopiedEvent?.();refresh();});
+  refresh();return refresh;
+}
+
 attachBuilder(document.getElementById('newCommandType'),document.getElementById('newCommandParameters'));
 attachBuilder(document.getElementById('commonCommandType'),document.getElementById('commonCommandParameters'));
 enhanceCards();
-const observer=new MutationObserver(mutations=>{for(const mutation of mutations)for(const node of mutation.addedNodes)if(node.nodeType===1){if(node.matches?.('.command-card'))enhanceCards(node.parentElement||document);else if(node.querySelector?.('.command-card'))enhanceCards(node);}});observer.observe(document.body,{childList:true,subtree:true});
+const refreshEventCopy=installEventCopyActions();
+const observer=new MutationObserver(mutations=>{for(const mutation of mutations)for(const node of mutation.addedNodes)if(node.nodeType===1){if(node.matches?.('.command-card'))enhanceCards(node.parentElement||document);else if(node.querySelector?.('.command-card'))enhanceCards(node);}queueMicrotask(refreshEventCopy);});observer.observe(document.body,{childList:true,subtree:true});
 if(window.PlushboundEditor) import('./reference-audit.js');

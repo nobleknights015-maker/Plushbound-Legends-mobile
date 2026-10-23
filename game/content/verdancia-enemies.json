@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "regionId": "verdancia",
+  "enemies": [
+    {
+      "id": "mossbit-frayling",
+      "name": "Mossbit Frayling",
+      "role": "skirmisher",
+      "level": 6,
+      "stats": {"hp": 82, "mp": 12, "attack": 18, "defense": 13, "spirit": 10, "agility": 18},
+      "tags": ["frayling", "verdancia", "threadwood", "early"],
+      "skills": ["fray-scratch", "moss-dart"],
+      "rewards": {"exp": 22, "gold": 14, "drops": [{"itemId": "threadmend-tonic", "chance": 0.08}]},
+      "assets": {"sprite": "enemy/verdancia/mossbit-frayling/sprite", "battle": "enemy/verdancia/mossbit-frayling/battle", "portrait": "enemy/verdancia/mossbit-frayling/portrait"}
+    },
+    {
+      "id": "briar-tuft-frayling",
+      "name": "Briar Tuft Frayling",
+      "role": "bruiser",
+      "level": 7,
+      "stats": {"hp": 116, "mp": 8, "attack": 23, "defense": 18, "spirit": 9, "agility": 11},
+      "tags": ["frayling", "verdancia", "threadwood", "mossveil"],
+      "skills": ["thorn-bash", "snagging-vine"],
+      "rewards": {"exp": 30, "gold": 18, "drops": [{"itemId": "spool-salve", "chance": 0.06}]},
+      "assets": {"sprite": "enemy/verdancia/briar-tuft-frayling/sprite", "battle": "enemy/verdancia/briar-tuft-frayling/battle", "portrait": "enemy/verdancia/briar-tuft-frayling/portrait"}
+    },
+    {
+      "id": "hollow-stitchling",
+      "name": "Hollow Stitchling",
+      "role": "caster",
+      "level": 8,
+      "stats": {"hp": 94, "mp": 34, "attack": 14, "defense": 13, "spirit": 25, "agility": 16},
+      "tags": ["frayling", "verdancia", "mossveil", "elderstitch"],
+      "skills": ["loose-thread", "hollow-whisper"],
+      "rewards": {"exp": 38, "gold": 21, "drops": [{"itemId": "waybread", "chance": 0.12}]},
+      "assets": {"sprite": "enemy/verdancia/hollow-stitchling/sprite", "battle": "enemy/verdancia/hollow-stitchling/battle", "portrait": "enemy/verdancia/hollow-stitchling/portrait"}
+    },
+    {
+      "id": "knotjaw-frayling",
+      "name": "Knotjaw Frayling",
+      "role": "tank",
+      "level": 9,
+      "stats": {"hp": 168, "mp": 10, "attack": 28, "defense": 26, "spirit": 12, "agility": 8},
+      "tags": ["frayling", "verdancia", "rootbound", "dungeon"],
+      "skills": ["knot-crush", "rooted-guard"],
+      "rewards": {"exp": 50, "gold": 27, "drops": [{"itemId": "threadmend-tonic", "chance": 0.14}]},
+      "assets": {"sprite": "enemy/verdancia/knotjaw-frayling/sprite", "battle": "enemy/verdancia/knotjaw-frayling/battle", "portrait": "enemy/verdancia/knotjaw-frayling/portrait"}
+    },
+    {
+      "id": "rootbound-warden",
+      "name": "Rootbound Warden",
+      "role": "elite",
+      "level": 11,
+      "stats": {"hp": 310, "mp": 42, "attack": 35, "defense": 31, "spirit": 26, "agility": 14},
+      "tags": ["frayling", "verdancia", "rootbound", "elite"],
+      "skills": ["warden-slam", "binding-roots", "frayed-bark"],
+      "rewards": {"exp": 120, "gold": 68, "drops": [{"itemId": "spool-salve", "chance": 0.22}]},
+      "assets": {"sprite": "enemy/verdancia/rootbound-warden/sprite", "battle": "enemy/verdancia/rootbound-warden/battle", "portrait": "enemy/verdancia/rootbound-warden/portrait"}
+    },
+    {
+      "id": "unraveled-hart",
+      "name": "The Unraveled Hart",
+      "role": "regional-boss",
+      "level": 13,
+      "stats": {"hp": 980, "mp": 110, "attack": 48, "defense": 39, "spirit": 42, "agility": 22},
+      "tags": ["frayling", "verdancia", "sanctum", "boss", "regional-boss"],
+      "skills": ["antler-rend", "unraveling-call", "threadstorm", "hollow-crown"],
+      "rewards": {"exp": 520, "gold": 260, "drops": []},
+      "assets": {"sprite": "enemy/verdancia/unraveled-hart/sprite", "battle": "enemy/verdancia/unraveled-hart/battle", "portrait": "enemy/verdancia/unraveled-hart/portrait"}
+    }
+  ],
+  "encounterTables": [
+    {"id":"verdancia-threadwood-verge","entries":[{"enemyId":"mossbit-frayling","weight":55},{"enemyId":"briar-tuft-frayling","weight":30},{"enemyId":"hollow-stitchling","weight":15}]},
+    {"id":"verdancia-mossveil-hollow","entries":[{"enemyId":"briar-tuft-frayling","weight":40},{"enemyId":"hollow-stitchling","weight":45},{"enemyId":"knotjaw-frayling","weight":15}]},
+    {"id":"verdancia-elderstitch-grove","entries":[{"enemyId":"hollow-stitchling","weight":55},{"enemyId":"briar-tuft-frayling","weight":25},{"enemyId":"rootbound-warden","weight":20}]},
+    {"id":"verdancia-rootbound-depths","entries":[{"enemyId":"knotjaw-frayling","weight":55},{"enemyId":"hollow-stitchling","weight":20},{"enemyId":"rootbound-warden","weight":25}]},
+    {"id":"verdancia-weavers-sanctum","entries":[{"enemyId":"rootbound-warden","weight":70},{"enemyId":"knotjaw-frayling","weight":30}]}
+  ],
+  "bossEncounters": [
+    {"id":"verdancia-unraveled-hart","mapId":"verdancia-weavers-sanctum","enemyId":"unraveled-hart","oneTime":true,"completionSwitch":"verdancia:unraveled-hart:defeated"}
+  ]
+}

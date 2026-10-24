@@ -1,0 +1,39 @@
+name: Plushbound Character Atlas v1 CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ plushbound-game-development ]
+    paths:
+      - 'tools/editor/character-atlas-v1-core.js'
+      - 'tools/editor/character-atlas-v1.js'
+      - 'tools/editor/character-atlas-v1.html'
+      - 'tools/editor/editor-deeplinks.js'
+      - 'game/tests/character-atlas-v1-core.test.js'
+      - '.github/workflows/plushbound-character-atlas-v1-ci.yml'
+  pull_request:
+    paths:
+      - 'tools/editor/character-atlas-v1-core.js'
+      - 'tools/editor/character-atlas-v1.js'
+      - 'tools/editor/character-atlas-v1.html'
+      - 'tools/editor/editor-deeplinks.js'
+      - 'game/tests/character-atlas-v1-core.test.js'
+
+jobs:
+  atlas-v1-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate additive atlas compiler syntax
+        run: |
+          node --check tools/editor/character-atlas-v1-core.js
+          node --check tools/editor/character-atlas-v1.js
+          node --check tools/editor/editor-deeplinks.js
+      - name: Prove locked coordinates and rejection behavior
+        run: node --test game/tests/character-atlas-v1-core.test.js game/tests/editor-core.test.js
+      - name: Prove frozen Engine v1 was not changed by atlas support
+        run: git diff --exit-code 160d9fd95bc0d3db39224f8bb4c5e1e3a1f54425 -- engine/src engine/tests engine/package.json

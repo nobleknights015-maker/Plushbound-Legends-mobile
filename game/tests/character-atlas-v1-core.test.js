@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CHARACTER_ATLAS_V1, CHARACTER_ATLAS_V1_SLOTS, atlasV1Slot, validateCharacterAtlasV1Descriptor, compileCharacterAtlasV1Manifest, atlasV1CropPlan, atlasV1AssetEntries } from '../../tools/editor/character-atlas-v1-core.js';
+import { CHARACTER_ATLAS_V1, CHARACTER_ATLAS_V1_SLOTS, atlasV1Slot, validateCharacterAtlasV1Descriptor, compileCharacterAtlasV1Manifest, atlasV1CropPlan, atlasV1AssetEntries, hasPngSignature } from '../../tools/editor/character-atlas-v1-core.js';
 
 test('Character Atlas v1 locks the native production canvas and deterministic slots',()=>{
   assert.deepEqual([CHARACTER_ATLAS_V1.width,CHARACTER_ATLAS_V1.height],[1536,1024]);
@@ -14,7 +14,7 @@ test('Character Atlas v1 locks the native production canvas and deterministic sl
   assert.ok(CHARACTER_ATLAS_V1_SLOTS.every(slot=>slot.x>=0&&slot.y>=0&&slot.x+slot.width<=1536&&slot.y+slot.height<=1024));
 });
 
-test('Character Atlas v1 accepts native sheet and rejects legacy dimensions or disguised JPEG',()=>{
+test('Character Atlas v1 accepts native sheet and rejects legacy dimensions or wrong MIME',()=>{
   assert.equal(validateCharacterAtlasV1Descriptor({width:1536,height:1024,type:'image/png'}).ok,true);
   const legacy=validateCharacterAtlasV1Descriptor({width:2048,height:1536,type:'image/png'});
   assert.equal(legacy.ok,false);
@@ -24,6 +24,17 @@ test('Character Atlas v1 accepts native sheet and rejects legacy dimensions or d
   assert.ok(jpeg.issues.some(issue=>issue.code==='ATLAS_FORMAT_MISMATCH'));
   const unknown=validateCharacterAtlasV1Descriptor({width:1536,height:1024,type:''});
   assert.equal(unknown.ok,false);
+});
+
+test('Character Atlas v1 verifies PNG bytes instead of trusting filename or MIME alone',()=>{
+  const png=new Uint8Array([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0,0]);
+  const jpeg=new Uint8Array([0xff,0xd8,0xff,0xe0,0,0,0,0,0,0]);
+  assert.equal(hasPngSignature(png),true);
+  assert.equal(hasPngSignature(jpeg),false);
+  const disguised=validateCharacterAtlasV1Descriptor({width:1536,height:1024,type:'image/png',signatureValid:false});
+  assert.equal(disguised.ok,false);
+  assert.ok(disguised.issues.some(issue=>issue.code==='ATLAS_PNG_SIGNATURE_MISMATCH'));
+  assert.throws(()=>compileCharacterAtlasV1Manifest({characterId:'fake',width:1536,height:1024,type:'image/png',signatureValid:false}),/not PNG data/);
 });
 
 test('Character Atlas v1 compiler emits stable native asset IDs and crop coordinates',()=>{

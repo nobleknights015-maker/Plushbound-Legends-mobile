@@ -3,39 +3,10 @@ import assert from 'node:assert/strict';
 import { CHARACTER_ATLAS_V1_SLOTS } from '../../tools/editor/character-atlas-v1-core.js';
 import { createCharacterAtlasV1Build, assignCharacterAtlasV1Slot, clearCharacterAtlasV1Slot, validateCharacterAtlasV1Build, characterAtlasV1PlacementPlan, characterAtlasV1BuildSummary } from '../../tools/editor/character-atlas-v1-builder-core.js';
 
-test('sheet builder always targets the locked native Character Atlas v1 canvas',()=>{
-  const build=createCharacterAtlasV1Build({characterId:'Chris Bourn',name:'Chris Bourn'});
-  assert.equal(build.character.id,'chris-bourn');
-  assert.deepEqual(build.canvas,{width:1536,height:1024,type:'image/png'});
-  assert.equal(Object.keys(build.slots).length,56);
-  assert.equal(validateCharacterAtlasV1Build(build).ok,true);
-});
-
-test('sheet builder reports required production slots instead of guessing',()=>{
-  const build=createCharacterAtlasV1Build({characterId:'penney-nguyen'});
-  const before=characterAtlasV1BuildSummary(build);
-  assert.equal(before.required,26);assert.equal(before.missingRequired.length,26);assert.equal(before.ready,false);
-  for(const slot of CHARACTER_ATLAS_V1_SLOTS.filter(slot=>slot.required)) assignCharacterAtlasV1Slot(build,slot.id,{name:`${slot.id}.png`,type:'image/png',width:512,height:512});
-  const after=characterAtlasV1BuildSummary(build);
-  assert.equal(after.assigned,26);assert.equal(after.missingRequired.length,0);assert.equal(after.ready,true);
-});
-
-test('sheet builder emits deterministic contain placement coordinates',()=>{
-  const build=createCharacterAtlasV1Build({characterId:'test'});
-  assignCharacterAtlasV1Slot(build,'portrait.neutral',{name:'neutral.png',width:512,height:512,type:'image/png'});
-  const [placement]=characterAtlasV1PlacementPlan(build);
-  assert.equal(placement.slotId,'portrait.neutral');
-  assert.deepEqual(placement.destination,{x:363,y:167,width:91,height:91});
-  assert.deepEqual(placement.source,{name:'neutral.png',type:'image/png',width:512,height:512,x:0,y:0});
-  clearCharacterAtlasV1Slot(build,'portrait.neutral');
-  assert.equal(characterAtlasV1PlacementPlan(build).length,0);
-});
-
-test('sheet builder rejects unknown slots and legacy canvas contracts',()=>{
-  const build=createCharacterAtlasV1Build({characterId:'test'});
-  assert.throws(()=>assignCharacterAtlasV1Slot(build,'made.up.slot',{width:10,height:10}),/Unknown/);
-  build.canvas.width=2048;build.canvas.height=1536;
-  const validation=validateCharacterAtlasV1Build(build);
-  assert.equal(validation.ok,false);
-  assert.ok(validation.issues.some(issue=>issue.code==='BUILD_CANVAS_MISMATCH'));
-});
+test('sheet builder always targets the locked native Character Atlas v1 canvas',()=>{const build=createCharacterAtlasV1Build({characterId:'Chris Bourn',name:'Chris Bourn'});assert.equal(build.character.id,'chris-bourn');assert.deepEqual(build.canvas,{width:1536,height:1024,type:'image/png'});assert.equal(Object.keys(build.slots).length,56);assert.equal(validateCharacterAtlasV1Build(build).ok,true);});
+test('sheet builder reports required production slots instead of guessing',()=>{const build=createCharacterAtlasV1Build({characterId:'penney-nguyen'});const before=characterAtlasV1BuildSummary(build);assert.equal(before.required,26);assert.equal(before.missingRequired.length,26);assert.equal(before.ready,false);for(const slot of CHARACTER_ATLAS_V1_SLOTS.filter(slot=>slot.required))assignCharacterAtlasV1Slot(build,slot.id,{name:`${slot.id}.png`,type:'image/png',width:512,height:512});const after=characterAtlasV1BuildSummary(build);assert.equal(after.assigned,26);assert.equal(after.missingRequired.length,0);assert.equal(after.ready,true);});
+test('sheet builder emits deterministic contain placement coordinates',()=>{const build=createCharacterAtlasV1Build({characterId:'test'});assignCharacterAtlasV1Slot(build,'portrait.neutral',{name:'neutral.png',width:512,height:512,type:'image/png'});const [placement]=characterAtlasV1PlacementPlan(build);assert.equal(placement.slotId,'portrait.neutral');assert.deepEqual(placement.destination,{x:363,y:167,width:91,height:91});assert.deepEqual(placement.source,{name:'neutral.png',type:'image/png',width:512,height:512,x:0,y:0});clearCharacterAtlasV1Slot(build,'portrait.neutral');assert.equal(characterAtlasV1PlacementPlan(build).length,0);});
+test('sheet builder rejects unknown slots and legacy canvas contracts',()=>{const build=createCharacterAtlasV1Build({characterId:'test'});assert.throws(()=>assignCharacterAtlasV1Slot(build,'made.up.slot',{width:10,height:10,type:'image/png'}),/Unknown/);build.canvas.width=2048;build.canvas.height=1536;const validation=validateCharacterAtlasV1Build(build);assert.equal(validation.ok,false);assert.ok(validation.issues.some(issue=>issue.code==='BUILD_CANVAS_MISMATCH'));});
+test('sheet builder rejects unsupported or missing source image types',()=>{const build=createCharacterAtlasV1Build({characterId:'test'});assert.throws(()=>assignCharacterAtlasV1Slot(build,'portrait.neutral',{width:10,height:10,type:''}),/Unsupported source image type/);assert.throws(()=>assignCharacterAtlasV1Slot(build,'portrait.neutral',{width:10,height:10,type:'image/gif'}),/Unsupported source image type/);assert.doesNotThrow(()=>assignCharacterAtlasV1Slot(build,'portrait.neutral',{width:10,height:10,type:'image/webp'}));});
+test('sheet builder validation catches corrupt assigned source metadata and canvas MIME',()=>{const build=createCharacterAtlasV1Build({characterId:'test'});build.slots['portrait.neutral']={name:'broken.png',type:'image/png',width:0,height:20};let validation=validateCharacterAtlasV1Build(build);assert.equal(validation.ok,false);assert.ok(validation.issues.some(issue=>issue.code==='BUILD_SOURCE_DIMENSIONS_INVALID'));build.slots['portrait.neutral']=null;build.canvas.type='image/jpeg';validation=validateCharacterAtlasV1Build(build);assert.equal(validation.ok,false);assert.ok(validation.issues.some(issue=>issue.code==='BUILD_CANVAS_MISMATCH'));});
+test('sheet builder cover placement remains inside the locked source and destination rectangles',()=>{const build=createCharacterAtlasV1Build({characterId:'test'});assignCharacterAtlasV1Slot(build,'battle.attack',{name:'attack.jpg',width:1600,height:900,type:'image/jpeg'});const [placement]=characterAtlasV1PlacementPlan(build,{fit:'cover'});assert.equal(placement.slotId,'battle.attack');assert.ok(placement.source.x>=0&&placement.source.y>=0);assert.ok(placement.source.x+placement.source.width<=1600);assert.ok(placement.source.y+placement.source.height<=900);assert.deepEqual(placement.destination,{x:457,y:474,width:91,height:84});});

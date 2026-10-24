@@ -25,6 +25,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 20
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -33,7 +35,7 @@ jobs:
           node --check tools/editor/character-atlas-v1-core.js
           node --check tools/editor/character-atlas-v1.js
           node --check tools/editor/editor-deeplinks.js
-      - name: Prove locked coordinates and rejection behavior
+      - name: Prove locked coordinates and existing editor behavior
         run: node --test game/tests/character-atlas-v1-core.test.js game/tests/editor-core.test.js
-      - name: Prove frozen Engine v1 was not changed by atlas support
-        run: git diff --exit-code 160d9fd95bc0d3db39224f8bb4c5e1e3a1f54425 -- engine/src engine/tests engine/package.json
+      - name: Prove frozen Engine v1 was untouched by Atlas v1 integration
+        run: git diff --exit-code 343f51cc8a4bbf4ae66b1dd3393ea8b1480f527a..HEAD -- engine/

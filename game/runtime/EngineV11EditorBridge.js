@@ -21,19 +21,28 @@ function normalizeLayer(layer, width, height, index) {
   } else data = data.map(value => Number(value) || 0);
   data = data.slice(0, count);
   while (data.length < count) data.push(0);
-  return {
-    ...source,
-    id: source.id || `layer-${index + 1}`,
-    name: source.name || `Layer ${index + 1}`,
-    z: Number.isFinite(Number(source.z)) ? Number(source.z) : index,
-    visible: source.visible !== false,
-    data
-  };
+  return { ...source, id: source.id || `layer-${index + 1}`, name: source.name || `Layer ${index + 1}`, z: Number.isFinite(Number(source.z)) ? Number(source.z) : index, visible: source.visible !== false, data };
 }
 
-export function validateEditorPackage(source, { assetIds = [], encounterTableIds = [] } = {}) {
-  const errors = [];
-  const warnings = [];
+function commandList(event) {
+  const result = [];
+  for (const page of event?.pages || []) for (const command of page?.commands || []) if (command && typeof command === 'object') result.push(command);
+  return result;
+}
+
+function validateGrid(errors, warnings, map, mapId, field, { allowSparse = false } = {}) {
+  const value = map[field];
+  if (value == null) return;
+  if (!Array.isArray(value)) {
+    errors.push(diagnostic('error', 'MAP_GRID_INVALID', `${field} on ${mapId} must be an array`, { objectId: mapId, field }));
+    return;
+  }
+  const cells = map.width * map.height;
+  if (!allowSparse && value.length !== cells) warnings.push(diagnostic('warning', 'MAP_GRID_SIZE_NORMALIZED', `${field} on ${mapId} will be normalized to ${cells} cells`, { objectId: mapId, field }));
+}
+
+export function validateEditorPackage(source, { assetIds = [], encounterTableIds = [], start = null } = {}) {
+  const errors = [], warnings = [];
   if (!source || typeof source !== 'object') {
     errors.push(diagnostic('error', 'PACKAGE_INVALID', 'World Editor package must be an object'));
     return { ok: false, errors, warnings };
@@ -42,6 +51,7 @@ export function validateEditorPackage(source, { assetIds = [], encounterTableIds
     errors.push(diagnostic('error', 'MAPS_MISSING', 'World Editor package must contain maps[]', { field: 'maps' }));
     return { ok: false, errors, warnings };
   }
+  if (!source.maps.length) errors.push(diagnostic('error', 'MAPS_EMPTY', 'World Editor package must contain at least one map', { field: 'maps' }));
 
   const maps = new Map();
   const knownAssets = new Set((assetIds || []).map(String));
@@ -60,28 +70,43 @@ export function validateEditorPackage(source, { assetIds = [], encounterTableIds
       continue;
     }
     const cells = map.width * map.height;
-    for (const [index, layer] of (map.layers || []).entries()) {
+    if (map.layers != null && !Array.isArray(map.layers)) errors.push(diagnostic('error', 'LAYERS_INVALID', `Map ${mapId} layers must be an array`, { objectId: mapId, field: 'layers' }));
+    for (const [index, layer] of (Array.isArray(map.layers) ? map.layers : []).entries()) {
       const raw = Array.isArray(layer) ? layer : layer?.data;
+      if (raw != null && !Array.isArray(raw)) errors.push(diagnostic('error', 'LAYER_DATA_INVALID', `Layer ${layer?.id || index + 1} on ${mapId} must contain array data`, { objectId: mapId, field: `layers.${index}.data` }));
       const size = Array.isArray(raw?.[0]) ? raw.reduce((sum, row) => sum + (Array.isArray(row) ? row.length : 0), 0) : (Array.isArray(raw) ? raw.length : 0);
       if (size && size !== cells) warnings.push(diagnostic('warning', 'LAYER_SIZE_NORMALIZED', `Layer ${layer?.id || index + 1} on ${mapId} will be normalized to ${cells} cells`, { objectId: mapId, field: `layers.${index}.data` }));
     }
+    validateGrid(errors, warnings, map, mapId, 'regions');
+    if (map.blocked != null && !Array.isArray(map.blocked)) errors.push(diagnostic('error', 'BLOCKED_INVALID', `blocked on ${mapId} must be an array`, { objectId: mapId, field: 'blocked' }));
     if (map.encounterTable && knownTables.size && !knownTables.has(String(map.encounterTable))) errors.push(diagnostic('error', 'ENCOUNTER_TABLE_MISSING', `Unknown encounter table ${map.encounterTable}`, { objectId: mapId, field: 'encounterTable', value: map.encounterTable }));
+    if (map.events != null && !Array.isArray(map.events)) errors.push(diagnostic('error', 'EVENTS_INVALID', `events on ${mapId} must be an array`, { objectId: mapId, field: 'events' }));
     const eventIds = new Set();
-    for (const event of map.events || []) {
+    for (const event of Array.isArray(map.events) ? map.events : []) {
       const eventId = String(event?.id || '');
       if (!eventId) { errors.push(diagnostic('error', 'EVENT_ID_MISSING', `Event on ${mapId} has no id`, { objectId: mapId })); continue; }
       if (eventIds.has(eventId)) errors.push(diagnostic('error', 'EVENT_ID_DUPLICATE', `Duplicate event ${eventId} on ${mapId}`, { objectId: eventId }));
       eventIds.add(eventId);
       if (!Number.isInteger(event.x) || !Number.isInteger(event.y) || event.x < 0 || event.y < 0 || event.x >= map.width || event.y >= map.height) errors.push(diagnostic('error', 'EVENT_POSITION_INVALID', `Event ${eventId} is outside ${mapId}`, { objectId: eventId, field: 'position' }));
       if (event.assetId && knownAssets.size && !knownAssets.has(String(event.assetId))) errors.push(diagnostic('error', 'MISSING_ASSET', `Asset ${event.assetId} could not be resolved`, { objectId: eventId, field: 'assetId', value: event.assetId }));
-      for (const page of event.pages || []) for (const command of page.commands || []) {
-        if (command?.code !== 'TRANSFER') continue;
+      for (const command of commandList(event)) {
+        if (command.code !== 'TRANSFER') continue;
         const [targetMapId, x, y, direction = 2] = command.parameters || [];
         const target = source.maps.find(candidate => String(candidate?.id) === String(targetMapId));
         if (!target) errors.push(diagnostic('error', 'TRANSFER_MAP_MISSING', `Transfer ${eventId} targets missing map ${targetMapId}`, { objectId: eventId, field: 'TRANSFER', value: targetMapId }));
-        else if (Number(x) < 0 || Number(y) < 0 || Number(x) >= target.width || Number(y) >= target.height) errors.push(diagnostic('error', 'TRANSFER_POSITION_INVALID', `Transfer ${eventId} targets an invalid position on ${targetMapId}`, { objectId: eventId, field: 'TRANSFER', value: [targetMapId, x, y, direction] }));
+        else if (!Number.isInteger(Number(x)) || !Number.isInteger(Number(y)) || Number(x) < 0 || Number(y) < 0 || Number(x) >= target.width || Number(y) >= target.height) errors.push(diagnostic('error', 'TRANSFER_POSITION_INVALID', `Transfer ${eventId} targets an invalid position on ${targetMapId}`, { objectId: eventId, field: 'TRANSFER', value: [targetMapId, x, y, direction] }));
         if (!DIRECTIONS.has(Number(direction))) errors.push(diagnostic('error', 'TRANSFER_DIRECTION_INVALID', `Transfer ${eventId} has invalid direction ${direction}`, { objectId: eventId, field: 'TRANSFER', value: direction }));
       }
+    }
+  }
+
+  if (start?.mapId != null) {
+    const startMap = maps.get(String(start.mapId));
+    if (!startMap) errors.push(diagnostic('error', 'START_MAP_MISSING', `Start map ${start.mapId} does not exist`, { field: 'start.mapId', value: start.mapId }));
+    else {
+      const x = Number(start.x ?? 0), y = Number(start.y ?? 0), direction = Number(start.direction ?? 2);
+      if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0 || x >= startMap.width || y >= startMap.height) errors.push(diagnostic('error', 'START_POSITION_INVALID', `Start position is outside ${start.mapId}`, { field: 'start', value: [x, y, direction] }));
+      if (!DIRECTIONS.has(direction)) errors.push(diagnostic('error', 'START_DIRECTION_INVALID', `Start direction ${direction} is invalid`, { field: 'start.direction', value: direction }));
     }
   }
   return { ok: errors.length === 0, errors, warnings };
@@ -103,7 +128,7 @@ export function adaptEditorPackage(source, options = {}) {
     normalized.id = String(map.id);
     normalized.events = Array.isArray(map.events) ? clone(map.events) : [];
     normalized.blocked = Array.isArray(map.blocked) ? [...map.blocked] : [];
-    normalized.layers = (map.layers || []).map((layer, index) => normalizeLayer(layer, map.width, map.height, index));
+    normalized.layers = (Array.isArray(map.layers) ? map.layers : []).map((layer, index) => normalizeLayer(layer, map.width, map.height, index));
     const cells = map.width * map.height;
     normalized.regions = Array.isArray(map.regions) ? map.regions.slice(0, cells).map(value => Math.max(0, Math.floor(Number(value) || 0))) : [];
     while (normalized.regions.length < cells) normalized.regions.push(0);

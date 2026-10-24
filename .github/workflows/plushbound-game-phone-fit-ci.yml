@@ -6,6 +6,7 @@ on:
     branches: [ plushbound-game-development ]
     paths:
       - 'game/runtime/**'
+      - 'game/tests/engine-v11-editor-bridge.test.js'
       - 'game/tests/phone-viewport-contract.test.js'
       - 'game/tests/game-phone-hud-contract.test.js'
       - 'game/tests/phone-viewport-guard.test.js'
@@ -21,6 +22,7 @@ on:
   pull_request:
     paths:
       - 'game/runtime/**'
+      - 'game/tests/engine-v11-editor-bridge.test.js'
       - 'game/tests/phone-viewport-contract.test.js'
       - 'game/tests/game-phone-hud-contract.test.js'
       - 'game/tests/phone-viewport-guard.test.js'
@@ -48,12 +50,14 @@ jobs:
           node --check game/runtime/GameDomAdapter.js
           node --check game/runtime/PhoneViewportGuard.js
           node --check game/runtime/AndroidGameBootstrap.js
+          node --check game/runtime/EngineV11EditorBridge.js
 
-      - name: Prove player UI and game frame fit supported phone matrix
+      - name: Prove player UI, editor bridge and game frame fit supported phone matrix
         run: |
           node --test \
             engine/tests/screen_adaptation.test.js \
             engine/tests/native_viewport_ui.test.js \
+            game/tests/engine-v11-editor-bridge.test.js \
             game/tests/phone-viewport-contract.test.js \
             game/tests/game-phone-hud-contract.test.js \
             game/tests/phone-viewport-guard.test.js \
@@ -71,6 +75,7 @@ jobs:
           Variable UI: dialogue, actions and shop inventory locally scroll instead of clipping
           Minimum DOM touch target: 44 CSS px
           Engine v1 core: frozen / unmodified by this phone-fit patch
+          Engine v1.1 editor bridge: validation/adaptation test included
           Result: ${{ job.status }}
           Commit: ${{ github.sha }}
           EOF

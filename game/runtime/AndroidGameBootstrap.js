@@ -8,6 +8,7 @@ import { createMVPluginRuntime, normalizeMVPluginManifest } from './MVPluginRunt
 import { createMVDatabaseBridge, normalizeMVDatabaseIdRegistry } from './MVDatabaseBridge.js';
 import { createMVEventCommandBridge } from './MVEventCommandBridge.js';
 import { createMVUiRuntime } from './MVUiRuntime.js';
+import { EngineV11EditorBridge } from './EngineV11EditorBridge.js';
 
 async function loadJson(url) {
   const response = await fetch(url, { cache: 'no-store' });
@@ -71,22 +72,33 @@ function combineMapPackages(runtimePackages, engineBaseline) {
   return { schemaVersion: 1, engineBaseline, maps };
 }
 
+function collectEncounterTableIds(contentPackages) {
+  return contentPackages.flatMap(content => Array.isArray(content?.encounterTables) ? content.encounterTables : []).map(table => String(table?.id || '')).filter(Boolean);
+}
+
 export async function bootPlushboundGame({ scope = globalThis, baseUrl } = {}) {
   ensureStructuredClone(scope);
   const runtimeBase = baseUrl ? new URL(baseUrl, scope.location?.href) : resolveBase(scope);
-  const root = new URL('../', runtimeBase), contentBase = new URL('content/', root), pluginBase = new URL('plugins/', root);
+  const root = new URL('../', runtimeBase), contentBase = new URL('content/', root), pluginBase = new URL('plugins/', root), assetBase = new URL('assets/', root);
   const index = await loadJson(new URL('content-index.json', contentBase));
-  const [pluginManifest, databaseIdRegistry] = await Promise.all([
+  const [pluginManifest, databaseIdRegistry, assetManifest] = await Promise.all([
     loadOptionalJson(new URL('plugins.json', pluginBase), { schemaVersion: 1, target: 'RPG Maker MV 1.6.x', plugins: [] }).then(normalizeMVPluginManifest),
-    loadOptionalJson(new URL('mv-database-ids.json', pluginBase), { schemaVersion: 1, target: 'RPG Maker MV 1.6.x', ids: {} }).then(normalizeMVDatabaseIdRegistry)
+    loadOptionalJson(new URL('mv-database-ids.json', pluginBase), { schemaVersion: 1, target: 'RPG Maker MV 1.6.x', ids: {} }).then(normalizeMVDatabaseIdRegistry),
+    loadOptionalJson(new URL('asset-manifest.json', assetBase), { schemaVersion: 1, entries: [] })
   ]);
 
   const expectedBaseline = '160d9fd95bc0d3db39224f8bb4c5e1e3a1f54425';
   if (index.engineBaseline !== expectedBaseline) throw new Error(`Game content expects Engine ${index.engineBaseline}; packaged game requires ${expectedBaseline}`);
 
   const loaded = await loadIndexedPackages(index, contentBase);
-  const mapPackage = combineMapPackages(loaded.runtimePackages, expectedBaseline);
+  const combinedMapPackage = combineMapPackages(loaded.runtimePackages, expectedBaseline);
   const contentPackages = loaded.contentPackages.map(record => record.data);
+  const editorBridge = new EngineV11EditorBridge({
+    assetIds: (assetManifest.entries || []).map(entry => String(entry?.id || '')).filter(Boolean),
+    encounterTableIds: collectEncounterTableIds(contentPackages)
+  });
+  const editorBridgeResult = editorBridge.load(combinedMapPackage);
+  const mapPackage = editorBridgeResult.package;
   const state = new GameState();
   const session = new PlushboundGameSession({ state, contentPackages, mapPackage });
   const autosave = new GameSavePersistence({ scope });
@@ -96,8 +108,9 @@ export async function bootPlushboundGame({ scope = globalThis, baseUrl } = {}) {
   const viewportGuard = scope.PlushboundPhoneViewportGuard || attachPhoneViewportGuard(scope);
   scope.PlushboundPhoneViewportGuard = viewportGuard;
   const runtime = {
-    version: 1, engineBaseline: index.engineBaseline, contentIndex: index, contentPackages,
+    version: 1.1, engineBaseline: index.engineBaseline, contentIndex: index, contentPackages,
     runtimeBaseUrl: runtimeBase.href, pluginManifest, mvDatabaseIdRegistry: databaseIdRegistry,
+    editorBridge, editorBridgeValidation: editorBridgeResult.validation,
     mvPlugins: null, mvDatabase: null, mvEventCommands: null, mvUi: null,
     loadedPackageIds: loaded.contentPackages.map(record => record.entry.id),
     loadedRuntimePackageIds: loaded.runtimePackages.map(record => record.entry.id),
@@ -128,7 +141,8 @@ export async function bootPlushboundGame({ scope = globalThis, baseUrl } = {}) {
 
   scope.dispatchEvent?.(new CustomEvent('plushbound-game-ready', {
     detail: {
-      engineBaseline: index.engineBaseline, startMapId: index.start.mapId, loadedMaps: mapPackage.maps.length, restoredSave,
+      runtimeVersion: runtime.version, engineBaseline: index.engineBaseline, startMapId: index.start.mapId, loadedMaps: mapPackage.maps.length, restoredSave,
+      editorBridgeWarnings: editorBridgeResult.validation.warnings.length,
       mvPluginTarget: pluginStatus.target, configuredPlugins: pluginStatus.configured, loadedPlugins: pluginStatus.loaded.length,
       mvDatabaseCounts: databaseStatus.counts, mvDatabaseMissingIds: databaseStatus.missingRegistryEntries.length,
       mvEventCommandsImplemented: eventCommandStatus.implementedCount, mvEventCommandsDeferred: eventCommandStatus.deferredCount,
@@ -143,7 +157,7 @@ if (typeof window !== 'undefined' && window.document) {
   if (!script?.hasAttribute('data-plushbound-manual-boot')) {
     bootPlushboundGame({ scope: window }).catch(error => {
       console.error('Plushbound game boot failed', error);
-      window.dispatchEvent?.(new CustomEvent('plushbound-game-boot-error', { detail: { message: String(error?.message || error) } }));
+      window.dispatchEvent?.(new CustomEvent('plushbound-game-boot-error', { detail: { message: String(error?.message || error), code: error?.code || null, diagnostics: error?.diagnostics || null } }));
     });
   }
 }

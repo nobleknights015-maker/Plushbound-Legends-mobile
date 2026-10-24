@@ -1,73 +1,10 @@
 import { CHARACTER_ATLAS_V1, CHARACTER_ATLAS_V1_SLOTS, atlasV1Slot } from './character-atlas-v1-core.js';
 
-export const CHARACTER_ATLAS_V1_BUILD_SCHEMA=Object.freeze({
-  schemaVersion:1,
-  kind:'plushbound-character-atlas-build',
-  templateId:CHARACTER_ATLAS_V1.id,
-  templateVersion:CHARACTER_ATLAS_V1.version
-});
-
-export function normalizeAtlasV1CharacterId(value){
-  return String(value||'').trim().toLowerCase().replace(/[^a-z0-9._-]+/g,'-').replace(/^-+|-+$/g,'');
-}
-
-export function createCharacterAtlasV1Build({characterId,name=''}={}){
-  const id=normalizeAtlasV1CharacterId(characterId);
-  if(!id) throw new Error('Character Atlas v1 build requires characterId');
-  return {
-    ...CHARACTER_ATLAS_V1_BUILD_SCHEMA,
-    character:{id,name:String(name||id)},
-    canvas:{width:CHARACTER_ATLAS_V1.width,height:CHARACTER_ATLAS_V1.height,type:CHARACTER_ATLAS_V1.format},
-    slots:Object.fromEntries(CHARACTER_ATLAS_V1_SLOTS.map(slot=>[slot.id,null]))
-  };
-}
-
-export function validateCharacterAtlasV1Build(build={}){
-  const issues=[];
-  if(build.templateId!==CHARACTER_ATLAS_V1.id||build.templateVersion!==CHARACTER_ATLAS_V1.version) issues.push({severity:'error',code:'BUILD_TEMPLATE_MISMATCH',message:'Build does not target Character Atlas v1'});
-  const id=normalizeAtlasV1CharacterId(build.character?.id);
-  if(!id) issues.push({severity:'error',code:'BUILD_CHARACTER_ID_MISSING',message:'Character ID is required'});
-  if(Number(build.canvas?.width)!==CHARACTER_ATLAS_V1.width||Number(build.canvas?.height)!==CHARACTER_ATLAS_V1.height) issues.push({severity:'error',code:'BUILD_CANVAS_MISMATCH',message:`Build canvas must be ${CHARACTER_ATLAS_V1.width}×${CHARACTER_ATLAS_V1.height}`});
-  const assignments=build.slots&&typeof build.slots==='object'?build.slots:{};
-  for(const key of Object.keys(assignments)) if(!atlasV1Slot(key)) issues.push({severity:'error',code:'BUILD_UNKNOWN_SLOT',slotId:key,message:`Unknown Character Atlas v1 slot: ${key}`});
-  const assigned=CHARACTER_ATLAS_V1_SLOTS.filter(slot=>assignments[slot.id]);
-  const missingRequired=CHARACTER_ATLAS_V1_SLOTS.filter(slot=>slot.required&&!assignments[slot.id]);
-  return {ok:!issues.some(issue=>issue.severity==='error'),issues,assignedCount:assigned.length,requiredCount:CHARACTER_ATLAS_V1_SLOTS.filter(slot=>slot.required).length,missingRequired:missingRequired.map(slot=>slot.id)};
-}
-
-export function assignCharacterAtlasV1Slot(build,slotId,source={}){
-  const slot=atlasV1Slot(slotId);if(!slot) throw new Error(`Unknown Character Atlas v1 slot: ${slotId}`);
-  if(!build?.slots||typeof build.slots!=='object') throw new Error('Invalid Character Atlas v1 build');
-  const width=Number(source.width),height=Number(source.height);
-  if(!(width>0)||!(height>0)) throw new Error(`Source dimensions are required for ${slotId}`);
-  build.slots[slotId]={name:String(source.name||slotId),type:String(source.type||'image/png'),width,height};
-  return build.slots[slotId];
-}
-
-export function clearCharacterAtlasV1Slot(build,slotId){
-  if(!atlasV1Slot(slotId)) throw new Error(`Unknown Character Atlas v1 slot: ${slotId}`);
-  build.slots[slotId]=null;return null;
-}
-
-export function characterAtlasV1PlacementPlan(build,{fit='contain'}={}){
-  const validation=validateCharacterAtlasV1Build(build);
-  if(!validation.ok) throw new Error(validation.issues.map(issue=>issue.message).join('; '));
-  if(!['contain','cover','stretch'].includes(fit)) throw new Error(`Unsupported atlas fit mode: ${fit}`);
-  const out=[];
-  for(const slot of CHARACTER_ATLAS_V1_SLOTS){
-    const source=build.slots[slot.id];if(!source)continue;
-    let dx=slot.x,dy=slot.y,dw=slot.width,dh=slot.height,sx=0,sy=0,sw=source.width,sh=source.height;
-    if(fit==='contain'){
-      const scale=Math.min(slot.width/source.width,slot.height/source.height);dw=Math.max(1,Math.round(source.width*scale));dh=Math.max(1,Math.round(source.height*scale));dx=slot.x+Math.floor((slot.width-dw)/2);dy=slot.y+Math.floor((slot.height-dh)/2);
-    }else if(fit==='cover'){
-      const scale=Math.max(slot.width/source.width,slot.height/source.height);sw=Math.max(1,Math.round(slot.width/scale));sh=Math.max(1,Math.round(slot.height/scale));sx=Math.max(0,Math.floor((source.width-sw)/2));sy=Math.max(0,Math.floor((source.height-sh)/2));
-    }
-    out.push({slotId:slot.id,role:slot.role,required:slot.required,group:slot.group,source:{...source,x:sx,y:sy,width:sw,height:sh},destination:{x:dx,y:dy,width:dw,height:dh}});
-  }
-  return out;
-}
-
-export function characterAtlasV1BuildSummary(build){
-  const validation=validateCharacterAtlasV1Build(build);
-  return {characterId:build.character?.id||'',templateId:build.templateId,templateVersion:build.templateVersion,canvas:{width:CHARACTER_ATLAS_V1.width,height:CHARACTER_ATLAS_V1.height},assigned:validation.assignedCount,total:CHARACTER_ATLAS_V1_SLOTS.length,required:validation.requiredCount,missingRequired:validation.missingRequired,ready:validation.ok&&validation.missingRequired.length===0};
-}
+export const CHARACTER_ATLAS_V1_BUILD_SCHEMA=Object.freeze({schemaVersion:1,kind:'plushbound-character-atlas-build',templateId:CHARACTER_ATLAS_V1.id,templateVersion:CHARACTER_ATLAS_V1.version});
+export function normalizeAtlasV1CharacterId(value){return String(value||'').trim().toLowerCase().replace(/[^a-z0-9._-]+/g,'-').replace(/^-+|-+$/g,'');}
+export function createCharacterAtlasV1Build({characterId,name=''}={}){const id=normalizeAtlasV1CharacterId(characterId);if(!id)throw new Error('Character Atlas v1 build requires characterId');return {...CHARACTER_ATLAS_V1_BUILD_SCHEMA,character:{id,name:String(name||id)},canvas:{width:CHARACTER_ATLAS_V1.width,height:CHARACTER_ATLAS_V1.height,type:CHARACTER_ATLAS_V1.format},slots:Object.fromEntries(CHARACTER_ATLAS_V1_SLOTS.map(slot=>[slot.id,null]))};}
+export function validateCharacterAtlasV1Build(build={}){const issues=[];if(build.templateId!==CHARACTER_ATLAS_V1.id||build.templateVersion!==CHARACTER_ATLAS_V1.version)issues.push({severity:'error',code:'BUILD_TEMPLATE_MISMATCH',message:'Build does not target Character Atlas v1'});const id=normalizeAtlasV1CharacterId(build.character?.id);if(!id)issues.push({severity:'error',code:'BUILD_CHARACTER_ID_MISSING',message:'Character ID is required'});if(Number(build.canvas?.width)!==CHARACTER_ATLAS_V1.width||Number(build.canvas?.height)!==CHARACTER_ATLAS_V1.height||String(build.canvas?.type||'').toLowerCase()!==CHARACTER_ATLAS_V1.format)issues.push({severity:'error',code:'BUILD_CANVAS_MISMATCH',message:`Build canvas must be ${CHARACTER_ATLAS_V1.width}×${CHARACTER_ATLAS_V1.height} PNG`});const assignments=build.slots&&typeof build.slots==='object'?build.slots:{};for(const key of Object.keys(assignments))if(!atlasV1Slot(key))issues.push({severity:'error',code:'BUILD_UNKNOWN_SLOT',slotId:key,message:`Unknown Character Atlas v1 slot: ${key}`});const assigned=CHARACTER_ATLAS_V1_SLOTS.filter(slot=>assignments[slot.id]);for(const slot of assigned){const source=assignments[slot.id];if(!(Number(source.width)>0)||!(Number(source.height)>0))issues.push({severity:'error',code:'BUILD_SOURCE_DIMENSIONS_INVALID',slotId:slot.id,message:`Invalid source dimensions for ${slot.id}`});}const missingRequired=CHARACTER_ATLAS_V1_SLOTS.filter(slot=>slot.required&&!assignments[slot.id]);return {ok:!issues.some(issue=>issue.severity==='error'),issues,assignedCount:assigned.length,requiredCount:CHARACTER_ATLAS_V1_SLOTS.filter(slot=>slot.required).length,missingRequired:missingRequired.map(slot=>slot.id)};}
+export function assignCharacterAtlasV1Slot(build,slotId,source={}){const slot=atlasV1Slot(slotId);if(!slot)throw new Error(`Unknown Character Atlas v1 slot: ${slotId}`);if(!build?.slots||typeof build.slots!=='object')throw new Error('Invalid Character Atlas v1 build');const width=Number(source.width),height=Number(source.height);if(!(width>0)||!(height>0))throw new Error(`Source dimensions are required for ${slotId}`);const type=String(source.type||'').toLowerCase();if(!['image/png','image/webp','image/jpeg'].includes(type))throw new Error(`Unsupported source image type for ${slotId}: ${type||'unknown'}`);build.slots[slotId]={name:String(source.name||slotId),type,width,height};return build.slots[slotId];}
+export function clearCharacterAtlasV1Slot(build,slotId){if(!atlasV1Slot(slotId))throw new Error(`Unknown Character Atlas v1 slot: ${slotId}`);build.slots[slotId]=null;return null;}
+export function characterAtlasV1PlacementPlan(build,{fit='contain'}={}){const validation=validateCharacterAtlasV1Build(build);if(!validation.ok)throw new Error(validation.issues.map(issue=>issue.message).join('; '));if(!['contain','cover','stretch'].includes(fit))throw new Error(`Unsupported atlas fit mode: ${fit}`);const out=[];for(const slot of CHARACTER_ATLAS_V1_SLOTS){const source=build.slots[slot.id];if(!source)continue;let dx=slot.x,dy=slot.y,dw=slot.width,dh=slot.height,sx=0,sy=0,sw=source.width,sh=source.height;if(fit==='contain'){const scale=Math.min(slot.width/source.width,slot.height/source.height);dw=Math.max(1,Math.round(source.width*scale));dh=Math.max(1,Math.round(source.height*scale));dx=slot.x+Math.floor((slot.width-dw)/2);dy=slot.y+Math.floor((slot.height-dh)/2);}else if(fit==='cover'){const scale=Math.max(slot.width/source.width,slot.height/source.height);sw=Math.max(1,Math.round(slot.width/scale));sh=Math.max(1,Math.round(slot.height/scale));sx=Math.max(0,Math.floor((source.width-sw)/2));sy=Math.max(0,Math.floor((source.height-sh)/2));}out.push({slotId:slot.id,role:slot.role,required:slot.required,group:slot.group,source:{...source,x:sx,y:sy,width:sw,height:sh},destination:{x:dx,y:dy,width:dw,height:dh}});}return out;}
+export function characterAtlasV1BuildSummary(build){const validation=validateCharacterAtlasV1Build(build);return {characterId:build.character?.id||'',templateId:build.templateId,templateVersion:build.templateVersion,canvas:{width:CHARACTER_ATLAS_V1.width,height:CHARACTER_ATLAS_V1.height},assigned:validation.assignedCount,total:CHARACTER_ATLAS_V1_SLOTS.length,required:validation.requiredCount,missingRequired:validation.missingRequired,ready:validation.ok&&validation.missingRequired.length===0};}

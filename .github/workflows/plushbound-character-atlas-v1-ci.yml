@@ -8,16 +8,25 @@ on:
       - 'tools/editor/character-atlas-v1-core.js'
       - 'tools/editor/character-atlas-v1.js'
       - 'tools/editor/character-atlas-v1.html'
+      - 'tools/editor/character-atlas-v1-builder-core.js'
+      - 'tools/editor/character-atlas-v1-builder.js'
+      - 'tools/editor/character-atlas-v1-builder.html'
       - 'tools/editor/editor-deeplinks.js'
       - 'game/tests/character-atlas-v1-core.test.js'
+      - 'game/tests/character-atlas-v1-builder-core.test.js'
       - '.github/workflows/plushbound-character-atlas-v1-ci.yml'
   pull_request:
     paths:
       - 'tools/editor/character-atlas-v1-core.js'
       - 'tools/editor/character-atlas-v1.js'
       - 'tools/editor/character-atlas-v1.html'
+      - 'tools/editor/character-atlas-v1-builder-core.js'
+      - 'tools/editor/character-atlas-v1-builder.js'
+      - 'tools/editor/character-atlas-v1-builder.html'
       - 'tools/editor/editor-deeplinks.js'
       - 'game/tests/character-atlas-v1-core.test.js'
+      - 'game/tests/character-atlas-v1-builder-core.test.js'
+      - '.github/workflows/plushbound-character-atlas-v1-ci.yml'
 
 jobs:
   atlas-v1-contract:
@@ -25,17 +34,18 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 20
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Validate additive atlas compiler syntax
+      - name: Validate additive atlas compiler and builder syntax
         run: |
           node --check tools/editor/character-atlas-v1-core.js
           node --check tools/editor/character-atlas-v1.js
+          node --check tools/editor/character-atlas-v1-builder-core.js
+          node --check tools/editor/character-atlas-v1-builder.js
           node --check tools/editor/editor-deeplinks.js
-      - name: Prove locked coordinates and existing editor behavior
-        run: node --test game/tests/character-atlas-v1-core.test.js game/tests/editor-core.test.js
-      - name: Prove frozen Engine v1 was untouched by Atlas v1 integration
-        run: git diff --exit-code 343f51cc8a4bbf4ae66b1dd3393ea8b1480f527a..HEAD -- engine/
+      - name: Prove locked coordinates, deterministic building and rejection behavior
+        run: node --test game/tests/character-atlas-v1-core.test.js game/tests/character-atlas-v1-builder-core.test.js game/tests/editor-core.test.js
+      - name: Prove frozen Engine v1 is untouched by Atlas v1 production tooling
+        run: |
+          test -z "$(git diff --name-only c0b2e9eae707fd1ac66fc23c6ca362cf0a946e5c...HEAD -- engine/)"

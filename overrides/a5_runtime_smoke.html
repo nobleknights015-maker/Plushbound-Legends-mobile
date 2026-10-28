@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Plushbound A5 Runtime Smoke</title>
+</head>
+<body data-a5-runtime-smoke="PENDING">
+  <canvas id="tile0" width="48" height="48"></canvas>
+  <canvas id="tile127" width="48" height="48"></canvas>
+  <pre id="status">PENDING</pre>
+  <script src="a5_runtime_importer.js"></script>
+  <script>
+    (async () => {
+      const status = document.getElementById('status');
+      try {
+        const pkg = await window.PlushboundA5Importer.importManifest('data/tilesets/gloamfen_a5.json');
+        if (pkg.regionId !== 'gloamfen') throw new Error('wrong region id');
+        if (pkg.stableSheetId !== 'tileset.gloamfen.a5') throw new Error('wrong stable sheet id');
+        if (pkg.slotCount !== 128 || pkg.slots.length !== 128) throw new Error('slot count mismatch');
+        if (pkg.slots[0].x !== 0 || pkg.slots[0].y !== 0) throw new Error('slot 0 mapping mismatch');
+        if (pkg.slots[127].x !== 336 || pkg.slots[127].y !== 720) throw new Error('slot 127 mapping mismatch');
+
+        const c0 = document.getElementById('tile0').getContext('2d');
+        const c127 = document.getElementById('tile127').getContext('2d');
+        window.PlushboundA5Importer.drawSlot(c0, 'gloamfen', 0, 0, 0);
+        window.PlushboundA5Importer.drawSlot(c127, 'gloamfen', 127, 0, 0);
+
+        const alpha0 = c0.getImageData(0, 0, 48, 48).data.filter((_, i) => i % 4 === 3).some(v => v > 0);
+        const alpha127 = c127.getImageData(0, 0, 48, 48).data.filter((_, i) => i % 4 === 3).some(v => v > 0);
+        if (!alpha0 || !alpha127) throw new Error('drawn tile is blank');
+
+        if (!window.PlushboundA5Importer.releaseRegion('gloamfen')) throw new Error('release failed');
+        if (window.PlushboundA5Importer.getRegion('gloamfen') !== null) throw new Error('release did not clear cache');
+
+        document.body.dataset.a5RuntimeSmoke = 'PASS';
+        status.textContent = 'PASS tileset.gloamfen.a5 128/128';
+      } catch (error) {
+        document.body.dataset.a5RuntimeSmoke = 'FAIL';
+        status.textContent = `FAIL ${error && error.message ? error.message : error}`;
+        console.error(error);
+      }
+    })();
+  </script>
+</body>
+</html>

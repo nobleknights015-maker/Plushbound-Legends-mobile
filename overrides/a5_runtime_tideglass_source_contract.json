@@ -1,0 +1,51 @@
+{
+  "schema": "plushbound.a5_source_contract.v1",
+  "regionId": "tideglass-coast",
+  "areaId": "glasswake-harbor",
+  "productionBatch": "TG-01-harbor-and-capital",
+  "sourcePipeline": "world-asset-pipeline-v2",
+  "engineProfile": "mv_tileset_a5",
+  "status": "AWAITING_REFERENCE_SHEETS",
+  "immutabilityRule": "accepted references are immutable once qualified",
+  "referenceSheetContract": {
+    "format": "PNG",
+    "layout": ["A1_floor", "A2_wall", "A3_edges_corners", "A4_props", "A5_variations", "extras_optional"],
+    "worldEditorCompatible": true,
+    "engineV1Compatible": true,
+    "compilerOwnsGeometry": true,
+    "worldEditorMustNotInferVisually": true
+  },
+  "requiredCoreSources": [
+    "sea_glass",
+    "saltwood",
+    "shell_lacquer",
+    "blue_ceramic",
+    "harbor_brass",
+    "rope_canvas",
+    "pearl_thread",
+    "weathered_stone"
+  ],
+  "sourceIntent": {
+    "sea_glass": "sea-glass roofs, merchant architecture, windows, inlays and harbor decorative surfaces",
+    "saltwood": "docks, piers, boardwalks, shipyard structures, ferries and salt-weathered timber",
+    "shell_lacquer": "coastal decorative trim, merchant interiors, shrine and civic finish materials",
+    "blue_ceramic": "roofing, wall accents, drainage, market and residential architectural ceramics",
+    "harbor_brass": "cranes, dock hardware, railings, lamps, mechanisms and merchant-hall fittings",
+    "rope_canvas": "rigging, nets, awnings, stitched sails, cargo covers and harbor utility props",
+    "pearl_thread": "Plushbound-specific textile inlays, banners, ceremonial trims and coastal motifs",
+    "weathered_stone": "quays, seawalls, roads, stairs, warehouse foundations and harbor masonry"
+  },
+  "areaRequirements": [
+    "tiered saltwood docks",
+    "sea-glass roofs",
+    "merchant halls",
+    "ferries",
+    "cranes",
+    "lantern piers"
+  ],
+  "notes": [
+    "Do not reuse or recolor locked Cinderreach, Crownweave, Gloamfen or Silkspire reference art as Tideglass final art.",
+    "This contract defines source identities only; deterministic extraction coordinates are created after each reference sheet is accepted.",
+    "A runtime A5 manifest must not be banked until a real compiled 384x768 RGBA sheet and SHA-256 exist."
+  ]
+}

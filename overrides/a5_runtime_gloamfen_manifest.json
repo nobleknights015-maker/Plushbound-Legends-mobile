@@ -1,0 +1,18 @@
+{
+  "schema": "plushbound.a5_runtime_package.v1",
+  "regionId": "gloamfen",
+  "stableSheetId": "tileset.gloamfen.a5",
+  "profile": "mv_tileset_a5",
+  "assetPath": "../../tilesets/gloamfen_A5.png",
+  "sha256": "03f0f49fd8539b48c68b2a27e830e5daca4e67b4d2d2bab97cfea864490ea85e",
+  "width": 384,
+  "height": 768,
+  "tileWidth": 48,
+  "tileHeight": 48,
+  "columns": 8,
+  "rows": 16,
+  "slotCount": 128,
+  "hashVerifiedAtBuild": true,
+  "sourcePipeline": "world-asset-pipeline-v2",
+  "sourceQualification": "gloamfen-real-data-v2"
+}

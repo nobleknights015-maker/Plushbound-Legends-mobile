@@ -13,8 +13,8 @@ ASSETS = ROOT / 'app/src/main/assets'
 OVERRIDES = ROOT / 'overrides'
 IMPORTER_SOURCE = OVERRIDES / 'a5_runtime_importer.js'
 SMOKE_SOURCE = OVERRIDES / 'a5_runtime_smoke.html'
-OPTIONAL_GLOAMFEN_PNG = OVERRIDES / 'region_assets/gloamfen_A5.png'
-OPTIONAL_GLOAMFEN_MANIFEST = OVERRIDES / 'a5_runtime_gloamfen_manifest.json'
+REGION_ASSET_ROOT = OVERRIDES / 'region_assets'
+REGION_MANIFEST_GLOB = 'a5_runtime_*_manifest.json'
 
 
 def sha256(path: Path) -> str:
@@ -33,7 +33,7 @@ def write_runtime_fixture(path: Path) -> None:
     width, height = 384, 768
     raw = bytearray()
     for y in range(height):
-        raw.append(0)  # PNG filter type 0
+        raw.append(0)
         tile_row = y // 48
         local_y = y % 48
         for x in range(width):
@@ -66,8 +66,14 @@ def validate_package(png: Path, manifest: dict) -> dict:
         raise SystemExit('unexpected A5 runtime manifest schema')
     if manifest.get('profile') != 'mv_tileset_a5':
         raise SystemExit('unexpected A5 runtime profile')
-    if manifest.get('stableSheetId') != f"tileset.{manifest.get('regionId')}.a5":
+    region_id = manifest.get('regionId')
+    if not isinstance(region_id, str) or not region_id:
+        raise SystemExit('A5 runtime manifest regionId is required')
+    if manifest.get('stableSheetId') != f'tileset.{region_id}.a5':
         raise SystemExit('stable sheet id does not match region')
+    expected_runtime_path = f'../../tilesets/{region_id}_A5.png'
+    if manifest.get('assetPath') != expected_runtime_path:
+        raise SystemExit(f'A5 runtime assetPath must be {expected_runtime_path}')
     actual_sha = sha256(png)
     if actual_sha != manifest.get('sha256'):
         raise SystemExit(f'A5 source hash mismatch: {actual_sha} != {manifest.get("sha256")}')
@@ -85,7 +91,7 @@ def validate_package(png: Path, manifest: dict) -> dict:
     if manifest.get('hashVerifiedAtBuild') is not True:
         raise SystemExit('manifest must declare build-time hash verification')
     return {
-        'regionId': manifest['regionId'],
+        'regionId': region_id,
         'stableSheetId': manifest['stableSheetId'],
         'sha256': actual_sha,
         'width': width,
@@ -93,13 +99,33 @@ def validate_package(png: Path, manifest: dict) -> dict:
     }
 
 
+def discover_production_packages() -> list[tuple[Path, Path, dict]]:
+    packages: list[tuple[Path, Path, dict]] = []
+    seen_regions: set[str] = set()
+    for manifest_path in sorted(OVERRIDES.glob(REGION_MANIFEST_GLOB)):
+        manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+        region_id = manifest.get('regionId')
+        if not isinstance(region_id, str) or not region_id:
+            raise SystemExit(f'{manifest_path}: missing regionId')
+        if region_id == 'runtime_fixture':
+            raise SystemExit('production manifest may not claim runtime_fixture')
+        if region_id in seen_regions:
+            raise SystemExit(f'duplicate A5 runtime region manifest: {region_id}')
+        seen_regions.add(region_id)
+        png_path = REGION_ASSET_ROOT / f'{region_id}_A5.png'
+        if not png_path.is_file():
+            # A manifest may be banked before the binary is copied into this repo.
+            # Missing local bytes are retrieval/packaging state, never rerender authority.
+            continue
+        packages.append((png_path, manifest_path, manifest))
+    return packages
+
+
 (ASSETS / 'tilesets').mkdir(parents=True, exist_ok=True)
 (ASSETS / 'data/tilesets').mkdir(parents=True, exist_ok=True)
 shutil.copy2(IMPORTER_SOURCE, ASSETS / 'a5_runtime_importer.js')
 shutil.copy2(SMOKE_SOURCE, ASSETS / 'a5_runtime_smoke.html')
 
-# Deterministic fixture exercises the exact production contract in CI without
-# coupling runtime-import validation to a binary transfer between repositories.
 fixture_png = ASSETS / 'tilesets/runtime_fixture_A5.png'
 write_runtime_fixture(fixture_png)
 fixture_sha = sha256(fixture_png)
@@ -124,15 +150,13 @@ fixture_manifest_path = ASSETS / 'data/tilesets/runtime_fixture_a5.json'
 fixture_manifest_path.write_text(json.dumps(fixture_manifest, indent=2, sort_keys=True), encoding='utf-8')
 fixture_receipt = validate_package(fixture_png, fixture_manifest)
 
-# If a production-qualified package is supplied later, install it through the
-# exact same contract. Absence is not rerender authority and does not invalidate
-# the importer itself.
 production_packages = []
-if OPTIONAL_GLOAMFEN_PNG.is_file():
-    gloamfen_manifest = json.loads(OPTIONAL_GLOAMFEN_MANIFEST.read_text(encoding='utf-8'))
-    production_packages.append(validate_package(OPTIONAL_GLOAMFEN_PNG, gloamfen_manifest))
-    shutil.copy2(OPTIONAL_GLOAMFEN_PNG, ASSETS / 'tilesets/gloamfen_A5.png')
-    shutil.copy2(OPTIONAL_GLOAMFEN_MANIFEST, ASSETS / 'data/tilesets/gloamfen_a5.json')
+for png_path, manifest_path, manifest in discover_production_packages():
+    receipt = validate_package(png_path, manifest)
+    region_id = receipt['regionId']
+    production_packages.append(receipt)
+    shutil.copy2(png_path, ASSETS / f'tilesets/{region_id}_A5.png')
+    shutil.copy2(manifest_path, ASSETS / f'data/tilesets/{region_id}_a5.json')
 
 index_path = ASSETS / 'index.html'
 index = index_path.read_text(encoding='utf-8')
@@ -152,12 +176,14 @@ if script_tag not in index:
     index_path.write_text(index, encoding='utf-8')
 
 receipt = {
-    'schema': 'plushbound.a5_runtime_install_receipt.v1',
+    'schema': 'plushbound.a5_runtime_install_receipt.v2',
     'status': 'PASS_BUILD_TIME_ENGINE_V1_A5_IMPORTER_INSTALL',
     'profile': 'mv_tileset_a5',
     'fixture': fixture_receipt,
     'productionPackagesInstalled': production_packages,
     'productionPackageCount': len(production_packages),
+    'productionPackageDiscovery': 'overrides/a5_runtime_*_manifest.json + overrides/region_assets/<region>_A5.png',
+    'regionSpecificInstallerCodeRequired': False,
     'width': 384,
     'height': 768,
     'tileWidth': 48,

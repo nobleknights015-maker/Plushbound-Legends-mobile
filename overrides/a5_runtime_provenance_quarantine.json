@@ -1,0 +1,42 @@
+{
+  "schema": "plushbound.a5_provenance_quarantine.v1",
+  "policy": "Reference sheets are visual authority only. Production runtime A5 packages require Vera/Modal-generated source art before deterministic compilation.",
+  "requiredRuntimeSourceArtProvenance": "vera-modal-generated",
+  "referenceSheetPixelsMayBeRuntimeArt": false,
+  "regions": {
+    "elyndor": {
+      "status": "QUARANTINED_PENDING_VERA_MODAL_REGENERATION",
+      "reason": "Earlier A5 work was reported as deterministic/zero-generation compilation from approved source materials rather than verified Vera/Modal-generated final source art."
+    },
+    "cinderreach": {
+      "status": "QUARANTINED_PENDING_VERA_MODAL_REGENERATION",
+      "reason": "Earlier A5 work used reference-derived zero-GPU masters; references remain valid but cannot be runtime art."
+    },
+    "gloamfen": {
+      "status": "QUARANTINED_PENDING_PROVENANCE_VERIFICATION_OR_REGENERATION",
+      "reason": "Previous runtime manifest did not prove Vera/Modal-generated source-art provenance and has been removed."
+    },
+    "silkspire": {
+      "status": "QUARANTINED_PENDING_VERA_MODAL_REGENERATION",
+      "reason": "Previous runtime manifest explicitly recorded zero-GPU deterministic compilation and has been removed."
+    },
+    "crownweave": {
+      "status": "REFERENCES_ACCEPTED_AWAITING_VERA_MODAL_GENERATION",
+      "reason": "Reference sheets are valid visual authority; prior direct reference-sheet runtime compile and slot map were removed."
+    },
+    "tideglass-coast": {
+      "status": "REFERENCES_ACCEPTED_AWAITING_VERA_MODAL_GENERATION",
+      "reason": "TG-01 reference sheets are accepted visual authority only; local direct-reference compile is invalid and must not be promoted."
+    }
+  },
+  "promotionRequirements": [
+    "Vera/Modal generation uses accepted reference sheets as visual inputs",
+    "generated final source art is saved separately from reference sheets",
+    "generated-output SHA-256 is recorded as sourceGenerationProof.generatedOutputSha256",
+    "deterministic compiler consumes only Vera/Modal-generated source art",
+    "compiler emits 384x768 RGBA, 48x48, 8x16, 128-slot A5 package",
+    "runtime manifest sets sourceArtProvenance=vera-modal-generated",
+    "runtime manifest sets referenceSheetPixelsUsedAsRuntimeArt=false",
+    "World Editor and Engine v1 validation pass before runtime promotion"
+  ]
+}

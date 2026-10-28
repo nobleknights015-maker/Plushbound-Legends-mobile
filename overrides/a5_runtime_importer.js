@@ -1,6 +1,7 @@
 /* Plushbound Legends Engine v1 A5 runtime importer.
  * Consumes deterministic region A5 packages produced by the World Asset Pipeline.
  * Geometry is locked: 384x768 RGBA PNG, 48x48 tiles, 8x16 grid, 128 slots.
+ * Production manifests must prove that source art came from Vera/Modal generation.
  */
 (() => {
   'use strict';
@@ -15,6 +16,7 @@
     columns: 8,
     rows: 16,
     slotCount: 128,
+    sourceArtProvenance: 'vera-modal-generated',
   });
 
   const loaded = new Map();
@@ -36,6 +38,25 @@
     if (m.columns !== CONTRACT.columns || m.rows !== CONTRACT.rows) fail('grid differs from Engine v1 contract');
     if (m.slotCount !== CONTRACT.slotCount) fail('slot count differs from Engine v1 contract');
     if (m.hashVerifiedAtBuild !== true) fail('package was not hash-verified at build time');
+
+    // The deterministic smoke fixture is synthetic and is the only exception.
+    if (m.regionId !== 'runtime_fixture') {
+      if (m.sourceArtProvenance !== CONTRACT.sourceArtProvenance) {
+        fail('source art provenance is not Vera/Modal generated');
+      }
+      if (m.referenceSheetPixelsUsedAsRuntimeArt !== false) {
+        fail('reference-sheet pixels must never be used as runtime art');
+      }
+      if (!m.sourceGenerationProof || typeof m.sourceGenerationProof !== 'object') {
+        fail('sourceGenerationProof is required');
+      }
+      if (m.sourceGenerationProof.producer !== 'vera-modal') {
+        fail('sourceGenerationProof producer must be vera-modal');
+      }
+      if (!/^[0-9a-f]{64}$/.test(String(m.sourceGenerationProof.generatedOutputSha256 || ''))) {
+        fail('sourceGenerationProof.generatedOutputSha256 must be a lowercase SHA-256 digest');
+      }
+    }
     return m;
   }
 
@@ -120,6 +141,7 @@
       stableSheetId: manifest.stableSheetId,
       profile: manifest.profile,
       sha256: manifest.sha256,
+      sourceArtProvenance: manifest.sourceArtProvenance || 'synthetic-smoke-fixture',
       image,
       slots: SLOTS,
       slotCount: SLOTS.length,

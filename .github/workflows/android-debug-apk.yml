@@ -47,6 +47,47 @@ jobs:
           python overrides/patch_opening_cutscene.py
           node --check app/src/main/assets/game.js
 
+      - name: Install Engine v1 A5 runtime importer
+        run: |
+          python overrides/patch_a5_runtime_importer.py | tee /tmp/a5-import-install.json
+          node --check app/src/main/assets/a5_runtime_importer.js
+          grep -q '<script src="a5_runtime_importer.js"></script>' app/src/main/assets/index.html
+          test -f app/src/main/assets/data/tilesets/runtime_fixture_a5.json
+          test -f app/src/main/assets/tilesets/runtime_fixture_A5.png
+          python -m json.tool app/src/main/assets/data/tilesets/a5_runtime_importer_receipt.json >/dev/null
+
+      - name: Run real browser A5 runtime import smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          BROWSER=''
+          for candidate in google-chrome-stable google-chrome chromium chromium-browser; do
+            if command -v "$candidate" >/dev/null 2>&1; then BROWSER="$candidate"; break; fi
+          done
+          if [ -z "$BROWSER" ]; then
+            echo 'No supported Chromium/Chrome binary found on runner' >&2
+            exit 1
+          fi
+          python -m http.server 8765 --directory app/src/main/assets >/tmp/a5-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for attempt in 1 2 3 4 5; do
+            if curl -fsS http://127.0.0.1:8765/a5_runtime_smoke.html >/dev/null; then break; fi
+            sleep 1
+          done
+          "$BROWSER" \
+            --headless=new \
+            --no-sandbox \
+            --disable-gpu \
+            --virtual-time-budget=5000 \
+            --dump-dom \
+            http://127.0.0.1:8765/a5_runtime_smoke.html \
+            > /tmp/a5-runtime-smoke-dom.html
+          cat /tmp/a5-runtime-smoke-dom.html
+          grep -q 'data-a5-runtime-smoke="PASS"' /tmp/a5-runtime-smoke-dom.html
+          grep -q 'PASS tileset.runtime_fixture.a5 128/128' /tmp/a5-runtime-smoke-dom.html
+          echo 'PLUSHBOUND_ENGINE_V1_A5_BROWSER_RUNTIME_IMPORT=PASS'
+
       - name: Package scalable world manifest
         run: |
           mkdir -p app/src/main/assets/data
@@ -92,8 +133,18 @@ jobs:
       - name: Build debug APK
         run: gradle --no-daemon assembleDebug
 
-      - name: Verify APK exists
-        run: test -f app/build/outputs/apk/debug/app-debug.apk
+      - name: Verify APK and packaged A5 importer assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          test -f "$APK"
+          unzip -l "$APK" | grep -q 'assets/a5_runtime_importer.js'
+          unzip -l "$APK" | grep -q 'assets/a5_runtime_smoke.html'
+          unzip -l "$APK" | grep -q 'assets/data/tilesets/runtime_fixture_a5.json'
+          unzip -l "$APK" | grep -q 'assets/tilesets/runtime_fixture_A5.png'
+          unzip -p "$APK" assets/data/tilesets/a5_runtime_importer_receipt.json | python -m json.tool >/dev/null
+          echo 'PLUSHBOUND_ENGINE_V1_A5_APK_PACKAGE=PASS'
 
       - name: Upload installable APK
         uses: actions/upload-artifact@v4

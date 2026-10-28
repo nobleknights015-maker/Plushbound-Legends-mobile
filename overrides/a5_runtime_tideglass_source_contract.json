@@ -5,8 +5,11 @@
   "productionBatch": "TG-01-harbor-and-capital",
   "sourcePipeline": "world-asset-pipeline-v2",
   "engineProfile": "mv_tileset_a5",
-  "status": "AWAITING_REFERENCE_SHEETS",
-  "immutabilityRule": "accepted references are immutable once qualified",
+  "status": "REFERENCES_ACCEPTED_AWAITING_VERA_MODAL_GENERATION",
+  "immutabilityRule": "accepted reference sheets are immutable visual authority only",
+  "referenceRole": "visual_authority_only",
+  "referenceSheetPixelsMayBeRuntimeArt": false,
+  "requiredNextStage": "vera_modal_generation",
   "referenceSheetContract": {
     "format": "PNG",
     "layout": ["A1_floor", "A2_wall", "A3_edges_corners", "A4_props", "A5_variations", "extras_optional"],
@@ -43,9 +46,16 @@
     "cranes",
     "lantern piers"
   ],
+  "promotionGate": {
+    "requiredProducer": "vera-modal",
+    "requiredGeneratedSourceArt": true,
+    "compilerMayConsumeReferenceSheetsDirectly": false,
+    "runtimeManifestAllowedBeforeGeneratedSourceArt": false
+  },
   "notes": [
-    "Do not reuse or recolor locked Cinderreach, Crownweave, Gloamfen or Silkspire reference art as Tideglass final art.",
-    "This contract defines source identities only; deterministic extraction coordinates are created after each reference sheet is accepted.",
-    "A runtime A5 manifest must not be banked until a real compiled 384x768 RGBA sheet and SHA-256 exist."
+    "These eight sheets are references for Vera/Modal, not final runtime assets.",
+    "Do not crop, resize, slice, recolor, or otherwise promote reference-sheet pixels into runtime tiles.",
+    "After Vera/Modal generates final source art from these references, the deterministic compiler may slice/package that generated output for World Editor and Engine v1.",
+    "A runtime A5 manifest must not be banked until Vera/Modal-generated source art exists and the compiled 384x768 RGBA sheet has a verified SHA-256."
   ]
 }

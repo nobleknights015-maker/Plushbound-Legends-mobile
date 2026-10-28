@@ -1,0 +1,29 @@
+{
+  "schema": "plushbound.a5_source_contract.v1",
+  "regionId": "crownweave",
+  "productionBatch": "crownweave-core-materials",
+  "sourcePipeline": "world-asset-pipeline-v2",
+  "engineProfile": "mv_tileset_a5",
+  "status": "REFERENCES_ACCEPTED_AWAITING_VERA_MODAL_GENERATION",
+  "referenceRole": "visual_authority_only",
+  "referenceSheetPixelsMayBeRuntimeArt": false,
+  "requiredNextStage": "vera_modal_generation",
+  "acceptedReferences": [
+    "archive_stone",
+    "gilded_paver",
+    "lantern_brick",
+    "civic_stone",
+    "silkward_tile"
+  ],
+  "promotionGate": {
+    "requiredProducer": "vera-modal",
+    "requiredGeneratedSourceArt": true,
+    "compilerMayConsumeReferenceSheetsDirectly": false,
+    "runtimeManifestAllowedBeforeGeneratedSourceArt": false
+  },
+  "notes": [
+    "These accepted sheets define Crownweave visual authority only.",
+    "The removed Crownweave runtime manifest and slot map were invalid because they compiled reference-sheet pixels directly.",
+    "Vera/Modal must generate final source art from these references before deterministic slicing, packing, hashing, World Editor import, or Engine v1 runtime promotion."
+  ]
+}

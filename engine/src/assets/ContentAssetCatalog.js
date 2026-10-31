@@ -6,6 +6,12 @@ function clone(value) {
   return value == null ? value : structuredClone(value);
 }
 
+function positiveOrNull(value) {
+  if (value == null || value === '') return null;
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number : null;
+}
+
 export class ContentAssetCatalog {
   constructor({ assetManager = null, bindings = null, required = [] } = {}) {
     this.assetManager = assetManager;
@@ -22,11 +28,18 @@ export class ContentAssetCatalog {
       id,
       path: String(entry.path),
       type: String(entry.type || 'image'),
-      width: entry.width == null ? null : Math.max(1, Number(entry.width) || 1),
-      height: entry.height == null ? null : Math.max(1, Number(entry.height) || 1),
+      status: entry.status == null ? null : String(entry.status),
+      width: positiveOrNull(entry.width),
+      height: positiveOrNull(entry.height),
+      layout: entry.layout == null ? null : String(entry.layout),
+      frameWidth: positiveOrNull(entry.frameWidth),
+      frameHeight: positiveOrNull(entry.frameHeight),
+      columns: positiveOrNull(entry.columns),
+      rows: positiveOrNull(entry.rows),
       tags: Array.isArray(entry.tags) ? [...new Set(entry.tags.map(String))] : [],
       preload: entry.preload === true,
       required: entry.required === true || this.required.has(id),
+      atlas: clone(entry.atlas || null),
       meta: clone(entry.meta || {})
     };
     this.entries.set(id, normalized);
@@ -35,8 +48,12 @@ export class ContentAssetCatalog {
   }
 
   registerManifest(manifest = {}) {
-    const assets = Array.isArray(manifest) ? manifest : manifest.assets;
-    if (!Array.isArray(assets)) throw new Error('Asset manifest requires assets array');
+    const assets = Array.isArray(manifest)
+      ? manifest
+      : Array.isArray(manifest.assets)
+        ? manifest.assets
+        : manifest.entries;
+    if (!Array.isArray(assets)) throw new Error('Asset manifest requires assets or entries array');
     for (const entry of assets) this.register(entry);
     for (const [logicalId, assetId] of Object.entries(manifest.bindings || {})) this.bindings?.bind?.(logicalId, assetId);
     for (const id of manifest.required || []) this.required.add(normalizeId(id));

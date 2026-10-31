@@ -4,9 +4,11 @@ import {MV_DATABASE_FILES} from '../../tools/editor/mv-project-core.js';
 import {importMvProjectData,exportMvProjectData,mvEditorTileAt,verifyMvRoundTrip} from '../../tools/editor/mv-editor-adapter.js';
 
 function audio(){return {name:'',pan:0,pitch:100,volume:90};}
+function tileset(){return {id:1,name:'Test',mode:0,tilesetNames:['A1','A2','A3','A4','A5','B','C','D','E'],flags:new Array(8192).fill(0),note:''};}
 function filesFixture(){
   const files={};
   for(const name of MV_DATABASE_FILES) files[name]=[null,{id:1,name:'Test'}];
+  files['Tilesets.json']=[null,tileset()];
   files['MapInfos.json']=[null,{id:1,name:'Map',order:1,parentId:0,expanded:false,scrollX:0,scrollY:0}];
   files['System.json']={startMapId:1,startX:1,startY:0,switches:[''],variables:[''],elements:[''],skillTypes:[''],weaponTypes:[''],armorTypes:[''],equipTypes:['']};
   const width=2,height=2,count=4;

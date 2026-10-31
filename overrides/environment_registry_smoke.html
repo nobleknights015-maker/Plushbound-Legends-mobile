@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Plushbound Environment Registry Smoke</title></head>
+<body data-environment-registry-smoke="PENDING">
+<pre id="result">PENDING</pre>
+<script src="environment_registry_runtime.js"></script>
+<script>
+(async () => {
+  const body=document.body, out=document.getElementById('result');
+  function pass(msg){ body.dataset.environmentRegistrySmoke='PASS'; out.textContent=msg; }
+  function fail(err){ body.dataset.environmentRegistrySmoke='FAIL'; out.textContent='FAIL '+(err && err.message ? err.message : String(err)); }
+  try {
+    await window.PlushboundEnvironmentRegistry.load('data/world_editor/environment_registry_v1.json');
+    const stats=window.PlushboundEnvironmentRegistry.stats();
+    if (!stats || stats.sceneCount!==216 || stats.runtimeReady!==30 || stats.awaitingNewSource!==186) {
+      throw new Error('registry totals mismatch');
+    }
+    const ready=window.PlushboundEnvironmentRegistry.requireReady('environment/elyndor/settlement_core');
+    if (ready.runtimePath!=='game/assets/placeholders/regions/elyndor/battlebacks/022.png') {
+      throw new Error('stable ready binding mismatch');
+    }
+    let rejected=false;
+    try { window.PlushboundEnvironmentRegistry.requireReady('environment/elyndor/settlement_secondary'); }
+    catch (_) { rejected=true; }
+    if (!rejected) throw new Error('unresolved scene did not fail closed');
+    if (window.PlushboundEnvironmentRegistry.getScene('environment/nope/missing')!==null) {
+      throw new Error('unknown scene did not return null');
+    }
+    pass(`PASS scenes=${stats.sceneCount} ready=${stats.runtimeReady} waiting=${stats.awaitingNewSource}`);
+  } catch (e) { fail(e); }
+})();
+</script>
+</body>
+</html>

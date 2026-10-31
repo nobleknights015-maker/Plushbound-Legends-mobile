@@ -13,8 +13,7 @@ async function refresh(){
     const pkg=window.PlushboundEditor.getPackage();
     const validation=window.PlushboundEditor.validate?.()||[];
     const linkIssues=window.PlushboundEditor.validateLinks?.()||[];
-    if(window.PlushboundReferenceAudit?.audit)await window.PlushboundReferenceAudit.audit();
-    const referenceIssues=window.PlushboundReferenceAudit?.issues||[];
+    const referenceIssues=window.PlushboundReferenceAudit?.audit?await window.PlushboundReferenceAudit.audit():[];
     const dependencyGraph=window.PlushboundReferenceAudit?.graph||null;
     const mvProject=pkg?.format==='plushbound-world-editor-mv-adapter';
     const summary=summarizeBuildReadiness({pkg,validation,linkIssues,referenceIssues,dependencyGraph,mvProject});summaryEl.textContent=buildReadinessLabel(summary);host.innerHTML='';

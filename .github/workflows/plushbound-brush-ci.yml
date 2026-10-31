@@ -109,7 +109,9 @@ jobs:
           await page.fill('#tileId','44');
           await page.click('[data-tool="tile"]');
           const dragHistoryBefore=await page.evaluate(()=>window.PlushboundEditor.getHistory().undo);
-          const start=await page.locator('.tile[data-x="10"][data-y="10"]').boundingBox();
+          const dragTarget=page.locator('.tile[data-x="10"][data-y="10"]');
+          await dragTarget.scrollIntoViewIfNeeded();
+          const start=await dragTarget.boundingBox();
           const finish=await page.locator('.tile[data-x="14"][data-y="10"]').boundingBox();
           assert.ok(start&&finish);
           await page.mouse.move(start.x+start.width/2,start.y+start.height/2);
@@ -134,7 +136,9 @@ jobs:
           await page.fill('#tileId','52');
           await page.click('[data-tool="tile"]');
           const leapHistoryBefore=await page.evaluate(()=>window.PlushboundEditor.getHistory().undo);
-          const leapStart=await page.locator('.tile[data-x="10"][data-y="10"]').boundingBox();
+          const leapTarget=page.locator('.tile[data-x="10"][data-y="10"]');
+          await leapTarget.scrollIntoViewIfNeeded();
+          const leapStart=await leapTarget.boundingBox();
           const leapFinish=await page.locator('.tile[data-x="14"][data-y="10"]').boundingBox();
           assert.ok(leapStart&&leapFinish);
           await page.mouse.move(leapStart.x+leapStart.width/2,leapStart.y+leapStart.height/2);

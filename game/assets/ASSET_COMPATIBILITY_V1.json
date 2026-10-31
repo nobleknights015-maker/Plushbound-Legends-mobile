@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "id": "plushbound-asset-compatibility-v1",
+  "game": "Plushbound Legends",
+  "purpose": "Authoritative production handoff between asset generation, World Editor, Engine v1 and Android runtime.",
+  "referencePolicy": {
+    "mvReferenceAllowed": true,
+    "copyReferencePixels": false,
+    "copyReferenceAudio": false,
+    "copyReferenceCode": false,
+    "runtimeArtMustBeOriginal": true,
+    "notes": "RPG Maker MV material may be inspected for observable geometry/category behavior only. Production assets must be newly created Plushbound work."
+  },
+  "global": {
+    "tileSize": 48,
+    "screenWidth": 816,
+    "screenHeight": 624,
+    "imageColorModes": ["RGB", "RGBA"],
+    "losslessRuntimeImage": "png",
+    "alphaBackground": "transparent",
+    "pathRoot": "game/assets",
+    "stableLogicalIdsRequired": true,
+    "deterministicSlicingRequired": true,
+    "visualInferenceForbidden": true
+  },
+  "tilesets": {
+    "runtimeMode": "mv-layout-compatible",
+    "format": "image/png",
+    "tileSize": 48,
+    "sheets": {
+      "A1": {"width": 768, "height": 576, "role": "animated-water-and-autotile"},
+      "A2": {"width": 768, "height": 576, "role": "ground-autotile"},
+      "A3": {"width": 768, "height": 384, "role": "wall-autotile"},
+      "A4": {"width": 768, "height": 720, "role": "wall-and-roof-autotile"},
+      "A5": {"width": 384, "height": 768, "role": "normal-ground", "columns": 8, "rows": 16},
+      "B": {"width": 768, "height": 768, "role": "upper-normal", "columns": 16, "rows": 16},
+      "C": {"width": 768, "height": 768, "role": "upper-normal", "columns": 16, "rows": 16},
+      "D": {"width": 768, "height": 768, "role": "upper-normal", "columns": 16, "rows": 16},
+      "E": {"width": 768, "height": 768, "role": "upper-normal", "columns": 16, "rows": 16}
+    },
+    "a5ProductionSheet": {
+      "width": 384,
+      "height": 768,
+      "columns": 8,
+      "rows": 16,
+      "slots": 128,
+      "margin": 0,
+      "padding": 0,
+      "origin": [0, 0],
+      "postGenerationScalingAllowed": false
+    },
+    "autotiles": {
+      "quarterSize": 24,
+      "floorShapes": 48,
+      "wallShapes": 16,
+      "waterfallShapes": 4,
+      "compositionContract": "tools/editor/mv-autotile-composition.js"
+    }
+  },
+  "characters": {
+    "atlasV1": {
+      "templateId": "plushbound-character-atlas-v1",
+      "version": "1.0",
+      "width": 1536,
+      "height": 1024,
+      "format": "image/png",
+      "contract": "tools/editor/character-atlas-v1-core.js"
+    },
+    "fieldRuntime": {
+      "format": "image/png",
+      "layout": "single-character-3x4",
+      "frameWidth": 48,
+      "frameHeight": 48,
+      "columns": 3,
+      "rows": 4,
+      "width": 144,
+      "height": 192,
+      "directionRows": ["down", "left", "right", "up"],
+      "walkPattern": [0, 1, 2, 1],
+      "anchor": [0.5, 1.0]
+    },
+    "mvReferenceLayouts": {
+      "normalSheet": {"columns": 12, "rows": 8, "charactersPerSheet": 8},
+      "singleCharacter": {"columns": 3, "rows": 4, "filenameMarker": "$"}
+    }
+  },
+  "faces": {
+    "mvReferenceSheet": {"format": "image/png", "width": 576, "height": 288, "columns": 4, "rows": 2, "cellWidth": 144, "cellHeight": 144},
+    "runtimeNative": {"preferredWidth": 144, "preferredHeight": 144, "formats": ["image/png", "image/webp"]}
+  },
+  "battle": {
+    "battleback": {"width": 816, "height": 624, "formats": ["image/png", "image/webp"]},
+    "enemyBattler": {"transparentBackground": true, "anchor": [0.5, 1.0], "formatPreference": "image/png", "fixedCanvas": false},
+    "sideviewActorReference": {"format": "image/png", "width": 576, "height": 384, "columns": 9, "rows": 6, "cellWidth": 64, "cellHeight": 64}
+  },
+  "ui": {
+    "screenCanvas": {"width": 816, "height": 624},
+    "windowskinReference": {"format": "image/png", "width": 192, "height": 192},
+    "icon": {"runtimeNative": {"width": 32, "height": 32, "format": "image/png"}, "mvReferenceAtlas": {"columns": 16, "cellWidth": 32, "cellHeight": 32}},
+    "titleLayer": {"preferredWidth": 816, "preferredHeight": 624, "formats": ["image/png", "image/webp"]}
+  },
+  "animations": {
+    "legacyMvReferenceSheet": {"format": "image/png", "width": 960, "height": 960, "columns": 5, "rows": 5, "cellWidth": 192, "cellHeight": 192},
+    "runtimePolicy": "Use explicit manifest metadata for frame count, frame dimensions, timing and loop behavior; no visual guessing."
+  },
+  "environment": {
+    "parallax": {"preferredWidth": 816, "preferredHeight": 624, "fixedCanvas": false, "formats": ["image/png", "image/webp"]},
+    "mapObject": {"formatPreference": "image/png", "transparentBackground": true, "gridAlignment": 48, "fixedCanvas": false},
+    "mapOverlay": {"formats": ["image/png", "image/webp"], "transparentBackground": true, "fixedCanvas": false}
+  },
+  "audio": {
+    "categories": ["bgm", "bgs", "me", "se"],
+    "runtimePreferred": ".ogg",
+    "mvReferenceExtensions": [".ogg", ".m4a"],
+    "directMvInteropPairing": "When exporting an MV-shaped project package, paired .ogg/.m4a stems may be required; native Plushbound Android runtime does not require duplicate audio encodes unless the export target requests them."
+  },
+  "manifestEntry": {
+    "requiredFields": ["id", "type", "path", "status"],
+    "statuses": ["planned", "placeholder", "ready", "retired"],
+    "readyRequiresPhysicalFile": true,
+    "pathMustBeRelative": true,
+    "pathTraversalForbidden": true,
+    "optionalFields": ["width", "height", "layout", "frameWidth", "frameHeight", "columns", "rows", "tags", "meta"]
+  },
+  "handoffRule": "Asset production may begin against this contract. If an asset category is not explicitly defined here, generation may proceed only as an unconstrained source asset; final runtime integration must wait for an explicit manifest/slicing contract rather than inferred geometry."
+}

@@ -68,6 +68,8 @@ function adaptMap(map = {}) {
   assert(regions.length === count, `Editor map ${id} regions must contain exactly ${count} cells`);
   const shadowBits = Array.isArray(map.mvShadowBits) ? map.mvShadowBits.map(value => Number(value) || 0) : new Array(count).fill(0);
   assert(shadowBits.length === count, `Editor map ${id} shadow bits must contain exactly ${count} cells`);
+  const tileset=String(map.tileset||'').trim();
+  assert(tileset,`Editor map ${id} requires a stable string tileset asset ID`,'EDITOR_MAP_TILESET_ID_REQUIRED');
   return {
     ...clone(map.mv || {}),
     id,
@@ -76,6 +78,7 @@ function adaptMap(map = {}) {
     width,
     height,
     tilesetId: Number(map.tilesetId) || 0,
+    tileset,
     layers: {
       ground: layerData[0],
       lower: layerData[1],

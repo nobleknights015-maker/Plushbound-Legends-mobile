@@ -27,6 +27,16 @@
     "runtimeMode": "mv-layout-compatible",
     "format": "image/png",
     "tileSize": 48,
+    "setConvention": {
+      "parentType": "tileset",
+      "parentRole": "stable-tileset-set-id",
+      "childType": "tileset-sheet",
+      "slots": ["A1", "A2", "A3", "A4", "A5", "B", "C", "D", "E"],
+      "childIdPattern": "{parentId}/{slot}",
+      "childPathPattern": "{parentPathWithoutExtension}/{slot}.png",
+      "childrenDerivedByEngine": true,
+      "mapKeepsParentId": true
+    },
     "sheets": {
       "A1": {"width": 768, "height": 576, "role": "animated-water-and-autotile"},
       "A2": {"width": 768, "height": 576, "role": "ground-autotile"},

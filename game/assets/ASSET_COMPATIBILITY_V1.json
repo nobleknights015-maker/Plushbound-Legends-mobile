@@ -54,7 +54,9 @@
       "floorShapes": 48,
       "wallShapes": 16,
       "waterfallShapes": 4,
-      "compositionContract": "tools/editor/mv-autotile-composition.js"
+      "compositionContract": "tools/editor/mv-autotile-composition.js",
+      "engineResolver": "engine/src/render/MvTilesetResolver.js",
+      "runtimeRenderer": "engine/src/render/Canvas2DRenderBackend.js"
     }
   },
   "characters": {
@@ -77,7 +79,15 @@
       "height": 192,
       "directionRows": ["down", "left", "right", "up"],
       "walkPattern": [0, 1, 2, 1],
-      "anchor": [0.5, 1.0]
+      "anchor": [0.5, 1.0],
+      "atlasSourceSlotWidth": 75,
+      "atlasSourceSlotHeight": 64,
+      "sourceSafeAreaWidth": 48,
+      "sourceSafeAreaHeight": 48,
+      "sourceSafeAreaAlignment": "center-horizontal-bottom",
+      "extraction": "center-horizontal-bottom-aligned-no-scale",
+      "resampling": false,
+      "compiler": "tools/editor/character-atlas-v1-core.js#atlasV1FieldRuntimeSheetPlan"
     },
     "mvReferenceLayouts": {
       "normalSheet": {"columns": 12, "rows": 8, "charactersPerSheet": 8},
@@ -120,7 +130,7 @@
     "readyRequiresPhysicalFile": true,
     "pathMustBeRelative": true,
     "pathTraversalForbidden": true,
-    "optionalFields": ["width", "height", "layout", "frameWidth", "frameHeight", "columns", "rows", "tags", "meta"]
+    "optionalFields": ["width", "height", "layout", "frameWidth", "frameHeight", "columns", "rows", "atlas", "tags", "meta"]
   },
   "handoffRule": "Asset production may begin against this contract. If an asset category is not explicitly defined here, generation may proceed only as an unconstrained source asset; final runtime integration must wait for an explicit manifest/slicing contract rather than inferred geometry."
 }

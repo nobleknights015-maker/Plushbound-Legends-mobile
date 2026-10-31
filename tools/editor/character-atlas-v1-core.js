@@ -2,6 +2,18 @@ export const CHARACTER_ATLAS_V1 = Object.freeze({
   id: 'plushbound-character-atlas-v1', version: '1.0', width: 1536, height: 1024, format: 'image/png', layout: 'native-1536x1024'
 });
 
+export const CHARACTER_FIELD_RUNTIME_V1 = Object.freeze({
+  id:'plushbound-field-runtime-v1',
+  width:144,
+  height:192,
+  frameWidth:48,
+  frameHeight:48,
+  columns:3,
+  rows:4,
+  directionRows:Object.freeze(['down','left','right','up']),
+  extraction:'center-horizontal-bottom-aligned-no-scale'
+});
+
 const R=(id,role,x,y,width,height,required=false,group='misc')=>Object.freeze({id,role,x,y,width,height,required,group});
 const slots=[];
 
@@ -55,6 +67,31 @@ export function atlasV1CropPlan(manifest){
   if(manifest?.templateId!==CHARACTER_ATLAS_V1.id||manifest?.templateVersion!==CHARACTER_ATLAS_V1.version) throw new Error('Unsupported Character Atlas manifest');
   if(manifest?.source?.width!==CHARACTER_ATLAS_V1.width||manifest?.source?.height!==CHARACTER_ATLAS_V1.height||manifest?.source?.type!=='image/png') throw new Error('Character Atlas manifest source does not match locked v1 canvas');
   return manifest.slots.map(slot=>({assetId:slot.assetId,slotId:slot.id,role:slot.role,group:slot.group,required:slot.required,source:{x:slot.x,y:slot.y,width:slot.width,height:slot.height}}));
+}
+
+export function atlasV1FieldRuntimeFrame(slotOrId){
+  const slot=typeof slotOrId==='string'?atlasV1Slot(slotOrId):slotOrId;
+  if(!slot||slot.group!=='field') throw new Error(`Character Atlas field slot required: ${typeof slotOrId==='string'?slotOrId:'unknown'}`);
+  const fw=CHARACTER_FIELD_RUNTIME_V1.frameWidth,fh=CHARACTER_FIELD_RUNTIME_V1.frameHeight;
+  if(slot.width<fw||slot.height<fh) throw new Error(`Field slot ${slot.id} cannot contain ${fw}×${fh} runtime frame`);
+  const x=slot.x+Math.floor((slot.width-fw)/2);
+  const y=slot.y+(slot.height-fh);
+  return {slotId:slot.id,role:slot.role,source:{x,y,width:fw,height:fh},policy:CHARACTER_FIELD_RUNTIME_V1.extraction};
+}
+
+export function atlasV1FieldRuntimeSheetPlan(manifest){
+  if(manifest?.templateId!==CHARACTER_ATLAS_V1.id||manifest?.templateVersion!==CHARACTER_ATLAS_V1.version) throw new Error('Unsupported Character Atlas manifest');
+  if(manifest?.source?.width!==CHARACTER_ATLAS_V1.width||manifest?.source?.height!==CHARACTER_ATLAS_V1.height||manifest?.source?.type!=='image/png') throw new Error('Character Atlas manifest source does not match locked v1 canvas');
+  const frames=[];
+  for(let row=0;row<CHARACTER_FIELD_RUNTIME_V1.directionRows.length;row++){
+    const direction=CHARACTER_FIELD_RUNTIME_V1.directionRows[row];
+    for(let column=0;column<CHARACTER_FIELD_RUNTIME_V1.columns;column++){
+      const slotId=`field.${direction}.${column+1}`;
+      const frame=atlasV1FieldRuntimeFrame(slotId);
+      frames.push({...frame,direction,frame:column+1,destination:{x:column*CHARACTER_FIELD_RUNTIME_V1.frameWidth,y:row*CHARACTER_FIELD_RUNTIME_V1.frameHeight,width:CHARACTER_FIELD_RUNTIME_V1.frameWidth,height:CHARACTER_FIELD_RUNTIME_V1.frameHeight}});
+    }
+  }
+  return {schemaVersion:1,kind:'plushbound-field-runtime-sheet-plan',characterId:String(manifest.character?.id||''),width:CHARACTER_FIELD_RUNTIME_V1.width,height:CHARACTER_FIELD_RUNTIME_V1.height,frameWidth:CHARACTER_FIELD_RUNTIME_V1.frameWidth,frameHeight:CHARACTER_FIELD_RUNTIME_V1.frameHeight,columns:CHARACTER_FIELD_RUNTIME_V1.columns,rows:CHARACTER_FIELD_RUNTIME_V1.rows,layout:'single-character-3x4',resampling:false,frames};
 }
 
 export function atlasV1AssetEntries(manifest,{status='generated'}={}){

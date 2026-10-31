@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {resolve,dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {validateAssetCompatibilityV1,validateAssetDescriptorV1,assetCompatibilitySnapshot} from '../src/assets/AssetCompatibilityV1.js';
+import {validateAssetCompatibilityV1,validateAssetDescriptorV1,assetCompatibilitySnapshot,mvTilesetSetChildDescriptors,mvTilesetSetSheetAssetId,mvTilesetSetSheetPath} from '../src/assets/AssetCompatibilityV1.js';
 import {ContentAssetCatalog} from '../src/assets/ContentAssetCatalog.js';
 import {MvTilesetResolver,mvTileSlot,mvTileLocalIndex,mvAutotileKind,mvAutotileShape,mvAutotileSourcePlan} from '../src/render/MvTilesetResolver.js';
 import {mvTileSlot as editorSlot,mvTileLocalIndex as editorLocal,mvAutotileKind as editorKind,mvAutotileShape as editorShape} from '../../tools/editor/mv-tile-id-contracts.js';
@@ -19,6 +19,7 @@ test('Asset Compatibility V1 is accepted by Engine v1',()=>{
   const snap=assetCompatibilitySnapshot(contract);
   assert.deepEqual(snap.screen,[816,624]);
   assert.deepEqual(snap.fieldSprite,[144,192]);
+  assert.deepEqual(snap.fieldSafeArea,[48,48]);
   assert.deepEqual(snap.atlas,[1536,1024]);
   assert.deepEqual(snap.tilesetSheets.A5,[384,768]);
 });
@@ -30,14 +31,33 @@ test('runtime descriptors fail closed when locked geometry is wrong',()=>{
   assert.equal(bad.issues[0].code,'ASSET_CHARACTER_RUNTIME_SIZE');
 });
 
-test('Engine v1 consumes the production entries-based asset manifest directly',()=>{
+test('tileset parent IDs derive exact A1-E child IDs, paths and dimensions',()=>{
+  const parent={id:'tileset/elyndor/sunny-plains',type:'tileset',path:'tilesets/elyndor/sunny-plains.png',status:'planned'};
+  const children=mvTilesetSetChildDescriptors(parent);
+  assert.equal(children.length,9);
+  assert.equal(mvTilesetSetSheetAssetId(parent.id,'A1'),'tileset/elyndor/sunny-plains/A1');
+  assert.equal(mvTilesetSetSheetPath(parent.path,'A1'),'tilesets/elyndor/sunny-plains/A1.png');
+  assert.deepEqual(children.find(child=>child.meta.mvSlot==='A1'),{id:'tileset/elyndor/sunny-plains/A1',type:'tileset-sheet',path:'tilesets/elyndor/sunny-plains/A1.png',status:'planned',width:768,height:576,layout:'mv-a1',meta:{parentId:'tileset/elyndor/sunny-plains',mvSlot:'A1',derivedFromTilesetSet:true}});
+  assert.equal(validateAssetDescriptorV1(children.find(child=>child.meta.mvSlot==='A4'),contract).ok,true);
+});
+
+test('Engine v1 consumes production manifest and registers derived A1-E sheets',()=>{
   const catalog=new ContentAssetCatalog();
   const validation=catalog.registerManifest(productionManifest);
+  const tilesetCount=productionManifest.entries.filter(entry=>entry.type==='tileset').length;
   assert.equal(validation.valid,true);
-  assert.equal(validation.registered,productionManifest.entries.length);
+  assert.equal(validation.registered,productionManifest.entries.length+tilesetCount*9);
   const sample=productionManifest.entries.find(entry=>entry.type==='character-sprite')||productionManifest.entries[0];
   assert.ok(catalog.has(sample.id));
   assert.equal(catalog.get(sample.id).status,sample.status);
+  const tileset=productionManifest.entries.find(entry=>entry.type==='tileset');
+  assert.ok(tileset);
+  for(const slot of ['A1','A2','A3','A4','A5','B','C','D','E']){
+    const id=`${tileset.id}/${slot}`,entry=catalog.get(id);
+    assert.ok(entry,`missing derived ${id}`);
+    assert.equal(entry.meta.parentId,tileset.id);
+    assert.equal(entry.meta.mvSlot,slot);
+  }
 });
 
 test('ContentAssetCatalog preserves deterministic slicing metadata',()=>{

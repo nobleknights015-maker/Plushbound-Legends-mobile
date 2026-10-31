@@ -1,0 +1,42 @@
+name: Plushbound Build Readiness CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [plushbound-game-development]
+    paths:
+      - 'tools/editor/build-readiness-core.js'
+      - 'tools/editor/build-readiness.js'
+      - 'tools/editor/dependency-graph-core.js'
+      - 'tools/editor/reference-audit.js'
+      - 'game/tests/build-readiness-core.test.js'
+      - 'game/tests/dependency-graph-core.test.js'
+      - '.github/workflows/plushbound-build-readiness-ci.yml'
+  pull_request:
+    paths:
+      - 'tools/editor/build-readiness-core.js'
+      - 'tools/editor/build-readiness.js'
+      - 'tools/editor/dependency-graph-core.js'
+      - 'tools/editor/reference-audit.js'
+      - 'game/tests/build-readiness-core.test.js'
+      - 'game/tests/dependency-graph-core.test.js'
+      - '.github/workflows/plushbound-build-readiness-ci.yml'
+
+jobs:
+  readiness-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax check readiness modules
+        run: |
+          node --check tools/editor/build-readiness-core.js
+          node --check tools/editor/build-readiness.js
+          node --check tools/editor/dependency-graph-core.js
+          node --check tools/editor/reference-audit.js
+      - name: Test readiness and dependency contracts
+        run: node --test game/tests/build-readiness-core.test.js game/tests/dependency-graph-core.test.js
+      - name: Guard frozen Engine v1
+        run: test -z "$(git diff --name-only c0b2e9eae707fd1ac66fc23c6ca362cf0a946e5c...HEAD -- engine/)"

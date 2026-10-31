@@ -27,35 +27,28 @@ export class EditorPlaytest {
     throw new Error(`No passable preview start on ${map.id}`);
   }
 
-  move(dx, dy) {
-    return this.session.move(dx, dy);
-  }
+  move(dx, dy) { return this.session.move(dx, dy); }
 
   interactableEvents() {
     const { x, y } = this.session.state.map;
-    const positions = [
-      [x, y], [x, y + 1], [x - 1, y], [x + 1, y], [x, y - 1]
-    ];
+    const positions = [[x, y], [x, y + 1], [x - 1, y], [x + 1, y], [x, y - 1]];
     const result = [];
-    for (const [tx, ty] of positions) {
-      for (const event of this.session.maps.eventsAt(tx, ty)) {
-        if ((event.trigger || 'action') !== 'action') continue;
-        if (!result.some(item => item.id === event.id)) result.push({ id: event.id, x: tx, y: ty, assetId: event.assetId || null });
-      }
+    for (const [tx, ty] of positions) for (const event of this.session.maps.eventsAt(tx, ty)) {
+      if ((event.trigger || 'action') !== 'action') continue;
+      if (!result.some(item => item.id === event.id)) result.push({ id: event.id, x: tx, y: ty, assetId: event.assetId || null });
     }
     return result;
   }
 
-  interact(eventId) {
-    return this.session.interact(eventId);
-  }
+  interact(eventId) { return this.session.interact(eventId); }
 
   snapshot() {
     const snapshot = this.session.snapshot();
     return {
       ...snapshot,
       encounterPreview: this.session.encounterPreview(),
-      interactableEvents: this.interactableEvents()
+      interactableEvents: this.interactableEvents(),
+      debugState: this.session.state.serialize()
     };
   }
 }

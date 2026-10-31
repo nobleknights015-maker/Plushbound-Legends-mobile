@@ -1,5 +1,6 @@
 import {createMvCompatibilityPackage,validateMvDatabase} from './mv-project-core.js';
 import {validateMvExtendedDatabase} from './mv-database-contracts.js';
+import {decodeMvEventList,encodeMvEventCommands} from './mv-event-command-adapter.js';
 
 function clone(v){return typeof structuredClone==='function'?structuredClone(v):JSON.parse(JSON.stringify(v));}
 const TRIGGER_TO_EDITOR=Object.freeze({0:'action',1:'touch',2:'touch',3:'autorun',4:'parallel'});
@@ -32,7 +33,7 @@ function mvPageToEditor(page){
     trigger:TRIGGER_TO_EDITOR[page.trigger]||'action',
     priority:PRIORITY_TO_EDITOR[page.priorityType]||'same',
     conditions:clone(page.conditions||{}),
-    commands:[],
+    commands:decodeMvEventList(page.list||[]),
     mvTrigger:page.trigger,
     mv:clone(page)
   };
@@ -53,6 +54,7 @@ function editorEventToMv(event,sourceEvent){
     if(TRIGGER_TO_EDITOR[originalTrigger]===page.trigger) base.trigger=originalTrigger;
     else if(page.trigger in TRIGGER_TO_MV) base.trigger=TRIGGER_TO_MV[page.trigger];
     if(page.conditions) base.conditions=clone(page.conditions);
+    if(Array.isArray(page.commands)) base.list=encodeMvEventCommands(page.commands);
     return base;
   });
   return out;

@@ -1,10 +1,38 @@
-const REQUIRED_SHEETS = Object.freeze({
-  A1:[768,576], A2:[768,576], A3:[768,384], A4:[768,720], A5:[384,768],
-  B:[768,768], C:[768,768], D:[768,768], E:[768,768]
+export const ASSET_COMPATIBILITY_V1_TILESET_SHEETS = Object.freeze({
+  A1:Object.freeze({width:768,height:576}), A2:Object.freeze({width:768,height:576}), A3:Object.freeze({width:768,height:384}), A4:Object.freeze({width:768,height:720}), A5:Object.freeze({width:384,height:768}),
+  B:Object.freeze({width:768,height:768}), C:Object.freeze({width:768,height:768}), D:Object.freeze({width:768,height:768}), E:Object.freeze({width:768,height:768})
 });
+export const ASSET_COMPATIBILITY_V1_TILESET_SLOTS = Object.freeze(['A1','A2','A3','A4','A5','B','C','D','E']);
+const REQUIRED_SHEETS = Object.freeze(Object.fromEntries(Object.entries(ASSET_COMPATIBILITY_V1_TILESET_SHEETS).map(([slot,geometry])=>[slot,[geometry.width,geometry.height]])));
 
 function issue(code,message,path=''){return {severity:'error',code,message,path};}
 function int(value){return Number.isInteger(Number(value))?Number(value):null;}
+function cleanId(value){return String(value??'').trim().replace(/^\/+|\/+$/g,'');}
+function removeExtension(path){return String(path??'').replace(/\.[^/.]+$/,'');}
+
+export function mvTilesetSetSheetAssetId(parentId,slot){
+  const id=cleanId(parentId),key=String(slot||'').toUpperCase();
+  if(!id)throw new Error('MV tileset set requires parent asset id');
+  if(!ASSET_COMPATIBILITY_V1_TILESET_SLOTS.includes(key))throw new Error(`Unknown MV tileset slot: ${slot}`);
+  return `${id}/${key}`;
+}
+
+export function mvTilesetSetSheetPath(parentPath,slot){
+  const path=String(parentPath||'').trim(),key=String(slot||'').toUpperCase();
+  if(!path)throw new Error('MV tileset set requires parent path');
+  if(path.startsWith('/')||path.includes('..'))throw new Error('MV tileset parent path must be safe and relative');
+  if(!ASSET_COMPATIBILITY_V1_TILESET_SLOTS.includes(key))throw new Error(`Unknown MV tileset slot: ${slot}`);
+  return `${removeExtension(path)}/${key}.png`;
+}
+
+export function mvTilesetSetChildDescriptors(parentEntry={}){
+  const id=cleanId(parentEntry.id),path=String(parentEntry.path||'').trim();
+  if(!id||!path)throw new Error('MV tileset parent entry requires id and path');
+  return ASSET_COMPATIBILITY_V1_TILESET_SLOTS.map(slot=>{
+    const geometry=ASSET_COMPATIBILITY_V1_TILESET_SHEETS[slot];
+    return {id:mvTilesetSetSheetAssetId(id,slot),type:'tileset-sheet',path:mvTilesetSetSheetPath(path,slot),status:String(parentEntry.status||'planned'),width:geometry.width,height:geometry.height,layout:`mv-${slot.toLowerCase()}`,meta:{parentId:id,mvSlot:slot,derivedFromTilesetSet:true}};
+  });
+}
 
 export function validateAssetCompatibilityV1(contract={}){
   const issues=[];
@@ -22,6 +50,8 @@ export function validateAssetCompatibilityV1(contract={}){
     if(!sheet) issues.push(issue('ASSET_TILESET_SHEET_MISSING',`Missing tileset ${name} contract`,`tilesets.sheets.${name}`));
     else if(sheet.width!==width||sheet.height!==height) issues.push(issue('ASSET_TILESET_GEOMETRY',`Tileset ${name} must be ${width}x${height}`,`tilesets.sheets.${name}`));
   }
+  const set=contract.tilesets?.setConvention||{};
+  if(set.parentType!=='tileset'||set.childType!=='tileset-sheet'||set.childIdPattern!=='{parentId}/{slot}'||set.childPathPattern!=='{parentPathWithoutExtension}/{slot}.png')issues.push(issue('ASSET_TILESET_SET_CONVENTION','Tileset set child ID/path convention must remain deterministic','tilesets.setConvention'));
   const a5=contract.tilesets?.a5ProductionSheet||{};
   if(a5.width!==384||a5.height!==768||a5.columns!==8||a5.rows!==16||a5.slots!==128||a5.margin!==0||a5.padding!==0) issues.push(issue('ASSET_A5_PRODUCTION_GEOMETRY','A5 production sheet must be 384x768, 8x16, 128 slots, no margin/padding','tilesets.a5ProductionSheet'));
   if(a5.postGenerationScalingAllowed!==false) issues.push(issue('ASSET_A5_SCALING','A5 production sheets may not be arbitrarily rescaled','tilesets.a5ProductionSheet.postGenerationScalingAllowed'));
@@ -63,6 +93,11 @@ export function validateAssetDescriptorV1(entry={},contract={}){
   if(type==='character-sprite'&&layout==='single-character-3x4'){
     const f=contract.characters?.fieldRuntime||{};
     if(w!==f.width||h!==f.height) issues.push(issue('ASSET_CHARACTER_RUNTIME_SIZE',`Single-character field sprite ${id} must be ${f.width}x${f.height}`,'width/height'));
+  }
+  if(type==='tileset-sheet'){
+    const slot=String(entry.meta?.mvSlot||'').toUpperCase(),expected=ASSET_COMPATIBILITY_V1_TILESET_SHEETS[slot];
+    if(!expected)issues.push(issue('ASSET_TILESET_SLOT_INVALID',`Tileset sheet ${id} requires a valid MV slot`,'meta.mvSlot'));
+    else if(w!==expected.width||h!==expected.height)issues.push(issue('ASSET_TILESET_SHEET_SIZE',`Tileset ${slot} ${id} must be ${expected.width}x${expected.height}`,'width/height'));
   }
   if(type==='icon'&&w!=null&&h!=null){const expected=contract.ui?.icon?.runtimeNative||{};if(w!==expected.width||h!==expected.height) issues.push(issue('ASSET_ICON_RUNTIME_SIZE',`Icon ${id} must be ${expected.width}x${expected.height}`,'width/height'));}
   if(type==='battleback'&&w!=null&&h!=null){const expected=contract.battle?.battleback||{};if(w!==expected.width||h!==expected.height) issues.push(issue('ASSET_BATTLEBACK_RUNTIME_SIZE',`Battleback ${id} must be ${expected.width}x${expected.height}`,'width/height'));}

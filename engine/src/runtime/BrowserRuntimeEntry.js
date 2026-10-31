@@ -4,13 +4,14 @@ import { ContentAssetCatalog } from '../assets/ContentAssetCatalog.js';
 import { AssetBindingRegistry } from '../ui/AssetBindingRegistry.js';
 import { SceneRenderExecutor } from '../render/SceneRenderExecutor.js';
 import { Canvas2DRenderBackend } from '../render/Canvas2DRenderBackend.js';
+import { AssetBackedMapRenderer } from '../render/AssetBackedMapRenderer.js';
 import { InputManager } from '../input/InputManager.js';
 import { LiveInputRouter } from '../input/LiveInputRouter.js';
 import { SceneInteractionController } from '../scenes/SceneInteractionController.js';
 import { readCssSafeArea, normalizeSafeInsets, classifyScreen, responsiveAnchor } from '../platform/ScreenAdaptation.js';
 
 function imageLoader(descriptor, scope = globalThis) {
-  if (descriptor.type !== 'image' || typeof scope.Image !== 'function') return Promise.resolve({ id: descriptor.id, descriptor });
+  if (!['image','tileset','tileset-sheet','character-sprite','guardian-sprite','battle-sprite','portrait','guardian-portrait','guardian-silhouette','guardian-battle','map-object','map-overlay','parallax','icon','ui-image'].includes(String(descriptor.type || '')) || typeof scope.Image !== 'function') return Promise.resolve({ id: descriptor.id, descriptor });
   return new Promise((resolve, reject) => {
     const image = new scope.Image();
     image.onload = () => resolve(image);
@@ -140,6 +141,7 @@ export async function bootPlushboundEngineV1({
   const renderCanvas = backend ? canvas : ensureCanvas(scope, canvas);
   const liveBackend = backend || (renderCanvas ? new Canvas2DRenderBackend({ canvas: renderCanvas, assetManager, scope }) : null);
   const executor = new SceneRenderExecutor({ backend: liveBackend });
+  const mapRenderer = new AssetBackedMapRenderer({ catalog, tileSize: Number(resolvedManifest?.tileSize) || 48, viewportWidth: 816, viewportHeight: 624, strict: true });
   const inputManager = input || new InputManager({ touchDeadzone: 14 });
   const actionListeners = new Set();
   const interactionErrors = [];
@@ -198,6 +200,7 @@ export async function bootPlushboundEngineV1({
     bindings,
     catalog,
     executor,
+    mapRenderer,
     backend: liveBackend,
     canvas: renderCanvas,
     input: inputManager,
@@ -226,6 +229,8 @@ export async function bootPlushboundEngineV1({
       return liveBackend?.setSafeAreaInsets?.(runtimeSafeInsets) || null;
     },
     mapClientPoint: (x, y) => liveBackend?.pointFromClient?.(x, y) || { x: Number(x) || 0, y: Number(y) || 0 },
+    buildMapDrawList: options => mapRenderer.buildDrawList(options),
+    renderMap: options => mapRenderer.render({ backend: liveBackend, ...options }),
     onAction: listener => { if (typeof listener === 'function') actionListeners.add(listener); return () => actionListeners.delete(listener); },
     registerInteraction: (sceneType, id, handler) => { interaction.register(sceneType, id, handler); return runtime; },
     composeScene: (scene, options = {}) => executor.compose(scene, options),
@@ -256,6 +261,7 @@ export async function bootPlushboundEngineV1({
       liveRenderer: !!liveBackend,
       liveInput: !!renderCanvas,
       liveInteractions: true,
+      assetBackedMapRenderer: true,
       screenProfile: runtime.screenProfile().profile,
       diagnostics
     }

@@ -1,6 +1,3 @@
-import './mv-browser-integration.js';
-import './build-readiness.js';
-import './playtest-debug-overlay.js';
 import {mvAutotileSourcePlan} from './mv-autotile-composition.js';
 
 const $=id=>document.getElementById(id);

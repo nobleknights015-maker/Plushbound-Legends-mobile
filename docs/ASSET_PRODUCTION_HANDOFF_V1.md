@@ -34,7 +34,7 @@ Tile size is **48×48 px**.
 
 A5 is also the locked deterministic material-sheet production format already used by the Plushbound pipeline: **384×768 PNG, 8×16 grid, 128 slots, 48×48 px each, no margins, no padding, origin (0,0), no post-generation scaling**.
 
-A1–A4 are composed from **24×24 quarter tiles**. The editor and Engine v1 are cross-tested against the same observable MV geometry: 48 floor shapes, 16 wall shapes and 4 waterfall shapes, including A1 animation phases. Asset authors should create sheets in the locked A1–A4 geometry; they do not need to pre-render every map tile variant.
+A1–A4 are composed from **24×24 quarter tiles**. The editor and Engine v1 are cross-tested against the same observable MV geometry: 48 floor shapes, 16 wall shapes and 4 waterfall shapes, including A1 animation phases. Asset authors should create sheets in the locked A1–A4 geometry; they do not need to pre-render every map tile variant. Engine v1 resolves those same quarter recipes and the Canvas runtime renders the four resolved source quadrants directly.
 
 ## Character production
 
@@ -56,7 +56,9 @@ The runtime-native field character target is a **single-character 3×4 sheet**:
 - movement pattern: 0 → 1 → 2 → 1
 - bottom-center runtime anchor
 
-For MV visual comparison, a normal reference character sheet may be treated as 12×8 containing eight characters, while an MV `$` single-character sheet is 3×4. Plushbound should compile/use the single-character runtime form rather than depending on filename guessing.
+The Character Atlas V1 field authoring boxes are **75×64 px**, but the runtime frame inside every one is a locked **48×48 safe area**. Put all gameplay-critical field-sprite pixels inside that safe area. The compiler crops it **centered horizontally and bottom-aligned** inside each 75×64 field slot: 13 px from the left, 14 px remaining on the right, and 16 px of authoring/headroom above the runtime crop. It then assembles the twelve exact 48×48 crops into the 144×192 runtime sheet. **No resampling or post-crop scaling occurs.**
+
+For MV visual comparison, a normal reference character sheet may be treated as 12×8 containing eight characters, while an MV `$` single-character sheet is 3×4. Plushbound compiles/uses the single-character runtime form rather than depending on filename guessing.
 
 ## Faces / portraits
 
@@ -98,7 +100,7 @@ Logical categories are `bgm`, `bgs`, `me`, and `se`.
 
 ## Manifest handoff
 
-`game/assets/asset-manifest.json` is now directly consumable by Engine v1. At minimum every asset entry has:
+`game/assets/asset-manifest.json` is directly consumable by Engine v1. At minimum every asset entry has:
 
 - `id`
 - `type`
@@ -115,12 +117,13 @@ Use these as the production source of truth, in this order:
 
 1. `game/assets/ASSET_COMPATIBILITY_V1.json` — machine-readable dimensions/layout rules.
 2. `game/assets/asset-manifest.json` — stable logical IDs and destination paths.
-3. `tools/editor/character-atlas-v1-core.js` — exact Character Atlas V1 slots.
+3. `tools/editor/character-atlas-v1-core.js` — exact Character Atlas V1 slots and runtime field extraction.
 4. `tools/editor/mv-tile-id-contracts.js` and `tools/editor/mv-autotile-composition.js` — editor-side MV tile semantics.
-5. `engine/src/render/MvTilesetResolver.js` — Engine v1 interpretation of those generated A1–E sheets.
+5. `engine/src/render/MvTilesetResolver.js` — Engine v1 interpretation of generated A1–E sheets.
+6. `engine/src/render/Canvas2DRenderBackend.js` — runtime draw path for resolved normal/autotile sources.
 
-The engine/editor CI cross-checks the editor and engine tile semantics so a sheet that is valid against this contract has one deterministic interpretation on both sides.
+The engine/editor CI cross-checks the editor and engine tile semantics so a sheet that is valid against this contract has one deterministic interpretation on both sides. Character Atlas CI separately proves the deterministic Atlas V1 → 144×192 runtime field-sheet extraction.
 
 ## Handoff verdict
 
-The asset pipeline can proceed against Asset Compatibility V1. Future feature additions may extend the contract, but existing V1 geometry and logical-ID behavior should be treated as locked. Breaking changes require a new contract/template version rather than silently changing dimensions or slot meanings.
+The asset pipeline can proceed against Asset Compatibility V1. Future feature additions may extend the contract, but existing V1 geometry and logical-ID behavior are locked. Breaking changes require a new contract/template version rather than silently changing dimensions or slot meanings.

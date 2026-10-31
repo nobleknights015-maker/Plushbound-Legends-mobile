@@ -5,8 +5,12 @@ on:
     branches: [ engine-v1-rebuild, plushbound-game-development ]
     paths:
       - 'engine/**'
+      - 'game/assets/ASSET_COMPATIBILITY_V1.json'
       - 'tools/editor/mv-editor-adapter.js'
       - 'tools/editor/mv-event-command-adapter.js'
+      - 'tools/editor/mv-tile-id-contracts.js'
+      - 'tools/editor/mv-autotile-composition.js'
+      - 'tools/editor/character-atlas-v1-core.js'
       - '.github/workflows/engine-v1-ci.yml'
   workflow_dispatch:
 
@@ -27,6 +31,8 @@ jobs:
           find engine/src -name '*.js' -print0 | xargs -0 -n1 node --check
           node --check tools/editor/mv-editor-adapter.js
           node --check tools/editor/mv-event-command-adapter.js
+          node --check tools/editor/mv-tile-id-contracts.js
+          node --check tools/editor/mv-autotile-composition.js
 
       - name: Run executable engine tests
         working-directory: engine
@@ -35,12 +41,18 @@ jobs:
       - name: Verify World Editor to Engine v1 contract
         run: node --test engine/tests/world_editor_project_adapter.test.js
 
+      - name: Verify asset production compatibility contract
+        run: node --test engine/tests/asset_compatibility_v1.test.js game/tests/asset-compatibility-v1.test.js
+
       - name: Verify required engine modules
         run: |
           test -f engine/src/core/EngineKernel.js
           test -f engine/src/core/GameState.js
           test -f engine/src/events/EventInterpreter.js
           test -f engine/src/editor/WorldEditorProjectAdapter.js
+          test -f engine/src/assets/AssetCompatibilityV1.js
+          test -f engine/src/render/MvTilesetResolver.js
+          test -f game/assets/ASSET_COMPATIBILITY_V1.json
           test -f docs/ENGINE_V1_SPEC.md
           test -f docs/MV_FUNCTIONAL_COMPATIBILITY_MATRIX.md
 
@@ -54,5 +66,5 @@ jobs:
           grep -qi "touch" docs/MV_FUNCTIONAL_COMPATIBILITY_MATRIX.md
           grep -qi "vertical" docs/MV_FUNCTIONAL_COMPATIBILITY_MATRIX.md
 
-      - name: Engine v1 editor compatibility checkpoint
-        run: echo "Engine v1 and World Editor integration validation passed"
+      - name: Engine v1 editor and asset compatibility checkpoint
+        run: echo "Engine v1, World Editor and Asset Compatibility V1 validation passed"

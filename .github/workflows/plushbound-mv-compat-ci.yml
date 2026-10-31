@@ -12,6 +12,7 @@ on:
       - 'tools/editor/mv-file-import.js'
       - 'tools/editor/mv-zip.js'
       - 'tools/editor/mv-tile-id-contracts.js'
+      - 'tools/editor/mv-autotile-composition.js'
       - 'tools/editor/mv-browser-integration.js'
       - 'tools/editor/mv-raw-command-ui.js'
       - 'tools/editor/editor-deeplinks.js'
@@ -23,6 +24,7 @@ on:
       - 'game/tests/mv-file-import.test.js'
       - 'game/tests/mv-zip.test.js'
       - 'game/tests/mv-tile-id-contracts.test.js'
+      - 'game/tests/mv-autotile-composition.test.js'
       - 'game/tests/mv-raw-command-ui.test.js'
       - '.github/workflows/plushbound-mv-compat-ci.yml'
   workflow_dispatch:
@@ -47,9 +49,10 @@ jobs:
           node --check tools/editor/mv-file-import.js
           node --check tools/editor/mv-zip.js
           node --check tools/editor/mv-tile-id-contracts.js
+          node --check tools/editor/mv-autotile-composition.js
           node --check tools/editor/mv-browser-integration.js
           node --check tools/editor/mv-raw-command-ui.js
       - name: Test all MV compatibility contracts
-        run: node --test game/tests/mv-project-core.test.js game/tests/mv-database-contracts.test.js game/tests/mv-shell-contracts.test.js game/tests/mv-event-command-adapter.test.js game/tests/mv-editor-adapter.test.js game/tests/mv-file-import.test.js game/tests/mv-zip.test.js game/tests/mv-tile-id-contracts.test.js game/tests/mv-raw-command-ui.test.js
+        run: node --test game/tests/mv-project-core.test.js game/tests/mv-database-contracts.test.js game/tests/mv-shell-contracts.test.js game/tests/mv-event-command-adapter.test.js game/tests/mv-editor-adapter.test.js game/tests/mv-file-import.test.js game/tests/mv-zip.test.js game/tests/mv-tile-id-contracts.test.js game/tests/mv-autotile-composition.test.js game/tests/mv-raw-command-ui.test.js
       - name: Guard frozen Engine v1
         run: test -z "$(git diff --name-only c0b2e9eae707fd1ac66fc23c6ca362cf0a946e5c...HEAD -- engine/)"

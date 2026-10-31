@@ -77,11 +77,16 @@ export function importMvProjectData(files,{strictExtended=true}={}){
       mv:clone(map)
     };
   });
+  const commonEvents=(compat.database.CommonEvents||[]).slice(1).filter(Boolean).map(record=>({
+    id:String(record.id),name:record.name||`Common Event ${record.id}`,
+    trigger:record.trigger,switchId:record.switchId,
+    commands:decodeMvEventList(record.list||[]),mv:clone(record)
+  }));
   return {
     format:'plushbound-world-editor-mv-adapter',adapterVersion:1,
     sourceFormat:compat.format,
     start:{mapId:String(compat.start.mapId),x:compat.start.x,y:compat.start.y,direction:2},
-    maps,
+    maps,commonEvents,
     mvDatabase:clone(compat.database),
     mvSourceFiles:clone(files),
     mvDiagnostics:{core:clone(core.issues),extended:clone(extended.issues)}

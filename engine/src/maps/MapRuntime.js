@@ -5,11 +5,17 @@ export class MapRuntime {
     this.maps = maps instanceof Map ? maps : new Map(Object.entries(maps || {}));
     this.logger = logger;
     this.current = null;
+    this.commonEvents = new Map();
   }
 
   register(mapData) {
     if (!mapData?.id) throw new Error('Map data requires id');
     this.maps.set(String(mapData.id), structuredClone(mapData));
+  }
+
+  setCommonEvents(commonEvents = new Map()) {
+    this.commonEvents = commonEvents instanceof Map ? new Map(commonEvents) : new Map(Object.entries(commonEvents || {}));
+    return this.commonEvents;
   }
 
   load(mapId, x = 0, y = 0, direction = 2) {
@@ -86,8 +92,18 @@ export class MapRuntime {
 
   pageMatches(event, page) {
     const c = page.conditions || {};
+
+    // RPG Maker MV page-condition contract emitted by the World Editor MV adapter.
+    if (c.switch1Valid && !this.state.sw(c.switch1Id)) return false;
+    if (c.switch2Valid && !this.state.sw(c.switch2Id)) return false;
+    if (c.variableValid && !(Number(this.state.variable(c.variableId)) >= Number(c.variableValue ?? 0))) return false;
+    if (c.selfSwitchValid && !this.state.selfSw(this.current.id, event.id, c.selfSwitchCh || 'A')) return false;
+    if (c.itemValid && this.state.count('items', c.itemId) <= 0) return false;
+    if (c.actorValid && !this.state.party.map(String).includes(String(c.actorId))) return false;
+
+    // Native/normalized Engine v1 page-condition contract remains supported.
     if (c.switchId != null && this.state.sw(c.switchId) !== (c.switchValue ?? true)) return false;
-    if (c.variableId != null) {
+    if (c.variableId != null && !Object.prototype.hasOwnProperty.call(c, 'variableValid')) {
       const value = Number(this.state.variable(c.variableId));
       const target = Number(c.variableValue ?? 0);
       const op = c.variableOp || '>=';
@@ -98,7 +114,7 @@ export class MapRuntime {
       if (op === '==' && !(value === target)) return false;
       if (op === '!=' && !(value !== target)) return false;
     }
-    if (c.selfSwitch) {
+    if (c.selfSwitch && !Object.prototype.hasOwnProperty.call(c, 'selfSwitchValid')) {
       const expected = c.selfSwitchValue ?? true;
       if (this.state.selfSw(this.current.id, event.id, c.selfSwitch) !== expected) return false;
     }

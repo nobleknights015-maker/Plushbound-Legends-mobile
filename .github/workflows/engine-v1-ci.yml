@@ -2,14 +2,19 @@ name: Plushbound Engine v1 CI
 
 on:
   push:
-    branches: [ engine-v1-rebuild ]
+    branches: [ engine-v1-rebuild, plushbound-game-development ]
+    paths:
+      - 'engine/**'
+      - 'tools/editor/mv-editor-adapter.js'
+      - 'tools/editor/mv-event-command-adapter.js'
+      - '.github/workflows/engine-v1-ci.yml'
   workflow_dispatch:
 
 jobs:
   engine-validation:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out engine rebuild
+      - name: Check out engine/editor integration
         uses: actions/checkout@v4
 
       - name: Set up Node.js
@@ -20,16 +25,22 @@ jobs:
       - name: Validate engine source syntax
         run: |
           find engine/src -name '*.js' -print0 | xargs -0 -n1 node --check
+          node --check tools/editor/mv-editor-adapter.js
+          node --check tools/editor/mv-event-command-adapter.js
 
       - name: Run executable engine tests
         working-directory: engine
         run: npm test
+
+      - name: Verify World Editor to Engine v1 contract
+        run: node --test engine/tests/world_editor_project_adapter.test.js
 
       - name: Verify required engine modules
         run: |
           test -f engine/src/core/EngineKernel.js
           test -f engine/src/core/GameState.js
           test -f engine/src/events/EventInterpreter.js
+          test -f engine/src/editor/WorldEditorProjectAdapter.js
           test -f docs/ENGINE_V1_SPEC.md
           test -f docs/MV_FUNCTIONAL_COMPATIBILITY_MATRIX.md
 
@@ -43,5 +54,5 @@ jobs:
           grep -qi "touch" docs/MV_FUNCTIONAL_COMPATIBILITY_MATRIX.md
           grep -qi "vertical" docs/MV_FUNCTIONAL_COMPATIBILITY_MATRIX.md
 
-      - name: Engine v1 foundation checkpoint
-        run: echo "Engine v1 executable foundation validation passed"
+      - name: Engine v1 editor compatibility checkpoint
+        run: echo "Engine v1 and World Editor integration validation passed"

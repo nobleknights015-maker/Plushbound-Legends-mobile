@@ -12,6 +12,7 @@ on:
       - 'game/tests/editor-core.test.js'
       - 'game/tests/encounter-session.test.js'
       - 'game/tests/common-event-core.test.js'
+      - 'game/tests/dependency-graph-core.test.js'
       - '.github/workflows/plushbound-editor-ci.yml'
   pull_request:
     paths:
@@ -22,6 +23,7 @@ on:
       - 'game/tests/editor-core.test.js'
       - 'game/tests/encounter-session.test.js'
       - 'game/tests/common-event-core.test.js'
+      - 'game/tests/dependency-graph-core.test.js'
       - '.github/workflows/plushbound-editor-ci.yml'
 
 jobs:
@@ -45,9 +47,11 @@ jobs:
           node --check tools/editor/common-event-core.js
           node --check tools/editor/common-event-map.js
           node --check tools/editor/common-events.js
+          node --check tools/editor/dependency-graph-core.js
+          node --check tools/editor/reference-audit.js
           node --check game/runtime/GameContentRuntime.js
           node --check game/runtime/PlushboundGameSession.js
-          node --test game/tests/editor-core.test.js game/tests/encounter-session.test.js game/tests/common-event-core.test.js
+          node --test game/tests/editor-core.test.js game/tests/encounter-session.test.js game/tests/common-event-core.test.js game/tests/dependency-graph-core.test.js
 
       - name: Install headless browser
         run: |
@@ -85,6 +89,15 @@ jobs:
           assert.equal(await page.locator('.tile').count(), 640);
           assert.ok(await page.locator('.asset-card').count() > 5);
           assert.ok(await page.evaluate(() => window.PlushboundEditor.getAssets().some(a => a.id === 'npc/lio/sprite')));
+
+          // Reference diagnostics and dependency graph must initialize against the live project.
+          await page.waitForFunction(() => window.PlushboundReferenceAudit?.graph?.nodes?.length > 0);
+          assert.match(await page.textContent('#dependencyGraphSummary'), /node\(s\).*edge\(s\)/);
+          assert.ok(await page.locator('#dependencyGraphFocus option').count() > 0);
+          const firstDependency = await page.locator('#dependencyGraphFocus option').first().getAttribute('value');
+          await page.selectOption('#dependencyGraphFocus', firstDependency);
+          assert.match(await page.textContent('#dependencyGraphView'), /Focus/);
+          assert.match(await page.textContent('#dependencyGraphCycles'), /dependency cycle|No quest\/Waystitch dependency cycles/);
 
           // Regression coverage: selecting an event must render page summaries without page errors.
           await page.click('[data-tool="select"]');
@@ -211,7 +224,7 @@ jobs:
 
           assert.deepEqual(errors, []);
           await browser.close();
-          console.log('Plushbound editor authoring + runtime playtest simulation passed');
+          console.log('Plushbound editor authoring + dependency graph + runtime playtest simulation passed');
           NODE
 
       - name: Record editor simulation gate
@@ -221,7 +234,7 @@ jobs:
           Plushbound Visual Editor simulation
           Browser: Chromium headless
           Target package: Elyndor runtime maps
-          Coverage: tile layers, regions, encounters, collision, assets, event placement/pages/full commands, reusable common-event insertion + history, transfers, undo/redo, validation, real-session playtest
+          Coverage: dependency graph, tile layers, regions, encounters, collision, assets, event placement/pages/full commands, reusable common-event insertion + history, transfers, undo/redo, validation, real-session playtest
           Result: ${{ job.status }}
           Commit: ${{ github.sha }}
           EOF

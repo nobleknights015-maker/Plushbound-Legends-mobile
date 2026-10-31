@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import { LogicalViewport, Canvas2DRenderBackend } from '../src/render/Canvas2DRenderBackend.js';
 import { bootPlushboundEngineV1 } from '../src/runtime/BrowserRuntimeEntry.js';
+import { mvAutotileSourcePlan } from '../src/render/MvTilesetResolver.js';
 
 test('logical viewport letterboxes 1604x720 and round-trips touch coordinates', () => {
   const viewport = new LogicalViewport();
@@ -14,7 +15,7 @@ test('logical viewport letterboxes 1604x720 and round-trips touch coordinates', 
   assert.deepEqual(viewport.logicalToScreen(802, 360), { x: 802, y: 450 });
 });
 
-test('canvas backend preserves pixel-art rendering and maps client touch to game coordinates', () => {
+function backendFixture(assetId='icon/test', image={ width: 32, height: 32 }) {
   const calls = [];
   const ctx = {
     globalAlpha: 1,
@@ -31,19 +32,38 @@ test('canvas backend preserves pixel-art rendering and maps client touch to game
     getContext: () => ctx,
     getBoundingClientRect: () => ({ left: 10, top: 20 })
   };
-  const image = { width: 32, height: 32 };
   const assetManager = {
-    cache: new Map([['icon/test', image]]),
-    has: id => id === 'icon/test',
+    cache: new Map([[assetId, image]]),
+    has: id => id === assetId,
     load: async () => image
   };
-  const backend = new Canvas2DRenderBackend({ canvas, assetManager, scope: { devicePixelRatio: 2, innerWidth: 802, innerHeight: 360 } });
+  return { calls, ctx, canvas, backend:new Canvas2DRenderBackend({ canvas, assetManager, scope: { devicePixelRatio: 2, innerWidth: 802, innerHeight: 360 } }) };
+}
+
+test('canvas backend preserves pixel-art rendering and maps client touch to game coordinates', () => {
+  const {calls,ctx,backend}=backendFixture();
   assert.equal(ctx.imageSmoothingEnabled, false);
   assert.deepEqual(backend.pointFromClient(411, 200), { x: 802, y: 360 });
   backend.beginFrame();
   backend.draw({ kind: 'ui-image', assetId: 'icon/test', destination: { x: 10, y: 12, width: 32, height: 32 }, opacity: 1 });
   backend.endFrame();
   assert.ok(calls.some(call => call[0] === 'drawImage'));
+});
+
+test('canvas backend renders an MV autotile plan as four exact quarter draws',()=>{
+  const image={width:768,height:576};
+  const {calls,backend}=backendFixture('tileset/A2',image);
+  const source=mvAutotileSourcePlan(2816,{animationFrame:0,images:{A2:'tileset/A2'}});
+  assert.equal(source.supported,true);
+  backend.draw({kind:'tile',source,screenX:96,screenY:144});
+  const draws=calls.filter(call=>call[0]==='drawImage');
+  assert.equal(draws.length,4);
+  for(let i=0;i<4;i++){
+    const q=source.quadrants[i],call=draws[i];
+    assert.equal(call[1],image);
+    assert.deepEqual(call.slice(2,6),[q.sourcePixel.x,q.sourcePixel.y,q.sourcePixel.width,q.sourcePixel.height]);
+    assert.deepEqual(call.slice(6,10),[96+q.destinationPixel.x,144+q.destinationPixel.y,q.destinationPixel.width,q.destinationPixel.height]);
+  }
 });
 
 test('browser runtime creates a live canvas backend and exposes logical touch mapping', async () => {

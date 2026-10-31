@@ -33,6 +33,8 @@ export function validateAssetCompatibilityV1(contract={}){
   const field=contract.characters?.fieldRuntime||{};
   if(field.frameWidth!==48||field.frameHeight!==48||field.columns!==3||field.rows!==4||field.width!==144||field.height!==192) issues.push(issue('ASSET_FIELD_SPRITE','Runtime field sprites must be 144x192, 3x4 of 48x48 frames','characters.fieldRuntime'));
   if(JSON.stringify(field.directionRows)!==JSON.stringify(['down','left','right','up'])) issues.push(issue('ASSET_FIELD_DIRECTIONS','Field sprite direction rows must be down,left,right,up','characters.fieldRuntime.directionRows'));
+  if(field.atlasSourceSlotWidth!==75||field.atlasSourceSlotHeight!==64||field.sourceSafeAreaWidth!==48||field.sourceSafeAreaHeight!==48) issues.push(issue('ASSET_FIELD_SAFE_AREA','Atlas field slots must expose a locked 48x48 runtime safe area inside 75x64 authoring slots','characters.fieldRuntime'));
+  if(field.sourceSafeAreaAlignment!=='center-horizontal-bottom'||field.extraction!=='center-horizontal-bottom-aligned-no-scale'||field.resampling!==false) issues.push(issue('ASSET_FIELD_EXTRACTION','Field runtime extraction must be centered horizontally, bottom aligned and never resampled','characters.fieldRuntime'));
 
   const face=contract.faces?.mvReferenceSheet||{};
   if(face.width!==576||face.height!==288||face.columns!==4||face.rows!==2||face.cellWidth!==144||face.cellHeight!==144) issues.push(issue('ASSET_FACE_GEOMETRY','MV-compatible face sheet must be 576x288 with 144x144 cells','faces.mvReferenceSheet'));
@@ -74,6 +76,7 @@ export function assetCompatibilitySnapshot(contract={}){
     tileSize:contract.global?.tileSize??null,
     screen:[contract.global?.screenWidth??null,contract.global?.screenHeight??null],
     fieldSprite:[contract.characters?.fieldRuntime?.width??null,contract.characters?.fieldRuntime?.height??null],
+    fieldSafeArea:[contract.characters?.fieldRuntime?.sourceSafeAreaWidth??null,contract.characters?.fieldRuntime?.sourceSafeAreaHeight??null],
     atlas:[contract.characters?.atlasV1?.width??null,contract.characters?.atlasV1?.height??null],
     tilesetSheets:Object.fromEntries(Object.entries(REQUIRED_SHEETS).map(([key])=>[key,[contract.tilesets?.sheets?.[key]?.width??null,contract.tilesets?.sheets?.[key]?.height??null]]))
   };

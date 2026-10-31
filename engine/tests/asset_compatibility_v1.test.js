@@ -4,12 +4,14 @@ import {readFileSync} from 'node:fs';
 import {resolve,dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {validateAssetCompatibilityV1,validateAssetDescriptorV1,assetCompatibilitySnapshot} from '../src/assets/AssetCompatibilityV1.js';
+import {ContentAssetCatalog} from '../src/assets/ContentAssetCatalog.js';
 import {MvTilesetResolver,mvTileSlot,mvTileLocalIndex,mvAutotileKind,mvAutotileShape,mvAutotileSourcePlan} from '../src/render/MvTilesetResolver.js';
 import {mvTileSlot as editorSlot,mvTileLocalIndex as editorLocal,mvAutotileKind as editorKind,mvAutotileShape as editorShape} from '../../tools/editor/mv-tile-id-contracts.js';
 import {mvAutotileSourcePlan as editorPlan} from '../../tools/editor/mv-autotile-composition.js';
 
 const here=dirname(fileURLToPath(import.meta.url));
 const contract=JSON.parse(readFileSync(resolve(here,'../../game/assets/ASSET_COMPATIBILITY_V1.json'),'utf8'));
+const productionManifest=JSON.parse(readFileSync(resolve(here,'../../game/assets/asset-manifest.json'),'utf8'));
 
 test('Asset Compatibility V1 is accepted by Engine v1',()=>{
   const result=validateAssetCompatibilityV1(contract);
@@ -28,6 +30,24 @@ test('runtime descriptors fail closed when locked geometry is wrong',()=>{
   assert.equal(bad.issues[0].code,'ASSET_CHARACTER_RUNTIME_SIZE');
 });
 
+test('Engine v1 consumes the production entries-based asset manifest directly',()=>{
+  const catalog=new ContentAssetCatalog();
+  const validation=catalog.registerManifest(productionManifest);
+  assert.equal(validation.valid,true);
+  assert.equal(validation.registered,productionManifest.entries.length);
+  const sample=productionManifest.entries.find(entry=>entry.type==='character-sprite')||productionManifest.entries[0];
+  assert.ok(catalog.has(sample.id));
+  assert.equal(catalog.get(sample.id).status,sample.status);
+});
+
+test('ContentAssetCatalog preserves deterministic slicing metadata',()=>{
+  const catalog=new ContentAssetCatalog();
+  catalog.register({id:'character/test/field',path:'characters/test.png',type:'character-sprite',status:'ready',width:144,height:192,layout:'single-character-3x4',frameWidth:48,frameHeight:48,columns:3,rows:4,atlas:{templateId:'plushbound-character-atlas-v1',slotId:'field.down.1'}});
+  const entry=catalog.get('character/test/field');
+  assert.deepEqual({width:entry.width,height:entry.height,layout:entry.layout,frameWidth:entry.frameWidth,frameHeight:entry.frameHeight,columns:entry.columns,rows:entry.rows},{width:144,height:192,layout:'single-character-3x4',frameWidth:48,frameHeight:48,columns:3,rows:4});
+  assert.equal(entry.atlas.templateId,'plushbound-character-atlas-v1');
+});
+
 test('engine and editor agree on every MV tile slot and local index',()=>{
   for(let id=0;id<8192;id++){
     assert.equal(mvTileSlot(id),editorSlot(id),`slot mismatch tile ${id}`);
@@ -43,7 +63,7 @@ test('engine A1-A4 quarter composition matches editor contract across all valid 
     for(const frame of [0,1,2,3]){
       const engine=mvAutotileSourcePlan(id,{animationFrame:frame});
       const editor=editorPlan(id,{animationFrame:frame});
-      assert.equal(engine.slot??engine.sheetId,editor.slot,`slot mismatch ${id}/${frame}`);
+      assert.equal(engine.sheetId,editor.slot,`slot mismatch ${id}/${frame}`);
       assert.equal(engine.family,editor.family,`family mismatch ${id}/${frame}`);
       assert.equal(engine.supported,editor.supported,`support mismatch ${id}/${frame}`);
       assert.deepEqual(engine.sourceBlock,editor.sourceBlock,`block mismatch ${id}/${frame}`);

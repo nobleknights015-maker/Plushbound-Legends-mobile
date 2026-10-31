@@ -151,6 +151,28 @@ export class Canvas2DRenderBackend {
     if (command.label) this.drawText({ kind: 'ui-text', text: command.label, x: d.x, y: d.y - 18, fontSize: 14, color: command.color || '#ffffff' });
   }
 
+  drawTile(image, command, source) {
+    const dx = Number(command.screenX) || 0, dy = Number(command.screenY) || 0;
+    if (Array.isArray(source.quadrants) && source.quadrants.length) {
+      for (const quadrant of source.quadrants) {
+        const s = quadrant.sourcePixel || {}, d = quadrant.destinationPixel || {};
+        this.ctx.drawImage(
+          image,
+          Number(s.x) || 0,
+          Number(s.y) || 0,
+          Number(s.width) || 24,
+          Number(s.height) || 24,
+          dx + (Number(d.x) || 0),
+          dy + (Number(d.y) || 0),
+          Number(d.width) || Number(s.width) || 24,
+          Number(d.height) || Number(s.height) || 24
+        );
+      }
+      return;
+    }
+    this.ctx.drawImage(image, source.sx ?? source.x ?? 0, source.sy ?? source.y ?? 0, source.sw ?? source.width ?? 48, source.sh ?? source.height ?? 48, dx, dy, source.dw ?? source.sw ?? 48, source.dh ?? source.sh ?? 48);
+  }
+
   draw(command = {}) {
     if (command.kind === 'ui-dimmer' || command.kind === 'ui-fade' || command.kind === 'ui-selection-highlight') {
       const d = command.destination || { x: 0, y: 0, width: this.viewport.logicalWidth, height: this.viewport.logicalHeight };
@@ -171,8 +193,7 @@ export class Canvas2DRenderBackend {
     this.ctx.globalAlpha = clamp(command.opacity ?? 1, 0, 1);
 
     if (command.kind === 'tile' && command.source) {
-      const s = command.source;
-      this.ctx.drawImage(image, s.sx ?? s.x ?? 0, s.sy ?? s.y ?? 0, s.sw ?? s.width ?? 48, s.sh ?? s.height ?? 48, Number(command.screenX) || 0, Number(command.screenY) || 0, s.dw ?? s.sw ?? 48, s.dh ?? s.sh ?? 48);
+      this.drawTile(image, command, command.source);
     } else if (command.kind === 'sprite' && command.source) {
       const s = command.source;
       const sw = s.sw ?? s.width ?? 48, sh = s.sh ?? s.height ?? 48;

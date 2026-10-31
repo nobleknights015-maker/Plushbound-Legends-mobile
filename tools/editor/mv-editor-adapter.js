@@ -1,4 +1,4 @@
-import {createMvCompatibilityPackage,validateMvDatabase,mvMapCellIndex} from './mv-project-core.js';
+import {createMvCompatibilityPackage,validateMvDatabase} from './mv-project-core.js';
 import {validateMvExtendedDatabase} from './mv-database-contracts.js';
 
 function clone(v){return typeof structuredClone==='function'?structuredClone(v):JSON.parse(JSON.stringify(v));}
@@ -33,6 +33,7 @@ function mvPageToEditor(page){
     priority:PRIORITY_TO_EDITOR[page.priorityType]||'same',
     conditions:clone(page.conditions||{}),
     commands:[],
+    mvTrigger:page.trigger,
     mv:clone(page)
   };
 }
@@ -48,7 +49,9 @@ function editorEventToMv(event,sourceEvent){
   out.id=Number(event.id)||Number(out.id)||0;out.name=event.name??out.name??'';out.x=event.x;out.y=event.y;
   if(Array.isArray(event.pages)) out.pages=event.pages.map((page,index)=>{
     const base=clone(page.mv||out.pages?.[index]||{});
-    if(page.trigger in TRIGGER_TO_MV) base.trigger=TRIGGER_TO_MV[page.trigger];
+    const originalTrigger=Number.isInteger(page.mvTrigger)?page.mvTrigger:base.trigger;
+    if(TRIGGER_TO_EDITOR[originalTrigger]===page.trigger) base.trigger=originalTrigger;
+    else if(page.trigger in TRIGGER_TO_MV) base.trigger=TRIGGER_TO_MV[page.trigger];
     if(page.conditions) base.conditions=clone(page.conditions);
     return base;
   });
@@ -104,10 +107,12 @@ export function exportMvProjectData(project){
 
 export function mvEditorTileAt(project,mapId,x,y,z){
   const map=(project.maps||[]).find(m=>String(m.id)===String(mapId));if(!map)throw new Error(`Unknown map: ${mapId}`);
+  if(!Number.isInteger(x)||!Number.isInteger(y)||x<0||y<0||x>=map.width||y>=map.height)throw new RangeError('MV map coordinate out of range');
   if(!Number.isInteger(z)||z<0||z>5)throw new RangeError('MV z coordinate out of range');
-  if(z<4)return map.layers[z].data[y*map.width+x];
-  if(z===4)return map.mvShadowBits[y*map.width+x];
-  return map.regions[y*map.width+x];
+  const i=y*map.width+x;
+  if(z<4)return map.layers[z].data[i];
+  if(z===4)return map.mvShadowBits[i];
+  return map.regions[i];
 }
 
 export function verifyMvRoundTrip(files){

@@ -6,8 +6,10 @@ on:
     paths:
       - 'tools/editor/mv-project-core.js'
       - 'tools/editor/mv-database-contracts.js'
+      - 'tools/editor/mv-shell-contracts.js'
       - 'game/tests/mv-project-core.test.js'
       - 'game/tests/mv-database-contracts.test.js'
+      - 'game/tests/mv-shell-contracts.test.js'
       - '.github/workflows/plushbound-mv-compat-ci.yml'
   workflow_dispatch:
 
@@ -25,7 +27,8 @@ jobs:
         run: |
           node --check tools/editor/mv-project-core.js
           node --check tools/editor/mv-database-contracts.js
+          node --check tools/editor/mv-shell-contracts.js
       - name: Test all MV compatibility contracts
-        run: node --test game/tests/mv-project-core.test.js game/tests/mv-database-contracts.test.js
+        run: node --test game/tests/mv-project-core.test.js game/tests/mv-database-contracts.test.js game/tests/mv-shell-contracts.test.js
       - name: Guard frozen Engine v1
         run: test -z "$(git diff --name-only c0b2e9eae707fd1ac66fc23c6ca362cf0a946e5c...HEAD -- engine/)"

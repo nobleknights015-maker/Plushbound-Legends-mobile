@@ -64,4 +64,10 @@ async function audit(){
   }catch(error){summary.textContent=`Reference audit unavailable: ${error.message}`;issuesHost.innerHTML='';const graphSummary=graphPanel()?.querySelector('#dependencyGraphSummary');if(graphSummary)graphSummary.textContent=`Dependency graph unavailable: ${error.message}`;return [];}
 }
 
-if(window.PlushboundEditor){const section=panel();graphPanel();section?.querySelector('#refreshProjectReferences')?.addEventListener('click',audit);document.getElementById('loadElyndor')?.addEventListener('click',()=>setTimeout(audit,0));document.getElementById('runValidation')?.addEventListener('click',audit);window.PlushboundReferenceAudit={audit,graph:null};audit();}
+let installed=false;
+function installReferenceAudit(){
+  if(installed||!window.PlushboundEditor||!document.querySelector('.sidebar.right'))return false;
+  installed=true;const section=panel();graphPanel();section?.querySelector('#refreshProjectReferences')?.addEventListener('click',audit);document.getElementById('loadElyndor')?.addEventListener('click',()=>setTimeout(audit,0));document.getElementById('runValidation')?.addEventListener('click',audit);window.PlushboundReferenceAudit={audit,graph:null};audit();return true;
+}
+async function installWhenReady(){for(let i=0;i<100&&!installReferenceAudit();i++)await new Promise(resolve=>setTimeout(resolve,20));}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installWhenReady,{once:true});else installWhenReady();

@@ -14,6 +14,12 @@ export const MV_IMAGE_DIRS=Object.freeze(['animations','battlebacks1','battlebac
 export const MV_TILESET_GEOMETRY=Object.freeze({
   A1:[768,576],A2:[768,576],A3:[768,384],A4:[768,720],A5:[384,768],B:[768,768],C:[768,768],D:[768,768],E:[768,768]
 });
+export const MV_TILESET_FLAG_COUNT=8192;
+export const MV_TILE_FLAGS=Object.freeze({
+  passageDown:0x01,passageLeft:0x02,passageRight:0x04,passageUp:0x08,star:0x10,
+  ladder:0x20,bush:0x40,counter:0x80,damageFloor:0x100,boatBlocked:0x200,shipBlocked:0x400,airshipBlocked:0x800,
+  terrainTagMask:0xF000
+});
 
 function clone(v){return typeof structuredClone==='function'?structuredClone(v):JSON.parse(JSON.stringify(v));}
 function obj(v){return !!v&&typeof v==='object'&&!Array.isArray(v);}
@@ -29,8 +35,6 @@ export function detectMvProject(files={}){
   return {isMvProject:present.length===MV_DATABASE_FILES.length&&maps.length>0,present,missing:MV_DATABASE_FILES.filter(name=>!names.has(name)),maps};
 }
 
-// Detect an MV-shaped project inside an archive or file listing without executing any source code.
-// A project may live at archive root or beneath one common prefix (for example NewData/).
 export function detectMvArchiveLayout(paths=[]){
   const normalized=[...new Set(paths.map(cleanPath).filter(Boolean))];
   const roots=new Set(['']);
@@ -86,6 +90,54 @@ export function mvTilesetSheetGeometry(width,height,slot){
   return {valid:width===expected[0]&&height===expected[1],slot:key,width,height,expectedWidth:expected[0],expectedHeight:expected[1],tileSize:48};
 }
 
+export function decodeMvTileFlag(flag){
+  if(!Number.isInteger(flag)||flag<0||flag>0xffff) throw new RangeError('MV tile flag must be a 16-bit non-negative integer');
+  return {
+    raw:flag,
+    blocked:{down:!!(flag&MV_TILE_FLAGS.passageDown),left:!!(flag&MV_TILE_FLAGS.passageLeft),right:!!(flag&MV_TILE_FLAGS.passageRight),up:!!(flag&MV_TILE_FLAGS.passageUp)},
+    star:!!(flag&MV_TILE_FLAGS.star),ladder:!!(flag&MV_TILE_FLAGS.ladder),bush:!!(flag&MV_TILE_FLAGS.bush),counter:!!(flag&MV_TILE_FLAGS.counter),damageFloor:!!(flag&MV_TILE_FLAGS.damageFloor),
+    vehicleBlocked:{boat:!!(flag&MV_TILE_FLAGS.boatBlocked),ship:!!(flag&MV_TILE_FLAGS.shipBlocked),airship:!!(flag&MV_TILE_FLAGS.airshipBlocked)},
+    terrainTag:(flag&MV_TILE_FLAGS.terrainTagMask)>>12
+  };
+}
+
+export function validateMvTilesetRecord(tileset,file='Tilesets.json'){
+  const issues=[];
+  if(!obj(tileset)) return [issue('MV_TILESET_OBJECT','MV tileset must be an object',file)];
+  if(!Number.isInteger(tileset.id)||tileset.id<=0) issues.push(issue('MV_TILESET_RECORD_ID','MV tileset id must be a positive integer',file));
+  if(!arr(tileset.tilesetNames)||tileset.tilesetNames.length!==9) issues.push(issue('MV_TILESET_NAMES','MV tilesetNames must contain exactly nine A1-E slots',file));
+  if(!arr(tileset.flags)||tileset.flags.length!==MV_TILESET_FLAG_COUNT) issues.push(issue('MV_TILESET_FLAGS',`MV tileset flags must contain exactly ${MV_TILESET_FLAG_COUNT} entries`,file));
+  else if(tileset.flags.some(x=>!Number.isInteger(x)||x<0||x>0xffff)) issues.push(issue('MV_TILESET_FLAG_VALUE','MV tileset flags must be 16-bit non-negative integers',file));
+  if(!Number.isInteger(tileset.mode)||tileset.mode<0) issues.push(issue('MV_TILESET_MODE','MV tileset mode must be a non-negative integer',file));
+  return issues;
+}
+
+export function validateMvEventCommand(command,file='event'){
+  const issues=[];
+  if(!obj(command)) return [issue('MV_EVENT_COMMAND_OBJECT','MV event command must be an object',file)];
+  if(!Number.isInteger(command.code)||command.code<0) issues.push(issue('MV_EVENT_COMMAND_CODE','MV event command code must be a non-negative integer',file));
+  if(!Number.isInteger(command.indent)||command.indent<0) issues.push(issue('MV_EVENT_COMMAND_INDENT','MV event command indent must be a non-negative integer',file));
+  if(!arr(command.parameters)) issues.push(issue('MV_EVENT_COMMAND_PARAMETERS','MV event command parameters must be an array',file));
+  return issues;
+}
+
+export function validateMvEventList(list,file='event'){
+  const issues=[];
+  if(!arr(list)) return [issue('MV_EVENT_LIST','MV event command list must be an array',file)];
+  list.forEach((cmd,i)=>issues.push(...validateMvEventCommand(cmd,`${file}#${i}`)));
+  if(list.length===0||list[list.length-1]?.code!==0) issues.push(issue('MV_EVENT_TERMINATOR','MV event command lists must end with command code 0',file));
+  return issues;
+}
+
+export function validateMvTroopPage(page,file='Troops.json'){
+  const issues=[];
+  if(!obj(page)) return [issue('MV_TROOP_PAGE_OBJECT','MV troop page must be an object',file)];
+  if(!obj(page.conditions)) issues.push(issue('MV_TROOP_CONDITIONS','MV troop page conditions must be an object',file));
+  if(!Number.isInteger(page.span)||page.span<0) issues.push(issue('MV_TROOP_SPAN','MV troop page span must be a non-negative integer',file));
+  issues.push(...validateMvEventList(page.list,`${file}.list`));
+  return issues;
+}
+
 export function validateMvMap(map,file='Map001.json'){
   const issues=[];
   if(!obj(map)) return [issue('MV_MAP_OBJECT','MV map must be an object',file)];
@@ -112,6 +164,9 @@ export function validateMvDatabase(files={}){
       for(const key of ['switches','variables','elements','skillTypes','weaponTypes','armorTypes','equipTypes']) if(!arr(system[key])) issues.push(issue('MV_SYSTEM_LIST',`System.${key} must be an array`,'System.json'));
     }
   }
+  if(arr(files['Tilesets.json'])) for(const record of files['Tilesets.json'].slice(1)) if(record) issues.push(...validateMvTilesetRecord(record,'Tilesets.json'));
+  if(arr(files['CommonEvents.json'])) for(const record of files['CommonEvents.json'].slice(1)) if(record) issues.push(...validateMvEventList(record.list,`CommonEvents.json#${record.id}`));
+  if(arr(files['Troops.json'])) for(const troop of files['Troops.json'].slice(1)) if(troop&&arr(troop.pages)) troop.pages.forEach((page,i)=>issues.push(...validateMvTroopPage(page,`Troops.json#${troop.id}.pages[${i}]`)));
   for(const name of detection.maps) issues.push(...validateMvMap(files[name],name));
   if(obj(system)&&Number.isInteger(system.startMapId)&&system.startMapId>0){const start=`Map${String(system.startMapId).padStart(3,'0')}.json`;if(!(start in files))issues.push(issue('MV_START_MAP_MISSING',`System start map ${start} is missing`,start));}
   return {ok:!issues.some(x=>x.severity==='error'),issues,detection};
@@ -130,7 +185,7 @@ export function createMvCompatibilityPackage(files={}){
     start:{mapId:system.startMapId,x:system.startX,y:system.startY},
     screen:{...MV_SCREEN},
     database,maps,
-    preservation:{mvIds:true,nullIndexZero:true,mapLayerCount:6,unknownFields:true}
+    preservation:{mvIds:true,nullIndexZero:true,mapLayerCount:6,unknownFields:true,tilesetFlags:true,eventCommandCodes:true}
   };
 }
 

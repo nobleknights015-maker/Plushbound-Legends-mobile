@@ -21,7 +21,8 @@ async function refresh(){
     window.PlushboundBuildReadiness.last=summary;return summary;
   }catch(error){summaryEl.textContent=`Readiness check unavailable: ${error.message}`;host.innerHTML='';return null;}
 }
-export function installBuildReadiness(){const section=panel();if(!section)return false;section.querySelector('#refreshBuildReadiness')?.addEventListener('click',refresh);document.getElementById('loadElyndor')?.addEventListener('click',()=>setTimeout(refresh,0));document.getElementById('runValidation')?.addEventListener('click',()=>setTimeout(refresh,0));setTimeout(refresh,0);return true;}
+function markStale(){const section=panel();if(!section)return;section.querySelector('#buildReadinessSummary').textContent='Project changed • refresh readiness when you are done editing.';section.querySelector('#buildReadinessChecks').innerHTML='';window.PlushboundBuildReadiness.last=null;}
+export function installBuildReadiness(){const section=panel();if(!section)return false;section.querySelector('#refreshBuildReadiness')?.addEventListener('click',refresh);document.getElementById('loadElyndor')?.addEventListener('click',markStale);document.getElementById('runValidation')?.addEventListener('click',()=>setTimeout(refresh,0));return true;}
 
 if(typeof document!=='undefined'){if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installBuildReadiness,{once:true});else installBuildReadiness();}
 window.PlushboundBuildReadiness={refresh,last:null};

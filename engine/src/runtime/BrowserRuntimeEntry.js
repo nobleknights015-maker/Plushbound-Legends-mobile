@@ -11,7 +11,7 @@ import { SceneInteractionController } from '../scenes/SceneInteractionController
 import { readCssSafeArea, normalizeSafeInsets, classifyScreen, responsiveAnchor } from '../platform/ScreenAdaptation.js';
 
 function imageLoader(descriptor, scope = globalThis) {
-  if (!['image','tileset','tileset-sheet','character-sprite','guardian-sprite','battle-sprite','portrait','guardian-portrait','guardian-silhouette','guardian-battle','map-object','map-overlay','parallax','icon','ui-image'].includes(String(descriptor.type || '')) || typeof scope.Image !== 'function') return Promise.resolve({ id: descriptor.id, descriptor });
+  if (!['image','tileset-sheet','character-sprite','guardian-sprite','battle-sprite','portrait','guardian-portrait','guardian-silhouette','guardian-battle','map-object','map-overlay','parallax','icon','ui-image'].includes(String(descriptor.type || '')) || typeof scope.Image !== 'function') return Promise.resolve({ id: descriptor.id, descriptor });
   return new Promise((resolve, reject) => {
     const image = new scope.Image();
     image.onload = () => resolve(image);

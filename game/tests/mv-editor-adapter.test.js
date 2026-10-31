@@ -4,17 +4,19 @@ import {MV_DATABASE_FILES} from '../../tools/editor/mv-project-core.js';
 import {importMvProjectData,exportMvProjectData,mvEditorTileAt,verifyMvRoundTrip} from '../../tools/editor/mv-editor-adapter.js';
 
 function audio(){return {name:'',pan:0,pitch:100,volume:90};}
+function end(){return {code:0,indent:0,parameters:[]};}
 function tileset(){return {id:1,name:'Test',mode:0,tilesetNames:['A1','A2','A3','A4','A5','B','C','D','E'],flags:new Array(8192).fill(0),note:''};}
 function filesFixture(){
   const files={};
   for(const name of MV_DATABASE_FILES) files[name]=[null,{id:1,name:'Test'}];
   files['Tilesets.json']=[null,tileset()];
+  files['CommonEvents.json']=[null,{id:1,name:'Test',trigger:0,switchId:1,list:[end()]}];
   files['MapInfos.json']=[null,{id:1,name:'Map',order:1,parentId:0,expanded:false,scrollX:0,scrollY:0}];
   files['System.json']={startMapId:1,startX:1,startY:0,switches:[''],variables:[''],elements:[''],skillTypes:[''],weaponTypes:[''],armorTypes:[''],equipTypes:['']};
   const width=2,height=2,count=4;
   files['Map001.json']={
     width,height,tilesetId:1,data:Array.from({length:count*6},(_,i)=>i),
-    events:[null,{id:1,name:'Touch Event',note:'keep',x:0,y:1,pages:[{conditions:{switch1Valid:false},image:{characterName:'',characterIndex:0,direction:2,pattern:1,tileId:0},moveType:0,moveSpeed:3,moveFrequency:3,moveRoute:{repeat:true,skippable:false,wait:false,list:[{code:0,parameters:[]}]},walkAnime:true,stepAnime:false,directionFix:false,through:false,priorityType:1,trigger:2,list:[{code:0,indent:0,parameters:[]}]}]}],
+    events:[null,{id:1,name:'Touch Event',note:'keep',x:0,y:1,pages:[{conditions:{switch1Valid:false},image:{characterName:'',characterIndex:0,direction:2,pattern:1,tileId:0},moveType:0,moveSpeed:3,moveFrequency:3,moveRoute:{repeat:true,skippable:false,wait:false,list:[{code:0,parameters:[]}]},walkAnime:true,stepAnime:false,directionFix:false,through:false,priorityType:1,trigger:2,list:[end()]}]}],
     encounterList:[],displayName:'Round Trip',futureField:{keep:true},
     bgm:audio(),bgs:audio(),autoplayBgm:false,autoplayBgs:false,disableDashing:false,parallaxLoopX:false,parallaxLoopY:false,parallaxShow:false,specifyBattleback:false,encounterStep:30,parallaxSx:0,parallaxSy:0,scrollType:0
   };

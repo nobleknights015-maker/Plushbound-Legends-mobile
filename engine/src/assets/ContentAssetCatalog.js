@@ -1,3 +1,5 @@
+import { mvTilesetSetChildDescriptors } from './AssetCompatibilityV1.js';
+
 function normalizeId(value) {
   return String(value ?? '').trim().replace(/^\/+|\/+$/g, '');
 }
@@ -47,6 +49,13 @@ export class ContentAssetCatalog {
     return clone(normalized);
   }
 
+  registerTilesetSet(entry = {}) {
+    const parent=this.register(entry);
+    const children=mvTilesetSetChildDescriptors(parent);
+    for(const child of children)this.register(child);
+    return {parent,children:children.map(clone)};
+  }
+
   registerManifest(manifest = {}) {
     const assets = Array.isArray(manifest)
       ? manifest
@@ -54,7 +63,10 @@ export class ContentAssetCatalog {
         ? manifest.assets
         : manifest.entries;
     if (!Array.isArray(assets)) throw new Error('Asset manifest requires assets or entries array');
-    for (const entry of assets) this.register(entry);
+    for (const entry of assets) {
+      if(String(entry?.type||'')==='tileset')this.registerTilesetSet(entry);
+      else this.register(entry);
+    }
     for (const [logicalId, assetId] of Object.entries(manifest.bindings || {})) this.bindings?.bind?.(logicalId, assetId);
     for (const id of manifest.required || []) this.required.add(normalizeId(id));
     return this.validation();

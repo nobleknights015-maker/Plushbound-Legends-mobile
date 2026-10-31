@@ -5,7 +5,9 @@ on:
     branches: [plushbound-game-development]
     paths:
       - 'tools/editor/mv-project-core.js'
+      - 'tools/editor/mv-database-contracts.js'
       - 'game/tests/mv-project-core.test.js'
+      - 'game/tests/mv-database-contracts.test.js'
       - '.github/workflows/plushbound-mv-compat-ci.yml'
   workflow_dispatch:
 
@@ -19,9 +21,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Syntax check MV compatibility core
-        run: node --check tools/editor/mv-project-core.js
-      - name: Test MV project data contracts
-        run: node --test game/tests/mv-project-core.test.js
+      - name: Syntax check MV compatibility modules
+        run: |
+          node --check tools/editor/mv-project-core.js
+          node --check tools/editor/mv-database-contracts.js
+      - name: Test all MV compatibility contracts
+        run: node --test game/tests/mv-project-core.test.js game/tests/mv-database-contracts.test.js
       - name: Guard frozen Engine v1
         run: test -z "$(git diff --name-only c0b2e9eae707fd1ac66fc23c6ca362cf0a946e5c...HEAD -- engine/)"

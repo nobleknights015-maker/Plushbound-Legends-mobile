@@ -32,6 +32,15 @@ Tile size is **48×48 px**.
 | D | 768×768 | upper normal tiles |
 | E | 768×768 | upper normal tiles |
 
+The existing manifest `tileset/...` ID is the stable **tileset-set identity** used by maps. It is not a single packed replacement image. Each parent deterministically owns nine child sheets. For example:
+
+- Parent map ID: `tileset/elyndor/sunny-plains`
+- A1 child ID: `tileset/elyndor/sunny-plains/A1`
+- A1 file: `tilesets/elyndor/sunny-plains/A1.png`
+- Continue identically through `A2`, `A3`, `A4`, `A5`, `B`, `C`, `D`, and `E`.
+
+Engine v1 derives and registers those nine child descriptors automatically from the parent manifest entry. Maps continue storing only the parent ID. An explicitly declared child entry may override its derived descriptor later without changing the parent map contract.
+
 A5 is also the locked deterministic material-sheet production format already used by the Plushbound pipeline: **384×768 PNG, 8×16 grid, 128 slots, 48×48 px each, no margins, no padding, origin (0,0), no post-generation scaling**.
 
 A1–A4 are composed from **24×24 quarter tiles**. The editor and Engine v1 are cross-tested against the same observable MV geometry: 48 floor shapes, 16 wall shapes and 4 waterfall shapes, including A1 animation phases. Asset authors should create sheets in the locked A1–A4 geometry; they do not need to pre-render every map tile variant. Engine v1 resolves those same quarter recipes and the Canvas runtime renders the four resolved source quadrants directly.
@@ -45,6 +54,8 @@ The master Plushbound character authoring format remains **Character Atlas V1**:
 - template version `1.0`
 - fixed deterministic slots defined in `tools/editor/character-atlas-v1-core.js`
 - no visual slot detection or scaling
+
+The Character Atlas builder now exports three deterministic files for a ready build: the 1536×1024 master atlas PNG, the compiled 144×192 field-runtime PNG, and a JSON export manifest containing the exact crop/destination plan.
 
 The runtime-native field character target is a **single-character 3×4 sheet**:
 
@@ -116,11 +127,12 @@ Statuses remain `planned`, `placeholder`, `ready`, and `retired`.
 Use these as the production source of truth, in this order:
 
 1. `game/assets/ASSET_COMPATIBILITY_V1.json` — machine-readable dimensions/layout rules.
-2. `game/assets/asset-manifest.json` — stable logical IDs and destination paths.
+2. `game/assets/asset-manifest.json` — stable parent/logical IDs and destination roots.
 3. `tools/editor/character-atlas-v1-core.js` — exact Character Atlas V1 slots and runtime field extraction.
 4. `tools/editor/mv-tile-id-contracts.js` and `tools/editor/mv-autotile-composition.js` — editor-side MV tile semantics.
 5. `engine/src/render/MvTilesetResolver.js` — Engine v1 interpretation of generated A1–E sheets.
-6. `engine/src/render/Canvas2DRenderBackend.js` — runtime draw path for resolved normal/autotile sources.
+6. `engine/src/render/AssetBackedMapRenderer.js` — automatic parent-ID → A1–E runtime bridge.
+7. `engine/src/render/Canvas2DRenderBackend.js` — runtime draw path for resolved normal/autotile sources.
 
 The engine/editor CI cross-checks the editor and engine tile semantics so a sheet that is valid against this contract has one deterministic interpretation on both sides. Character Atlas CI separately proves the deterministic Atlas V1 → 144×192 runtime field-sheet extraction.
 

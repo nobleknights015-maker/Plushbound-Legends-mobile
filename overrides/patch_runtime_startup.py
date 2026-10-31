@@ -47,3 +47,9 @@ else:
     print('renderStarters already present')
 
 path.write_text(data, encoding='utf-8')
+
+# Install deterministic environment-scene registry after base runtime fixes.
+environment_patch = Path('overrides/patch_environment_registry.py')
+if not environment_patch.is_file():
+    raise SystemExit('environment registry installer is missing')
+exec(compile(environment_patch.read_text(encoding='utf-8'), str(environment_patch), 'exec'), {'__name__': '__main__'})

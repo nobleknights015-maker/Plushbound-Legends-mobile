@@ -1,0 +1,76 @@
+name: Environment Registry Runtime Smoke
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'overrides/environment_registry_runtime.js'
+      - 'overrides/environment_registry_ready30.json'
+      - 'overrides/environment_registry_smoke.html'
+      - 'overrides/patch_environment_registry.py'
+      - 'overrides/patch_runtime_startup.py'
+      - 'docs/ENVIRONMENT_REGISTRY_RUNTIME_CONTRACT.md'
+      - '.github/workflows/environment-registry-smoke.yml'
+
+jobs:
+  environment-registry-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Reconstruct project source
+        run: |
+          cat source_chunks/part_* > project-source.b64
+          base64 -d project-source.b64 > project-source-fixed.zip
+          unzip -o project-source-fixed.zip -d .
+
+      - name: Install environment registry runtime
+        run: |
+          python overrides/patch_runtime_startup.py | tee /tmp/environment-registry-install.log
+          node --check app/src/main/assets/environment_registry_runtime.js
+          grep -q '<script src="environment_registry_runtime.js"></script>' app/src/main/assets/index.html
+          test -f app/src/main/assets/data/world_editor/environment_registry_v1.json
+          test -f app/src/main/assets/data/world_editor/environment_registry_install_receipt.json
+          python -m json.tool app/src/main/assets/data/world_editor/environment_registry_v1.json >/dev/null
+          python -m json.tool app/src/main/assets/data/world_editor/environment_registry_install_receipt.json >/dev/null
+
+      - name: Run browser environment-registry smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          BROWSER=''
+          for candidate in google-chrome-stable google-chrome chromium chromium-browser; do
+            if command -v "$candidate" >/dev/null 2>&1; then BROWSER="$candidate"; break; fi
+          done
+          if [ -z "$BROWSER" ]; then
+            echo 'No supported Chromium/Chrome binary found on runner' >&2
+            exit 1
+          fi
+          python -m http.server 8766 --directory app/src/main/assets >/tmp/environment-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for attempt in 1 2 3 4 5; do
+            if curl -fsS http://127.0.0.1:8766/environment_registry_smoke.html >/dev/null; then break; fi
+            sleep 1
+          done
+          "$BROWSER" \
+            --headless=new \
+            --no-sandbox \
+            --disable-gpu \
+            --virtual-time-budget=5000 \
+            --dump-dom \
+            http://127.0.0.1:8766/environment_registry_smoke.html \
+            > /tmp/environment-registry-smoke-dom.html
+          cat /tmp/environment-registry-smoke-dom.html
+          grep -q 'data-environment-registry-smoke="PASS"' /tmp/environment-registry-smoke-dom.html
+          grep -q 'PASS scenes=216 ready=30 waiting=186' /tmp/environment-registry-smoke-dom.html
+
+      - name: Build debug APK and verify packaged registry
+        run: |
+          gradle --no-daemon assembleDebug
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          test -f "$APK"
+          unzip -l "$APK" | grep -q 'assets/environment_registry_runtime.js'
+          unzip -l "$APK" | grep -q 'assets/data/world_editor/environment_registry_v1.json'
+          unzip -l "$APK" | grep -q 'assets/data/world_editor/environment_registry_install_receipt.json'
+          echo 'PLUSHBOUND_ENVIRONMENT_REGISTRY_APK=PASS'

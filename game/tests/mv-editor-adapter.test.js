@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {MV_DATABASE_FILES} from '../../tools/editor/mv-project-core.js';
-import {importMvProjectData,exportMvProjectData,mvEditorTileAt,verifyMvRoundTrip} from '../../tools/editor/mv-editor-adapter.js';
+import {importMvProjectData,exportMvProjectData,mvEditorTileAt,verifyMvRoundTrip,mvImportedTilesetAssetId} from '../../tools/editor/mv-editor-adapter.js';
 
 function audio(){return {name:'',pan:0,pitch:100,volume:90};}
 function end(){return {code:0,indent:0,parameters:[]};}
@@ -33,6 +33,15 @@ test('imports six MV layers into four editable tile layers plus shadow and regio
   assert.equal(mvEditorTileAt(project,'1',1,1,5),23);
   assert.equal(map.events[0].pages[0].trigger,'touch');
   assert.equal(map.events[0].pages[0].mvTrigger,2);
+});
+
+test('MV import assigns deterministic runtime tileset IDs without changing numeric MV serialization',()=>{
+  const project=importMvProjectData(filesFixture(),{strictExtended:false});
+  assert.equal(mvImportedTilesetAssetId(1),'tileset/mv-import/001');
+  assert.equal(project.maps[0].tileset,'tileset/mv-import/001');
+  assert.equal(project.maps[0].tilesetId,1);
+  assert.equal(exportMvProjectData(project)['Map001.json'].tilesetId,1);
+  assert.throws(()=>mvImportedTilesetAssetId(0),/positive integer/);
 });
 
 test('round trips untouched MV project data byte-for-byte at JSON value level',()=>{

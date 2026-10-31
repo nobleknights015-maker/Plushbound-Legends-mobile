@@ -18,7 +18,7 @@ function projectFixture({ unsupported = false } = {}) {
     sourceFormat: 'rpg-maker-mv-project-data',
     start: { mapId: '1', x: 0, y: 0, direction: 2 },
     maps: [{
-      id: '1', mvMapId: 1, name: 'Compatibility Lab', width: 2, height: 1, tilesetId: 1,
+      id: '1', mvMapId: 1, name: 'Compatibility Lab', width: 2, height: 1, tilesetId: 1, tileset:'tileset/test/compatibility-lab',
       layers: [
         { id: 'mv-layer-0', data: [10, 11] },
         { id: 'mv-layer-1', data: [20, 21] },
@@ -54,8 +54,9 @@ function projectFixture({ unsupported = false } = {}) {
 }
 
 function mvFilesFixture() {
-  const numbered = ['Actors.json','Animations.json','Armors.json','Classes.json','Enemies.json','Items.json','Skills.json','States.json','Tilesets.json','Troops.json','Weapons.json'];
+  const numbered = ['Actors.json','Animations.json','Armors.json','Classes.json','Enemies.json','Items.json','Skills.json','States.json','Troops.json','Weapons.json'];
   const files = Object.fromEntries(numbered.map(name => [name, [null]]));
+  files['Tilesets.json']=[null,{id:1,name:'Compatibility',mode:0,tilesetNames:['A1','A2','A3','A4','A5','B','C','D','E'],flags:new Array(8192).fill(0),note:''}];
   files['MapInfos.json'] = [null, { id: 1, name: 'Compatibility Lab' }];
   files['CommonEvents.json'] = [null, {
     id: 2, name: 'Bell', trigger: 0, switchId: 1,
@@ -66,7 +67,7 @@ function mvFilesFixture() {
     switches: [], variables: [], elements: [], skillTypes: [], weaponTypes: [], armorTypes: [], equipTypes: []
   };
   files['Map001.json'] = {
-    width: 2, height: 1, tilesetId: 0, displayName: 'Compatibility Lab',
+    width: 2, height: 1, tilesetId: 1, displayName: 'Compatibility Lab',
     data: [10,11,20,21,30,31,40,41,1,2,7,8], encounterList: [],
     events: [null, {
       id: 1, name: 'Gate', x: 1, y: 0,
@@ -93,9 +94,11 @@ test('World Editor compatibility contract is explicit and fail-closed', () => {
   assert.throws(() => adaptWorldEditorProject({ format: 'other', adapterVersion: 1, maps: [], start: {} }), /Unsupported editor project format/);
 });
 
-test('Engine adapter preserves four editor layers, regions, shadows, events and common events', () => {
+test('Engine adapter preserves four editor layers, tileset identity, regions, shadows, events and common events', () => {
   const bundle = adaptWorldEditorProject(projectFixture());
   const map = bundle.maps.get('1');
+  assert.equal(map.tileset,'tileset/test/compatibility-lab');
+  assert.equal(map.tilesetId,1);
   assert.deepEqual(map.layers.ground, [10, 11]);
   assert.deepEqual(map.layers.lower, [20, 21]);
   assert.deepEqual(map.layers.upper, [30, 31]);
@@ -154,10 +157,11 @@ test('Unsupported editor commands are reported and can block runtime installatio
   );
 });
 
-test('Actual MV JSON can flow through the World Editor importer into Engine v1', () => {
+test('Actual MV JSON can flow through the World Editor importer into Engine v1 with stable tileset identity', () => {
   const editorProject = importMvProjectData(mvFilesFixture(), { strictExtended: false });
   assert.equal(editorProject.format, WorldEditorCompatibility.format);
   assert.equal(editorProject.commonEvents[0].commands[0].code, 'SWITCH');
+  assert.equal(editorProject.maps[0].tileset,'tileset/mv-import/001');
 
   const state = new GameState();
   const maps = new MapRuntime({ state });
@@ -165,10 +169,16 @@ test('Actual MV JSON can flow through the World Editor importer into Engine v1',
   const bundle = installWorldEditorProject({ project: editorProject, state, mapRuntime: maps, dataRegistry: data, requireExecutable: true });
 
   assert.equal(bundle.report.runtimeExecutable, true);
+  assert.equal(bundle.maps.get('1').tileset,'tileset/mv-import/001');
   assert.equal(state.map.id, '1');
   assert.equal(maps.tileAt(0, 0, 'ground'), 10);
   assert.equal(maps.tileAt(1, 0, 'overlay'), 41);
   assert.equal(maps.regionAt(1, 0), 8);
   assert.equal(maps.eventsAt(1, 0)[0].commands[0].code, 'WAIT');
   assert.equal(maps.commonEvents.get('2')[0].code, 'SWITCH');
+});
+
+test('Engine adapter rejects editor maps with no stable runtime tileset asset identity',()=>{
+  const project=projectFixture();delete project.maps[0].tileset;
+  assert.throws(()=>adaptWorldEditorProject(project),error=>error?.code==='EDITOR_MAP_TILESET_ID_REQUIRED');
 });

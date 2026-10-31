@@ -52,7 +52,7 @@ export function validateMvEffect(v,file='effect'){
 export function validateMvDamage(v,file='damage'){
   const issues=[];
   if(!obj(v)) return [issue('MV_DAMAGE_OBJECT','MV damage must be an object',file)];
-  if(!int(v.type)||!int(v.elementId)) issues.push(issue('MV_DAMAGE_ID','MV damage type and elementId must be non-negative integers',file));
+  if(!int(v.type)||!Number.isInteger(v.elementId)||v.elementId< -1) issues.push(issue('MV_DAMAGE_ID','MV damage type must be non-negative and elementId must be -1 or greater',file));
   if(!str(v.formula)) issues.push(issue('MV_DAMAGE_FORMULA','MV damage formula must be a string',file));
   if(!Number.isFinite(v.variance)) issues.push(issue('MV_DAMAGE_VARIANCE','MV damage variance must be numeric',file));
   if(!bool(v.critical)) issues.push(issue('MV_DAMAGE_CRITICAL','MV damage critical must be boolean',file));

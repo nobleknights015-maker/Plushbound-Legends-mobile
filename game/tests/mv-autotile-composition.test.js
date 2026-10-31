@@ -33,7 +33,7 @@ test('plans A2, A3 and mixed A4 families with exact source quarter geometry',()=
   const a2=mvAutotileSourcePlan(mvAutotileId(16,47));
   assert.equal(a2.slot,'A2');assert.equal(a2.family,'floor');assert.equal(a2.supported,true);
   assert.deepEqual(a2.sourceBlock,{tileX:0,tileY:0,quarterX:0,quarterY:0});
-  assert.deepEqual(a2.quadrants.map(q=>q.sourceRelativeQuarter),[[0,0],[1,0],[0,1],[1,1]]);
+  assert.deepEqual(a2.quadrants.map(q=>q.sourceRelativeQuarter),[{x:0,y:0},{x:1,y:0},{x:0,y:1},{x:1,y:1}]);
 
   const a3=mvAutotileSourcePlan(mvAutotileId(48,15));
   assert.equal(a3.slot,'A3');assert.equal(a3.family,'wall');assert.equal(a3.supported,true);

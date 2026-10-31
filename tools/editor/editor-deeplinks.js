@@ -1,4 +1,5 @@
 import './mv-browser-integration.js';
+import './mv-raw-command-ui.js';
 import {readEditorLink} from './editor-navigation-core.js';
 
 const link=readEditorLink(location.search);

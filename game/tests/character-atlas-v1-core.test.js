@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CHARACTER_ATLAS_V1, CHARACTER_ATLAS_V1_SLOTS, atlasV1Slot, validateCharacterAtlasV1Descriptor, compileCharacterAtlasV1Manifest, atlasV1CropPlan, atlasV1AssetEntries, hasPngSignature } from '../../tools/editor/character-atlas-v1-core.js';
+import { CHARACTER_ATLAS_V1, CHARACTER_ATLAS_V1_SLOTS, CHARACTER_FIELD_RUNTIME_V1, atlasV1Slot, validateCharacterAtlasV1Descriptor, compileCharacterAtlasV1Manifest, atlasV1CropPlan, atlasV1AssetEntries, atlasV1FieldRuntimeFrame, atlasV1FieldRuntimeSheetPlan, hasPngSignature } from '../../tools/editor/character-atlas-v1-core.js';
 
 test('Character Atlas v1 locks the native production canvas and deterministic slots',()=>{
   assert.deepEqual([CHARACTER_ATLAS_V1.width,CHARACTER_ATLAS_V1.height],[1536,1024]);
@@ -51,7 +51,30 @@ test('Character Atlas v1 compiler emits stable native asset IDs and crop coordin
   assert.equal(assets.find(asset=>asset.id==='character/chris-bourn/battle/attack').type,'character-battle-sprite');
 });
 
+test('Character Atlas v1 field runtime extraction is exact 48x48 safe-area cropping with no resampling',()=>{
+  assert.deepEqual({width:CHARACTER_FIELD_RUNTIME_V1.width,height:CHARACTER_FIELD_RUNTIME_V1.height,frameWidth:CHARACTER_FIELD_RUNTIME_V1.frameWidth,frameHeight:CHARACTER_FIELD_RUNTIME_V1.frameHeight,columns:CHARACTER_FIELD_RUNTIME_V1.columns,rows:CHARACTER_FIELD_RUNTIME_V1.rows},{width:144,height:192,frameWidth:48,frameHeight:48,columns:3,rows:4});
+  assert.deepEqual(CHARACTER_FIELD_RUNTIME_V1.directionRows,['down','left','right','up']);
+  assert.equal(CHARACTER_FIELD_RUNTIME_V1.extraction,'center-horizontal-bottom-aligned-no-scale');
+  const slot=atlasV1Slot('field.down.1');
+  assert.deepEqual({width:slot.width,height:slot.height},{width:75,height:64});
+  assert.deepEqual(atlasV1FieldRuntimeFrame('field.down.1').source,{x:824,y:167,width:48,height:48});
+  assert.deepEqual(atlasV1FieldRuntimeFrame('field.up.3').source,{x:984,y:371,width:48,height:48});
+});
+
+test('Character Atlas v1 compiler produces a deterministic 144x192 3x4 runtime sheet plan',()=>{
+  const manifest=compileCharacterAtlasV1Manifest({characterId:'runtime-test',width:1536,height:1024,type:'image/png'});
+  const plan=atlasV1FieldRuntimeSheetPlan(manifest);
+  assert.deepEqual({width:plan.width,height:plan.height,frameWidth:plan.frameWidth,frameHeight:plan.frameHeight,columns:plan.columns,rows:plan.rows,layout:plan.layout,resampling:plan.resampling},{width:144,height:192,frameWidth:48,frameHeight:48,columns:3,rows:4,layout:'single-character-3x4',resampling:false});
+  assert.equal(plan.frames.length,12);
+  assert.deepEqual(plan.frames[0].destination,{x:0,y:0,width:48,height:48});
+  assert.deepEqual(plan.frames[2].destination,{x:96,y:0,width:48,height:48});
+  assert.deepEqual(plan.frames[11].destination,{x:96,y:144,width:48,height:48});
+  assert.deepEqual(plan.frames.map(frame=>frame.direction),['down','down','down','left','left','left','right','right','right','up','up','up']);
+});
+
 test('Character Atlas v1 compile is deterministic',()=>{
   const input={characterId:'npc-test',width:1536,height:1024,type:'image/png'};
   assert.deepEqual(compileCharacterAtlasV1Manifest(input),compileCharacterAtlasV1Manifest(input));
+  const manifest=compileCharacterAtlasV1Manifest(input);
+  assert.deepEqual(atlasV1FieldRuntimeSheetPlan(manifest),atlasV1FieldRuntimeSheetPlan(manifest));
 });

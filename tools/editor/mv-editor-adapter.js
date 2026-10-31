@@ -8,6 +8,7 @@ const TRIGGER_TO_MV=Object.freeze({action:0,touch:1,autorun:3,parallel:4});
 const PRIORITY_TO_EDITOR=Object.freeze({0:'below',1:'same',2:'above'});
 
 function mapFileName(id){return `Map${String(id).padStart(3,'0')}.json`;}
+export function mvImportedTilesetAssetId(tilesetId){const id=Number(tilesetId);if(!Number.isInteger(id)||id<=0)throw new Error(`MV tileset id must be a positive integer: ${tilesetId}`);return `tileset/mv-import/${String(id).padStart(3,'0')}`;}
 function splitMvLayers(map){
   const count=map.width*map.height;
   const layers=[];
@@ -70,7 +71,7 @@ export function importMvProjectData(files,{strictExtended=true}={}){
     const id=Number(filename.match(/Map(\d{3})\.json/)[1]);const map=files[filename];const split=splitMvLayers(map);
     return {
       id:String(id),mvMapId:id,mvFileName:filename,name:map.displayName||`Map ${id}`,
-      width:map.width,height:map.height,tilesetId:map.tilesetId,
+      width:map.width,height:map.height,tilesetId:map.tilesetId,tileset:mvImportedTilesetAssetId(map.tilesetId),
       layers:split.layers,regions:split.regions,mvShadowBits:split.shadowBits,
       events:(map.events||[]).slice(1).filter(Boolean).map(mvEventToEditor),
       encounterList:clone(map.encounterList||[]),
@@ -103,7 +104,7 @@ export function exportMvProjectData(project){
     out.data=joinMvLayers(editorMap,source);
     const sourceEvents=Array.isArray(source.events)?source.events:[];out.events=[null];
     for(const event of editorMap.events||[]){const numeric=Number(event.id);if(!Number.isInteger(numeric)||numeric<=0) throw new Error(`MV event id must remain a positive integer: ${event.id}`);out.events[numeric]=editorEventToMv(event,sourceEvents[numeric]);}
-    for(let i=1;i<out.events.length;i++) if(out.events[i]===undefined) out.events[i]=null;
+    for(let i=1;i<out.events.length;i++) if(out.events[i]===undefined)out.events[i]=null;
     if(Array.isArray(editorMap.encounterList))out.encounterList=clone(editorMap.encounterList);
     files[filename]=out;
   }

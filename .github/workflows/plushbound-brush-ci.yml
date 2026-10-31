@@ -9,6 +9,10 @@ on:
       - 'tools/editor/stroke-core.js'
       - 'tools/editor/editor.js'
       - 'tools/editor/tileset-preview.js'
+      - 'tools/editor/build-readiness.js'
+      - 'tools/editor/reference-audit.js'
+      - 'tools/editor/mv-browser-integration.js'
+      - 'tools/editor/playtest-debug-overlay.js'
       - 'tools/editor/index.html'
       - 'game/assets/asset-manifest.json'
       - 'game/tests/brush-core.test.js'
@@ -20,6 +24,10 @@ on:
       - 'tools/editor/stroke-core.js'
       - 'tools/editor/editor.js'
       - 'tools/editor/tileset-preview.js'
+      - 'tools/editor/build-readiness.js'
+      - 'tools/editor/reference-audit.js'
+      - 'tools/editor/mv-browser-integration.js'
+      - 'tools/editor/playtest-debug-overlay.js'
       - 'tools/editor/index.html'
       - 'game/assets/asset-manifest.json'
       - 'game/tests/brush-core.test.js'
@@ -41,6 +49,10 @@ jobs:
           node --check tools/editor/stroke-core.js
           node --check tools/editor/editor.js
           node --check tools/editor/tileset-preview.js
+          node --check tools/editor/build-readiness.js
+          node --check tools/editor/reference-audit.js
+          node --check tools/editor/mv-browser-integration.js
+          node --check tools/editor/playtest-debug-overlay.js
           node --test game/tests/brush-core.test.js game/tests/stroke-core.test.js game/tests/editor-core.test.js
       - name: Install Chromium
         run: |

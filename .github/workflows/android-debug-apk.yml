@@ -36,6 +36,15 @@ jobs:
         run: |
           python overrides/patch_runtime_startup.py
           node --check app/src/main/assets/game.js
+          node --check app/src/main/assets/character_generator_runtime.js
+          node --check app/src/main/assets/character_generator_pack_runtime.js
+          grep -q '<script src="character_generator_runtime.js"></script>' app/src/main/assets/index.html
+          grep -q '<script src="character_generator_pack_runtime.js"></script>' app/src/main/assets/index.html
+          test -f app/src/main/assets/data/world_editor/character_generator_install_receipt.json
+          python -m json.tool app/src/main/assets/data/world_editor/character_generator_install_receipt.json >/dev/null
+          grep -q '01e89432b8681206422fba05be6fd9e302afe8e2ee27ee8a7c872c3ede875783' app/src/main/assets/character_generator_pack_runtime.js
+          grep -q 'expected 2050 generator PNGs' app/src/main/assets/character_generator_pack_runtime.js
+          grep -q 'NPC Generator' app/src/main/assets/character_generator_pack_runtime.js
 
       - name: Apply live creator, Guardian, and field sprite pass
         run: |
@@ -133,7 +142,7 @@ jobs:
       - name: Build debug APK
         run: gradle --no-daemon assembleDebug
 
-      - name: Verify APK and packaged A5 importer assets
+      - name: Verify APK and packaged runtime assets
         shell: bash
         run: |
           set -euo pipefail
@@ -144,7 +153,13 @@ jobs:
           unzip -l "$APK" | grep -q 'assets/data/tilesets/runtime_fixture_a5.json'
           unzip -l "$APK" | grep -q 'assets/tilesets/runtime_fixture_A5.png'
           unzip -p "$APK" assets/data/tilesets/a5_runtime_importer_receipt.json | python -m json.tool >/dev/null
+          unzip -l "$APK" | grep -q 'assets/character_generator_runtime.js'
+          unzip -l "$APK" | grep -q 'assets/character_generator_pack_runtime.js'
+          unzip -l "$APK" | grep -q 'assets/data/world_editor/character_generator_install_receipt.json'
+          unzip -p "$APK" assets/data/world_editor/character_generator_install_receipt.json | python -m json.tool >/dev/null
+          unzip -p "$APK" assets/character_generator_pack_runtime.js | grep -q 'plushbound-character-creator-full-outfits-glasses-only-v1'
           echo 'PLUSHBOUND_ENGINE_V1_A5_APK_PACKAGE=PASS'
+          echo 'PLUSHBOUND_WORLD_EDITOR_NPC_GENERATOR_APK_PACKAGE=PASS'
 
       - name: Upload installable APK
         uses: actions/upload-artifact@v4

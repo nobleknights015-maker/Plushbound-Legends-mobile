@@ -1,0 +1,41 @@
+{
+  "schema": "plushbound.world_editor.character_generator_components.v1",
+  "version": 1,
+  "generatorId": "world-editor-character-generator-v1",
+  "failClosed": true,
+  "visualGuessingForbidden": true,
+  "layerOrder": [
+    "shadow",
+    "body",
+    "legs",
+    "feet",
+    "torso_under",
+    "torso_over",
+    "arms",
+    "hands",
+    "neck",
+    "hair_back",
+    "head",
+    "face",
+    "eyes",
+    "hair_front",
+    "headwear",
+    "accessory_back",
+    "accessory_front",
+    "equipment_back",
+    "equipment_front"
+  ],
+  "requiredSlots": ["body", "head", "face", "eyes"],
+  "optionalSlots": [
+    "shadow", "legs", "feet", "torso_under", "torso_over", "arms", "hands", "neck",
+    "hair_back", "hair_front", "headwear", "accessory_back", "accessory_front",
+    "equipment_back", "equipment_front"
+  ],
+  "componentPacks": [],
+  "notes": [
+    "Approved Plushbound component packs are registered here by stable component ID.",
+    "The editor assembles registered layers only; it does not invent, raster-paint, or visually infer missing clothing/body parts.",
+    "Component art is produced upstream and imported as source layers. World Editor owns deterministic assembly and compatibility validation.",
+    "Important story characters, Guardians, bosses, and other bespoke characters may continue to use the locked atlas/compiler pipeline instead of this modular generator."
+  ]
+}

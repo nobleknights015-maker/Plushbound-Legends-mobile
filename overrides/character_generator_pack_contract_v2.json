@@ -1,0 +1,48 @@
+{
+  "archiveEntries": 2072,
+  "audit": {
+    "allDimensionsValid": true,
+    "allFilenamesParse": true,
+    "badDimensionCount": 0,
+    "badFilenameCount": 0
+  },
+  "countsByFamilyBodySet": {
+    "Face/Female": 236,
+    "Face/Kid": 14,
+    "Face/Male": 275,
+    "SV/Female": 152,
+    "SV/Kid": 8,
+    "SV/Male": 214,
+    "TV/Female": 222,
+    "TV/Kid": 10,
+    "TV/Male": 278,
+    "TVD/Female": 150,
+    "TVD/Kid": 8,
+    "TVD/Male": 164,
+    "Variation/Female": 139,
+    "Variation/Kid": 9,
+    "Variation/Male": 170
+  },
+  "expectedDimensions": {
+    "Face": [144, 144],
+    "SV": [576, 384],
+    "TV": [144, 192],
+    "TVD": [144, 48],
+    "Variation": [64, 64]
+  },
+  "generatorPngCount": 2049,
+  "gradientPngCount": 1,
+  "totalPngCount": 2050,
+  "notes": [
+    "Variation part IDs are the shared character-recipe IDs.",
+    "Face-only selectors (Face/Eyes/Eyebrows/Mouth/Nose) do not require TV/TVD/SV counterparts.",
+    "Default human ear choices may intentionally omit TV/TVD/SV overlay art; non-default overlay art is rendered when present.",
+    "Some damaged/TVD variants intentionally omit visual overlays that do not have a matching damaged resource."
+  ],
+  "packId": "plushbound-character-creator-full-outfits-glasses-only-v1",
+  "schema": "plushbound.world_editor.character_generator_pack_contract.v2",
+  "sha256": "01e89432b8681206422fba05be6fd9e302afe8e2ee27ee8a7c872c3ede875783",
+  "supportedBodySets": ["Female", "Male", "Kid"],
+  "supportedOutputs": ["TV", "Face", "TVD", "SV"],
+  "version": 2
+}

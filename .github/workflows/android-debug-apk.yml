@@ -43,8 +43,20 @@ jobs:
           test -f app/src/main/assets/data/world_editor/character_generator_install_receipt.json
           python -m json.tool app/src/main/assets/data/world_editor/character_generator_install_receipt.json >/dev/null
           grep -q '01e89432b8681206422fba05be6fd9e302afe8e2ee27ee8a7c872c3ede875783' app/src/main/assets/character_generator_pack_runtime.js
-          grep -q 'expected 2050 generator PNGs' app/src/main/assets/character_generator_pack_runtime.js
           grep -q 'NPC Generator' app/src/main/assets/character_generator_pack_runtime.js
+
+      - name: Install audited World Editor character generator v3
+        run: |
+          python overrides/patch_character_generator_v3.py | tee /tmp/character-generator-v3-install.json
+          node --check app/src/main/assets/character_generator_runtime_v3.js
+          grep -q '<script src="character_generator_runtime_v3.js"></script>' app/src/main/assets/index.html
+          test -f app/src/main/assets/data/world_editor/character_generator_pack_contract_v2.json
+          test -f app/src/main/assets/data/world_editor/character_generator_v3_install_receipt.json
+          python -m json.tool app/src/main/assets/data/world_editor/character_generator_pack_contract_v2.json >/dev/null
+          python -m json.tool app/src/main/assets/data/world_editor/character_generator_v3_install_receipt.json >/dev/null
+          grep -q 'PART_COUNT=2049' app/src/main/assets/character_generator_runtime_v3.js
+          grep -q 'TOTAL_PNG=2050' app/src/main/assets/character_generator_runtime_v3.js
+          grep -q 'matchingRecipeAcrossFamilies:true' app/src/main/assets/character_generator_runtime_v3.js
 
       - name: Apply live creator, Guardian, and field sprite pass
         run: |
@@ -84,14 +96,7 @@ jobs:
             if curl -fsS http://127.0.0.1:8765/a5_runtime_smoke.html >/dev/null; then break; fi
             sleep 1
           done
-          "$BROWSER" \
-            --headless=new \
-            --no-sandbox \
-            --disable-gpu \
-            --virtual-time-budget=5000 \
-            --dump-dom \
-            http://127.0.0.1:8765/a5_runtime_smoke.html \
-            > /tmp/a5-runtime-smoke-dom.html
+          "$BROWSER" --headless=new --no-sandbox --disable-gpu --virtual-time-budget=5000 --dump-dom http://127.0.0.1:8765/a5_runtime_smoke.html > /tmp/a5-runtime-smoke-dom.html
           cat /tmp/a5-runtime-smoke-dom.html
           grep -q 'data-a5-runtime-smoke="PASS"' /tmp/a5-runtime-smoke-dom.html
           grep -q 'PASS tileset.runtime_fixture.a5 128/128' /tmp/a5-runtime-smoke-dom.html
@@ -155,11 +160,14 @@ jobs:
           unzip -p "$APK" assets/data/tilesets/a5_runtime_importer_receipt.json | python -m json.tool >/dev/null
           unzip -l "$APK" | grep -q 'assets/character_generator_runtime.js'
           unzip -l "$APK" | grep -q 'assets/character_generator_pack_runtime.js'
-          unzip -l "$APK" | grep -q 'assets/data/world_editor/character_generator_install_receipt.json'
-          unzip -p "$APK" assets/data/world_editor/character_generator_install_receipt.json | python -m json.tool >/dev/null
-          unzip -p "$APK" assets/character_generator_pack_runtime.js | grep -q 'plushbound-character-creator-full-outfits-glasses-only-v1'
+          unzip -l "$APK" | grep -q 'assets/character_generator_runtime_v3.js'
+          unzip -l "$APK" | grep -q 'assets/data/world_editor/character_generator_pack_contract_v2.json'
+          unzip -l "$APK" | grep -q 'assets/data/world_editor/character_generator_v3_install_receipt.json'
+          unzip -p "$APK" assets/data/world_editor/character_generator_v3_install_receipt.json | python -m json.tool >/dev/null
+          unzip -p "$APK" assets/character_generator_runtime_v3.js | grep -q 'PART_COUNT=2049'
+          unzip -p "$APK" assets/character_generator_runtime_v3.js | grep -q 'TOTAL_PNG=2050'
           echo 'PLUSHBOUND_ENGINE_V1_A5_APK_PACKAGE=PASS'
-          echo 'PLUSHBOUND_WORLD_EDITOR_NPC_GENERATOR_APK_PACKAGE=PASS'
+          echo 'PLUSHBOUND_WORLD_EDITOR_NPC_GENERATOR_V3_APK_PACKAGE=PASS'
 
       - name: Upload installable APK
         uses: actions/upload-artifact@v4

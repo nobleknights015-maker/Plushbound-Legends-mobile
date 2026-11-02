@@ -1,0 +1,31 @@
+/* Plushbound World Editor - local-only RPG Maker MV Free Assets add-on importer
+ * IMPORTANT: this module never redistributes the resource pack. The user selects
+ * their own ZIP locally; compatible generator overlays are stored in IndexedDB.
+ */
+(() => {
+  'use strict';
+  const EXPECTED_SHA256='260f992eafc9df2b3e6164ce342561b8ae127e78e846ba6ff899524a938349b9';
+  const PACK_ID='rpg-maker-mv-free-assets-local-addon-v1';
+  const DB_NAME='plushbound-world-editor', DB_VERSION=1;
+  const ASSET_STORE='characterGeneratorAssets', META_STORE='characterGeneratorMeta';
+  const META_KEY='mv-free-addon';
+  const SAFE_LAYERS=new Set(['Clothing','Clothing1','Clothing2','AccA','AccB']);
+  function fail(m){throw new Error(`MV Free Assets add-on rejected: ${m}`)}
+  function hex(buf){return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('')}
+  async function sha256(buf){return hex(await crypto.subtle.digest('SHA-256',buf))}
+  function openDb(){return new Promise((res,rej)=>{const r=indexedDB.open(DB_NAME,DB_VERSION);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+  async function putMany(store,rows){const db=await openDb();for(let i=0;i<rows.length;i+=100){const c=rows.slice(i,i+100);await new Promise((res,rej)=>{const tx=db.transaction(store,'readwrite'),s=tx.objectStore(store);c.forEach(x=>s.put(x));tx.oncomplete=res;tx.onerror=()=>rej(tx.error);tx.onabort=()=>rej(tx.error)})}}
+  async function get(store,key){const db=await openDb();return new Promise((res,rej)=>{const tx=db.transaction(store,'readonly'),r=tx.objectStore(store).get(key);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+  function u16(v,o){return v.getUint16(o,true)} function u32(v,o){return v.getUint32(o,true)}
+  function findEocd(bytes){for(let i=bytes.length-22;i>=Math.max(0,bytes.length-65557);i--)if(bytes[i]===0x50&&bytes[i+1]===0x4b&&bytes[i+2]===0x05&&bytes[i+3]===0x06)return i;fail('ZIP end record not found')}
+  function parseZip(buffer){const bytes=new Uint8Array(buffer),v=new DataView(buffer),e=findEocd(bytes),count=u16(v,e+10),off=u32(v,e+16),dec=new TextDecoder();let p=off;const out=[];for(let i=0;i<count;i++){if(u32(v,p)!==0x02014b50)fail('bad ZIP directory');const method=u16(v,p+10),csize=u32(v,p+20),usize=u32(v,p+24),nl=u16(v,p+28),xl=u16(v,p+30),cl=u16(v,p+32),local=u32(v,p+42),name=dec.decode(bytes.slice(p+46,p+46+nl));out.push({name,method,csize,usize,local});p+=46+nl+xl+cl}return out}
+  async function inflate(buffer,e){const v=new DataView(buffer),bytes=new Uint8Array(buffer);if(u32(v,e.local)!==0x04034b50)fail(`bad local header ${e.name}`);const nl=u16(v,e.local+26),xl=u16(v,e.local+28),start=e.local+30+nl+xl,raw=bytes.slice(start,start+e.csize);if(e.method===0)return raw;if(e.method!==8)fail(`unsupported ZIP method ${e.method}`);const ds=new DecompressionStream('deflate-raw');return new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(ds)).arrayBuffer())}
+  function parseName(file){let m=file.match(/^(TV|TVD)_([A-Za-z0-9]+)_p([A-Za-z0-9-]+)(_c)?\.png$/i);if(!m)return null;return {declaredFamily:m[1].toUpperCase(),layer:m[2],part:String(m[3]),mask:!!m[4]}}
+  async function imageDims(bytes){const bmp=await createImageBitmap(new Blob([bytes],{type:'image/png'}));const d=[bmp.width,bmp.height];bmp.close();return d}
+  async function importAddon(file,onProgress){const buffer=await file.arrayBuffer(),digest=await sha256(buffer);if(digest!==EXPECTED_SHA256)fail(`unexpected SHA-256 ${digest}`);const entries=parseZip(buffer).filter(e=>/\/Generator Parts\/.*\.png$/i.test(e.name));const accepted=[],quarantined=[],rows=[];for(let i=0;i<entries.length;i++){const e=entries[i],bytes=await inflate(buffer,e),dims=await imageDims(bytes),fileName=e.name.split('/').pop(),p=parseName(fileName);let family=null;if(dims[0]===144&&dims[1]===192)family='TV';else if(dims[0]===144&&dims[1]===48)family='TVD';if(!p||!family||!SAFE_LAYERS.has(p.layer)){quarantined.push({path:e.name,reason:!p?'unparsed-name':!family?'unsupported-dimensions':'unsupported-layer',dims});continue}const key=`mvfree::${e.name}`;const item={id:`mvfree:${family}:${p.layer}:${p.part}`,path:e.name,key,family,layer:p.layer,part:p.part,mask:p.mask,declaredFamily:p.declaredFamily,dimensions:dims,declaredFamilyMismatch:p.declaredFamily!==family};accepted.push(item);rows.push({path:key,blob:new Blob([bytes],{type:'image/png'}),usize:bytes.byteLength});if(onProgress&&(i%10===0||i===entries.length-1))onProgress(i+1,entries.length,e.name)}if(rows.length)await putMany(ASSET_STORE,rows);const catalog={schema:'plushbound.world_editor.mv_free_addon_catalog.v1',version:1,packId:PACK_ID,sha256:digest,licenseMode:'user-supplied-local-only',redistributionForbidden:true,accepted,quarantined,importedAt:new Date().toISOString()};await putMany(META_STORE,[{key:META_KEY,catalog}]);return catalog}
+  async function getCatalog(){const r=await get(META_STORE,META_KEY);return r&&r.catalog||null}
+  function compatibleParts(catalog,family){const grouped={};for(const a of (catalog&&catalog.accepted||[])){if(a.family!==family)continue;const k=a.part;(grouped[k]||={part:k,layers:[]}).layers.push(a)}return Object.values(grouped).sort((a,b)=>String(a.part).localeCompare(String(b.part),undefined,{numeric:true}))}
+  function addUi(){if(document.getElementById('pb-mvfree-addon-button'))return;const b=document.createElement('button');b.id='pb-mvfree-addon-button';b.textContent='Import MV Free Assets';b.style.cssText='position:fixed;right:14px;bottom:58px;z-index:2147483002;padding:8px 12px;border:0;border-radius:10px;background:#363b48;color:#fff;font:600 12px system-ui';document.body.appendChild(b);b.onclick=()=>{const input=document.createElement('input');input.type='file';input.accept='.zip,application/zip';input.onchange=async()=>{const f=input.files&&input.files[0];if(!f)return;try{b.textContent='Importing MV add-on…';const c=await importAddon(f);b.textContent=`MV add-on: ${c.accepted.length} mapped`;console.info('[Plushbound] MV Free Assets add-on imported',c)}catch(e){b.textContent='Import MV Free Assets';alert(e.message)}};input.click()}}
+  window.PlushboundMVFreeAddon=Object.freeze({PACK_ID,EXPECTED_SHA256,importAddon,getCatalog,compatibleParts});
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',addUi,{once:true});else addUi();
+})();

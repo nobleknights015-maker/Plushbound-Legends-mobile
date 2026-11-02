@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import shutil
 from pathlib import Path
 
@@ -68,6 +69,56 @@ shutil.copy2(REGISTRY_SOURCE, registry_target)
 shutil.copy2(RUNTIME_SOURCE, ASSETS / 'character_generator_runtime.js')
 shutil.copy2(PACK_RUNTIME_SOURCE, ASSETS / 'character_generator_pack_runtime.js')
 
+# Correct RPG Maker generator hair depth. RearHair2 is the true behind-head layer;
+# RearHair1 wraps back over the body/head. FrontHair2 then FrontHair1 finish the
+# crown/bangs above the head. Treating both RearHair layers as a single pre-body
+# selector produces the visible bald-cap regression in rear-facing TV frames.
+pack_target = ASSETS / 'character_generator_pack_runtime.js'
+pack_text = pack_target.read_text(encoding='utf-8')
+old_recipe_pattern = re.compile(
+    r"  function recipePaths\(catalog,recipe,family\)\{.*?\n    return out;\n  \}",
+    re.DOTALL,
+)
+new_recipe = r'''  function recipePaths(catalog,recipe,family){
+    const out=[]; const gender=recipe.gender;
+    const add=(category,selector,partOverride)=>{
+      const part=partOverride!==undefined?partOverride:recipe.selections[selector];
+      if(part===undefined||part===null||part==='') return;
+      out.push(...chooseAssetPaths(catalog,family,gender,category,part));
+    };
+
+    // TV uses numbered hair sublayers with real depth semantics.
+    if(family==='TV'){
+      add('RearHair2','RearHair');
+      add('Body','Body',1);
+      add('Ears','Ears');
+      add('Clothing2','Clothing');
+      add('Clothing1','Clothing');
+      add('RearHair1','RearHair');
+      add('FacialMark','FacialMark');
+      add('Beard2','Beard');
+      add('Beard1','Beard');
+      add('FrontHair2','FrontHair');
+      add('FrontHair1','FrontHair');
+      add('Glasses','Glasses');
+      return out;
+    }
+
+    // Other families keep their native category grouping until a family-specific
+    // depth contract is proven from source naming/geometry.
+    const bodyCats=family==='SV'?['body']:['Body'];
+    for(const c of bodyCats) out.push(...chooseAssetPaths(catalog,family,gender,c,1));
+    for(const selector of DRAW_ORDER){
+      if(selector==='Body') continue; const part=recipe.selections[selector]; if(part===undefined||part===null||part==='') continue;
+      for(const cat of categoriesFor(selector,family)) out.push(...chooseAssetPaths(catalog,family,gender,cat,part));
+    }
+    return out;
+  }'''
+pack_text, substitutions = old_recipe_pattern.subn(new_recipe, pack_text, count=1)
+if substitutions != 1:
+    fail(f'expected exactly one recipePaths replacement, got {substitutions}')
+pack_target.write_text(pack_text, encoding='utf-8')
+
 index_path = ASSETS / 'index.html'
 index = index_path.read_text(encoding='utf-8')
 script_tags = [
@@ -88,7 +139,7 @@ index_path.write_text(index, encoding='utf-8')
 
 registry_sha = hashlib.sha256(registry_target.read_bytes()).hexdigest()
 runtime_sha = hashlib.sha256((ASSETS / 'character_generator_runtime.js').read_bytes()).hexdigest()
-pack_runtime_sha = hashlib.sha256((ASSETS / 'character_generator_pack_runtime.js').read_bytes()).hexdigest()
+pack_runtime_sha = hashlib.sha256(pack_target.read_bytes()).hexdigest()
 receipt = {
     'schema': 'plushbound.world_editor.character_generator_install_receipt.v1',
     'status': 'PASS_BUILD_TIME_CHARACTER_GENERATOR_INSTALL',
@@ -104,6 +155,8 @@ receipt = {
     'persistentIndexedDbPackStorage': True,
     'supportedOutputs': ['TV', 'Face', 'TVD', 'SV'],
     'supportedBodySets': ['Female', 'Male', 'Kid'],
+    'tvHairDepthContract': ['RearHair2', 'Body', 'Clothing2', 'Clothing1', 'RearHair1', 'FrontHair2', 'FrontHair1', 'Glasses'],
+    'hairBaldCapRegressionFixed': True,
     'failClosed': True,
     'visualGuessingForbidden': True,
     'deterministicLayerOrder': layer_order,

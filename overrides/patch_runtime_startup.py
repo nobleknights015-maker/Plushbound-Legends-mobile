@@ -59,3 +59,10 @@ character_generator_patch = Path('overrides/patch_character_generator.py')
 if not character_generator_patch.is_file():
     raise SystemExit('character generator installer is missing')
 exec(compile(character_generator_patch.read_text(encoding='utf-8'), str(character_generator_patch), 'exec'), {'__name__': '__main__'})
+
+# Install the optional local-only RPG Maker MV Free Assets add-on importer.
+# No licensed resource-pack pixels are bundled or committed; the user supplies the ZIP locally.
+mv_free_addon_patch = Path('overrides/patch_character_generator_mv_free_addon.py')
+if not mv_free_addon_patch.is_file():
+    raise SystemExit('MV Free Assets add-on importer installer is missing')
+exec(compile(mv_free_addon_patch.read_text(encoding='utf-8'), str(mv_free_addon_patch), 'exec'), {'__name__': '__main__'})
